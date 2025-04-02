@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ExtendedProfile, ProfileActivity } from "@/types/profile";
+import { ExtendedProfile } from "@/types/profile";
 import { fadeInUp, staggerContainer, staggerItem } from "@/lib/animations";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,7 +12,7 @@ interface ProfileActivityProps {
   profile: ExtendedProfile;
 }
 
-const ActivityItem = ({ activity }: { activity: ProfileActivity }) => {
+const ActivityItem = ({ activity }: { activity: any }) => {
   const getActivityIcon = () => {
     switch (activity.type) {
       case 'post':
@@ -92,7 +92,7 @@ const ActivityItem = ({ activity }: { activity: ProfileActivity }) => {
 
 const ProfileActivity = ({ profile }: ProfileActivityProps) => {
   const [currentTab, setCurrentTab] = useState("all");
-  const [activities, setActivities] = useState<ProfileActivity[]>(profile.recent_activity);
+  const [activities, setActivities] = useState<any[]>(profile.recent_activity);
   
   // Filter activities based on tab
   const filteredActivities = currentTab === 'all' ? 

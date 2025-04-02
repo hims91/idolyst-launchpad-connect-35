@@ -1,7 +1,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { ExtendedProfile, ProfileUpdatePayload, SocialLink } from "@/types/profile";
+import { ExtendedProfile, ProfileUpdatePayload, SocialLink, PrivacySettings } from "@/types/profile";
 import { toast } from "@/hooks/use-toast";
+import { Database } from "@/integrations/supabase/types";
 
 // Fetch profile with extended details
 export const fetchExtendedProfile = async (userId: string, currentUserId?: string): Promise<ExtendedProfile | null> => {
@@ -23,11 +24,16 @@ export const fetchExtendedProfile = async (userId: string, currentUserId?: strin
 
     if (rolesError) throw rolesError;
 
-    // Fetch social links (would need a table for this)
-    const { data: socialLinks, error: socialLinksError } = await supabase
+    // Fetch social links
+    let socialLinks: SocialLink[] = [];
+    const { data: socialLinksData, error: socialLinksError } = await supabase
       .from("social_links")
       .select("*")
       .eq("user_id", userId);
+
+    if (!socialLinksError && socialLinksData) {
+      socialLinks = socialLinksData;
+    }
 
     // Fetch follower count
     const { count: followersCount, error: followersError } = await supabase
@@ -55,18 +61,34 @@ export const fetchExtendedProfile = async (userId: string, currentUserId?: strin
     }
 
     // Fetch recent activity
-    const { data: recentActivity } = await supabase
+    let recentActivity = [];
+    const { data: activityData } = await supabase
       .from("user_activity")
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(5);
 
+    if (activityData) {
+      recentActivity = activityData;
+    }
+
     // Fetch badges
-    const { data: badges } = await supabase
+    let badges = [];
+    const { data: badgesData } = await supabase
       .from("user_badges")
       .select("*, badges(*)")
       .eq("user_id", userId);
+
+    if (badgesData) {
+      badges = badgesData.map((badge: any) => ({
+        id: badge.badges?.id || '',
+        name: badge.badges?.name || '',
+        description: badge.badges?.description || '',
+        icon: badge.badges?.icon || '',
+        earned_at: badge.earned_at
+      }));
+    }
 
     return {
       id: profile.id,
@@ -78,19 +100,13 @@ export const fetchExtendedProfile = async (userId: string, currentUserId?: strin
       xp: profile.xp,
       followers_count: followersCount || 0,
       following_count: followingCount || 0,
-      social_links: socialLinks || [],
-      badges: badges?.map(badge => ({
-        id: badge.badges.id,
-        name: badge.badges.name,
-        description: badge.badges.description,
-        icon: badge.badges.icon,
-        earned_at: badge.earned_at
-      })) || [],
-      professional_details: profile.professional_details || null,
-      portfolio_url: profile.portfolio_url || null,
+      social_links: socialLinks,
+      badges: badges,
+      professional_details: profile.professional_details,
+      portfolio_url: profile.portfolio_url,
       is_following: isFollowing,
       roles: roles || [],
-      recent_activity: recentActivity || [],
+      recent_activity: recentActivity,
       created_at: profile.created_at,
     };
   } catch (error: any) {
@@ -201,7 +217,7 @@ export const addSocialLink = async (userId: string, socialLink: Omit<SocialLink,
     toast({
       title: "Social link added",
     });
-    return data;
+    return data as SocialLink;
   } catch (error: any) {
     toast({
       variant: "destructive",
@@ -251,7 +267,7 @@ export const fetchFollowers = async (userId: string, page = 1, limit = 20) => {
     if (error) throw error;
 
     return {
-      followers: data.map(item => item.profiles),
+      followers: data?.map((item: any) => item.profiles) || [],
       total: count || 0,
     };
   } catch (error: any) {
@@ -275,7 +291,7 @@ export const fetchFollowing = async (userId: string, page = 1, limit = 20) => {
     if (error) throw error;
 
     return {
-      following: data.map(item => item.profiles),
+      following: data?.map((item: any) => item.profiles) || [],
       total: count || 0,
     };
   } catch (error: any) {
@@ -285,17 +301,15 @@ export const fetchFollowing = async (userId: string, page = 1, limit = 20) => {
 };
 
 // Update privacy settings
-export const updatePrivacySettings = async (userId: string, settings: {
-  profile_visibility?: 'public' | 'followers' | 'private';
-  messaging_permissions?: 'everyone' | 'followers' | 'none';
-  activity_visibility?: 'public' | 'followers' | 'private';
-}) => {
+export const updatePrivacySettings = async (userId: string, settings: PrivacySettings): Promise<boolean> => {
   try {
     const { error } = await supabase
       .from("privacy_settings")
       .upsert({
         user_id: userId,
-        ...settings,
+        profile_visibility: settings.profile_visibility,
+        messaging_permissions: settings.messaging_permissions,
+        activity_visibility: settings.activity_visibility,
         updated_at: new Date().toISOString(),
       });
 

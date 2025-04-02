@@ -1,390 +1,436 @@
 
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { useForm } from "react-hook-form";
-import { useAuth } from "@/providers/AuthProvider";
-import { ProfileUpdatePayload } from "@/types/profile";
-import { updateProfile } from "@/api/profile";
-import Layout from "@/components/layout/Layout";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { AlertCircle, ArrowLeft, Camera, Loader2, Save, Trash2, Upload } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { fadeInUp, scaleAnimation } from "@/lib/animations";
-import { toast } from "@/hooks/use-toast";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/providers/AuthProvider';
+import { updateProfile, addSocialLink, removeSocialLink } from '@/api/profile';
+import Layout from '@/components/layout/Layout';
+import { fadeInUp } from '@/lib/animations';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent } from '@/components/ui/card';
+import { PlusCircle, Trash2, Upload } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { ProfileUpdatePayload, SocialLink } from '@/types/profile';
+
+const profileSchema = z.object({
+  username: z.string().min(3, 'Username must be at least 3 characters').max(30, 'Username too long'),
+  full_name: z.string().optional(),
+  bio: z.string().max(200, 'Bio must be less than 200 characters').optional(),
+  professional_details: z.string().optional(),
+  portfolio_url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+  avatar_url: z.string().optional(),
+});
+
+type ProfileFormData = z.infer<typeof profileSchema>;
 
 const ProfileEdit = () => {
   const { user, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
-  
+  const [isLoading, setIsLoading] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  
-  const form = useForm<ProfileUpdatePayload>({
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(profile?.avatar_url || null);
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+  const [newPlatform, setNewPlatform] = useState<string>('');
+  const [newUrl, setNewUrl] = useState<string>('');
+
+  const form = useForm<ProfileFormData>({
+    resolver: zodResolver(profileSchema),
     defaultValues: {
-      username: profile?.username || "",
-      full_name: profile?.full_name || "",
-      bio: profile?.bio || "",
-      professional_details: profile?.professional_details || "",
-      portfolio_url: profile?.portfolio_url || "",
+      username: profile?.username || '',
+      full_name: profile?.full_name || '',
+      bio: profile?.bio || '',
+      professional_details: profile?.professional_details || '',
+      portfolio_url: profile?.portfolio_url || '',
+      avatar_url: profile?.avatar_url || '',
     },
   });
-  
-  // Redirect if not authenticated
+
+  // Fetch social links on component mount
   useEffect(() => {
-    if (!user) {
-      navigate("/auth/login", { replace: true });
-    }
-  }, [user, navigate]);
-  
-  // Handle avatar file selection
+    const fetchSocialLinks = async () => {
+      if (!user?.id) return;
+      try {
+        const { data, error } = await supabase
+          .from('social_links')
+          .select('*')
+          .eq('user_id', user.id);
+        
+        if (error) throw error;
+        setSocialLinks(data || []);
+      } catch (error) {
+        console.error('Error fetching social links:', error);
+        toast({
+          variant: "destructive",
+          title: "Error fetching social links",
+        });
+      }
+    };
+
+    fetchSocialLinks();
+  }, [user?.id]);
+
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      
-      // Validate file type and size
-      const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-      const maxSize = 5 * 1024 * 1024; // 5MB
-      
-      if (!validTypes.includes(file.type)) {
-        toast({
-          variant: "destructive",
-          title: "Invalid file type",
-          description: "Please upload a JPEG, PNG, GIF, or WebP image.",
-        });
-        return;
-      }
-      
-      if (file.size > maxSize) {
-        toast({
-          variant: "destructive",
-          title: "File too large",
-          description: "Please upload an image smaller than 5MB.",
-        });
-        return;
-      }
-      
-      setAvatarFile(file);
-      setAvatarPreview(URL.createObjectURL(file));
-    }
-  };
-  
-  // Remove selected avatar
-  const handleRemoveAvatar = () => {
-    setAvatarFile(null);
-    setAvatarPreview(null);
-    
-    // Reset file input
-    const fileInput = document.getElementById("avatar-upload") as HTMLInputElement;
-    if (fileInput) {
-      fileInput.value = "";
-    }
-  };
-  
-  // Upload avatar to storage
-  const uploadAvatar = async (userId: string): Promise<string | null> => {
-    if (!avatarFile) return profile?.avatar_url || null;
-    
-    try {
-      const fileExt = avatarFile.name.split(".").pop();
-      const filePath = `avatars/${userId}-${Date.now()}.${fileExt}`;
-      
-      const { error: uploadError, data } = await supabase.storage
-        .from("profiles")
-        .upload(filePath, avatarFile, {
-          upsert: true,
-          onUploadProgress: (progress) => {
-            const percentage = (progress.loaded / progress.total) * 100;
-            setUploadProgress(Math.round(percentage));
-          }
-        });
-        
-      if (uploadError) throw uploadError;
-      
-      const { data: publicUrl } = supabase.storage
-        .from("profiles")
-        .getPublicUrl(filePath);
-        
-      return publicUrl.publicUrl;
-    } catch (error: any) {
-      console.error("Error uploading avatar:", error.message);
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // File validation
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
       toast({
         variant: "destructive",
-        title: "Avatar upload failed",
-        description: error.message,
+        title: "Invalid file type",
+        description: "Please upload a JPG, PNG, or GIF image.",
+      });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB
+      toast({
+        variant: "destructive",
+        title: "File too large",
+        description: "Avatar image must be less than 5MB.",
+      });
+      return;
+    }
+
+    setAvatarFile(file);
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarPreview(previewUrl);
+  };
+
+  const uploadAvatar = async (userId: string): Promise<string | null> => {
+    if (!avatarFile) return null;
+    
+    try {
+      const fileExt = avatarFile.name.split('.').pop();
+      const fileName = `${userId}-${Date.now()}.${fileExt}`;
+      const filePath = `${userId}/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('profiles')
+        .upload(filePath, avatarFile);
+      
+      if (uploadError) throw uploadError;
+      
+      const { data: urlData } = supabase.storage
+        .from('profiles')
+        .getPublicUrl(filePath);
+      
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      toast({
+        variant: "destructive",
+        title: "Failed to upload avatar",
       });
       return null;
     }
   };
-  
-  // Submit form
-  const onSubmit = async (data: ProfileUpdatePayload) => {
-    if (!user) return;
-    
-    setIsSubmitting(true);
-    
-    try {
-      // Upload avatar if selected
-      let avatarUrl = profile?.avatar_url || null;
-      if (avatarFile) {
-        avatarUrl = await uploadAvatar(user.id);
-      }
-      
-      // Update profile
-      const success = await updateProfile(user.id, {
-        ...data,
-        avatar_url: avatarUrl || undefined,
-      });
-      
-      if (success) {
-        await refreshProfile();
-        navigate(`/profile/${user.id}`);
-      }
-    } catch (error: any) {
-      console.error("Error updating profile:", error.message);
+
+  const handleAddSocialLink = async () => {
+    if (!user?.id) return;
+    if (!newPlatform || !newUrl) {
       toast({
         variant: "destructive",
-        title: "Update failed",
-        description: error.message,
+        title: "Please enter both platform name and URL",
       });
-    } finally {
-      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const socialLink = {
+        platform: newPlatform,
+        url: newUrl,
+      };
+      
+      const result = await addSocialLink(user.id, socialLink);
+      if (result) {
+        setSocialLinks([...socialLinks, result]);
+        setNewPlatform('');
+        setNewUrl('');
+      }
+    } catch (error) {
+      console.error('Error adding social link:', error);
     }
   };
 
-  // Go back
-  const handleGoBack = () => {
-    navigate(-1);
+  const handleRemoveSocialLink = async (linkId: string) => {
+    try {
+      const success = await removeSocialLink(linkId);
+      if (success) {
+        setSocialLinks(socialLinks.filter(link => link.id !== linkId));
+      }
+    } catch (error) {
+      console.error('Error removing social link:', error);
+    }
   };
-  
+
+  const onSubmit = async (data: ProfileFormData) => {
+    if (!user?.id) return;
+    
+    setIsLoading(true);
+    try {
+      // Upload avatar if changed
+      let avatarUrl = data.avatar_url;
+      if (avatarFile) {
+        const uploadedUrl = await uploadAvatar(user.id);
+        if (uploadedUrl) {
+          avatarUrl = uploadedUrl;
+        }
+      }
+      
+      // Update profile
+      const profileData: ProfileUpdatePayload = {
+        ...data,
+        avatar_url: avatarUrl || undefined,
+      };
+      
+      const success = await updateProfile(user.id, profileData);
+      if (success) {
+        await refreshProfile();
+        toast({
+          title: "Profile updated successfully",
+        });
+        navigate('/profile');
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error updating profile",
+        description: error.message,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!user || !profile) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center min-h-[60vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-idolyst-purple"></div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto pb-20 md:pb-10">
-        <motion.div 
-          className="flex items-center mb-6"
-          initial="hidden"
-          animate="visible"
-          variants={fadeInUp}
-        >
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1"
-            onClick={handleGoBack}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-          <h1 className="text-2xl font-bold ml-2">Edit Profile</h1>
-        </motion.div>
+      <motion.div 
+        className="max-w-3xl mx-auto pb-20 md:pb-10 px-4"
+        initial="hidden"
+        animate="visible"
+        variants={fadeInUp}
+      >
+        <h1 className="text-2xl font-bold mb-6 gradient-text">Edit Profile</h1>
         
-        <motion.div 
-          className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6"
-          initial="hidden"
-          animate="visible"
-          variants={fadeInUp}
-          transition={{ delay: 0.1 }}
-        >
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Avatar Upload */}
-              <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
-                <div className="relative group">
-                  <Avatar className="h-24 w-24">
-                    <AvatarImage 
-                      src={avatarPreview || profile?.avatar_url || ""} 
-                      alt={profile?.username || "User"} 
+        <Card>
+          <CardContent className="pt-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {/* Avatar Upload */}
+                <div className="flex flex-col items-center mb-8">
+                  <div className="relative group">
+                    <Avatar className="w-24 h-24 border-2 group-hover:border-idolyst-purple transition-all">
+                      <AvatarImage src={avatarPreview || undefined} alt={profile.username || 'Profile'} />
+                      <AvatarFallback className="bg-idolyst-purple/20 text-idolyst-purple text-xl">
+                        {profile.username ? profile.username.slice(0, 2).toUpperCase() : 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <label 
+                      htmlFor="avatar-upload" 
+                      className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity text-white"
+                    >
+                      <Upload className="h-6 w-6" />
+                    </label>
+                    <input 
+                      type="file" 
+                      id="avatar-upload" 
+                      accept="image/*" 
+                      onChange={handleAvatarChange}
+                      className="hidden" 
                     />
-                    <AvatarFallback className="bg-idolyst-purple/20 text-idolyst-purple text-2xl">
-                      {profile?.username ? profile.username.slice(0, 2).toUpperCase() : "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  
-                  <label
-                    htmlFor="avatar-upload"
-                    className="absolute inset-0 flex items-center justify-center bg-black/40 text-white rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Camera className="h-6 w-6" />
-                  </label>
-                  
-                  <input
-                    id="avatar-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                    className="sr-only"
-                  />
+                  </div>
+                  <p className="text-sm text-gray-500 mt-2">Click to upload new avatar</p>
                 </div>
-                
-                <div className="flex-1">
-                  <h2 className="text-lg font-medium mb-2">Profile Picture</h2>
-                  <p className="text-sm text-gray-500 mb-3">
-                    Upload a new profile picture. JPG, PNG or GIF, max 5MB.
-                  </p>
+
+                {/* Username */}
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Username</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter username" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Full Name */}
+                <FormField
+                  control={form.control}
+                  name="full_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter full name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Bio */}
+                <FormField
+                  control={form.control}
+                  name="bio"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex justify-between">
+                        <FormLabel>Bio</FormLabel>
+                        <span className="text-xs text-gray-500">
+                          {field.value?.length || 0}/200
+                        </span>
+                      </div>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Tell others about yourself" 
+                          className="resize-none" 
+                          rows={4}
+                          maxLength={200}
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Professional Details */}
+                <FormField
+                  control={form.control}
+                  name="professional_details"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Professional Details</FormLabel>
+                      <FormControl>
+                        <Input placeholder="LinkedIn username or professional information" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Portfolio URL */}
+                <FormField
+                  control={form.control}
+                  name="portfolio_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Portfolio or Website URL</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://your-website.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Social Links */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Social Links</h3>
                   
-                  <div className="flex flex-wrap gap-2">
+                  <div className="space-y-3">
+                    {socialLinks.map((link) => (
+                      <div key={link.id} className="flex items-center gap-2">
+                        <div className="flex-1 flex items-center gap-2">
+                          <div className="w-24">
+                            <p className="text-sm font-medium capitalize">{link.platform}</p>
+                          </div>
+                          <Input
+                            value={link.url}
+                            readOnly
+                            className="flex-1"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveSocialLink(link.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2">
+                    <Input
+                      placeholder="Platform (e.g. Twitter)"
+                      value={newPlatform}
+                      onChange={(e) => setNewPlatform(e.target.value)}
+                      className="w-full max-w-[180px]"
+                    />
+                    <Input
+                      placeholder="URL"
+                      value={newUrl}
+                      onChange={(e) => setNewUrl(e.target.value)}
+                      className="flex-1"
+                    />
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => document.getElementById("avatar-upload")?.click()}
+                      onClick={handleAddSocialLink}
                     >
-                      <Upload className="h-4 w-4 mr-1" />
-                      {avatarPreview ? "Change Image" : "Upload Image"}
+                      <PlusCircle className="h-4 w-4 mr-1" />
+                      Add
                     </Button>
-                    
-                    {(avatarPreview || profile?.avatar_url) && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={handleRemoveAvatar}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Remove
-                      </Button>
-                    )}
                   </div>
                 </div>
-              </div>
-              
-              {/* Username */}
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Username</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your username" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Full Name */}
-              <FormField
-                control={form.control}
-                name="full_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your full name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Bio */}
-              <FormField
-                control={form.control}
-                name="bio"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex justify-between">
-                      <FormLabel>Bio</FormLabel>
-                      <span className="text-xs text-gray-500">
-                        {field.value?.length || 0}/200
-                      </span>
-                    </div>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Tell others about yourself (max 200 chars)" 
-                        className="resize-none"
-                        maxLength={200}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Professional Details */}
-              <FormField
-                control={form.control}
-                name="professional_details"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>LinkedIn Username</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Your LinkedIn username" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Portfolio URL */}
-              <FormField
-                control={form.control}
-                name="portfolio_url"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Portfolio URL</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="https://your-portfolio.com" 
-                        type="url"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <Alert variant="default" className="bg-blue-50 text-blue-800 border-blue-200">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Social links can be added in the settings section.
-                </AlertDescription>
-              </Alert>
-              
-              <div className="pt-4 flex justify-end">
-                <motion.div
-                  variants={scaleAnimation}
-                  initial="initial"
-                  whileHover="hover"
-                  whileTap="tap"
-                >
-                  <Button 
-                    type="submit" 
-                    className="gradient-bg hover-scale"
-                    disabled={isSubmitting}
+
+                <div className="flex justify-end gap-3 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => navigate('/profile')}
+                    disabled={isLoading}
                   >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {avatarFile && uploadProgress > 0 ? `Uploading... ${uploadProgress}%` : "Saving..."}
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save Changes
-                      </>
-                    )}
+                    Cancel
                   </Button>
-                </motion.div>
-              </div>
-            </form>
-          </Form>
-        </motion.div>
-      </div>
+                  <Button
+                    type="submit"
+                    className="gradient-bg hover-scale"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </motion.div>
     </Layout>
   );
 };

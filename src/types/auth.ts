@@ -1,5 +1,5 @@
 
-import { User } from "@supabase/supabase-js";
+import { User as SupabaseUser } from "@supabase/supabase-js";
 
 export interface AuthUser {
   id: string;
@@ -21,6 +21,8 @@ export interface UserProfile extends AuthUser {
   last_active_tab: string;
   roles: UserRole[];
   created_at: string;
+  professional_details?: string | null;
+  portfolio_url?: string | null;
 }
 
 export interface AuthState {
@@ -67,12 +69,12 @@ export interface ResetPasswordFormData {
 }
 
 // Helper function to convert Supabase User to AuthUser
-export const mapSupabaseUser = (user: User | null): AuthUser | null => {
+export const mapSupabaseUser = (user: SupabaseUser | null): AuthUser | null => {
   if (!user) return null;
   
   return {
     id: user.id,
-    email: user.email || "",
+    email: user.email || undefined,
     username: user.user_metadata?.username,
     avatar_url: user.user_metadata?.avatar_url,
   };

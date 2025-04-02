@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { Session, User } from "@supabase/supabase-js";
+import { Session } from "@supabase/supabase-js";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthContextType, AuthState, UserProfile, mapSupabaseUser } from "@/types/auth";
@@ -50,6 +50,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         last_active_tab: profile.last_active_tab,
         roles: roles || [],
         created_at: profile.created_at,
+        professional_details: profile.professional_details,
+        portfolio_url: profile.portfolio_url,
       };
 
       setState(prev => ({
@@ -75,9 +77,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setSession(currentSession);
 
           if (event === 'SIGNED_IN' && currentSession) {
+            const mappedUser = mapSupabaseUser(currentSession.user);
             setState(prev => ({
               ...prev,
-              user: mapSupabaseUser(currentSession.user),
+              user: mappedUser,
               isAuthenticated: true,
             }));
 
@@ -91,9 +94,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               isLoading: false,
             });
           } else if (event === 'USER_UPDATED' && currentSession) {
+            const mappedUser = mapSupabaseUser(currentSession.user);
             setState(prev => ({
               ...prev,
-              user: mapSupabaseUser(currentSession.user),
+              user: mappedUser,
             }));
 
             // Fetch updated profile
@@ -108,9 +112,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { data: { session: initialSession }, error } = await supabase.auth.getSession();
 
       if (initialSession) {
+        const mappedUser = mapSupabaseUser(initialSession.user);
         setState(prev => ({
           ...prev,
-          user: mapSupabaseUser(initialSession.user),
+          user: mappedUser,
           isAuthenticated: true,
         }));
 
@@ -272,6 +277,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           full_name: profileData.full_name,
           bio: profileData.bio,
           avatar_url: profileData.avatar_url,
+          professional_details: profileData.professional_details,
+          portfolio_url: profileData.portfolio_url,
           updated_at: new Date().toISOString(),
         })
         .eq("id", state.user.id);
