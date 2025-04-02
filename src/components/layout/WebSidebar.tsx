@@ -1,6 +1,7 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { Home, User, Trophy, Rocket, Users, MessageSquare, Bell, LogIn } from "lucide-react";
+import { Home, User, Trophy, Rocket, Users, MessageSquare, Bell, LogIn, LogOut } from "lucide-react";
+import { useAuth } from "@/providers/AuthProvider";
 import {
   Sidebar,
   SidebarContent,
@@ -9,13 +10,13 @@ import {
   SidebarTrigger
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import IdolystLogo from "../shared/IdolystLogo";
 
 const WebSidebar = () => {
   const location = useLocation();
-  // Mock auth state - in a real app this would come from an auth context
-  const isLoggedIn = false;
+  const { isAuthenticated, profile, signOut } = useAuth();
   
   const navItems = [
     {
@@ -79,7 +80,7 @@ const WebSidebar = () => {
         <div className="space-y-6 p-4">
           <nav className="space-y-1">
             {navItems
-              .filter(item => !item.requiresAuth || isLoggedIn)
+              .filter(item => !item.requiresAuth || isAuthenticated)
               .map((item) => {
                 const isActive = location.pathname === item.path;
                 
@@ -105,7 +106,7 @@ const WebSidebar = () => {
                 );
               })}
               
-            {isLoggedIn && (
+            {isAuthenticated && (
               <div className="pt-4 border-t border-border mt-4">
                 {extraItems.map((item) => {
                   const isActive = location.pathname === item.path;
@@ -144,33 +145,45 @@ const WebSidebar = () => {
       </SidebarContent>
       
       <SidebarFooter className="p-4 border-t">
-        {!isLoggedIn ? (
+        {!isAuthenticated ? (
           <div className="space-y-2">
             <Button asChild className="w-full gradient-bg">
-              <Link to="/login">
+              <Link to="/auth/login">
                 <LogIn className="mr-2 h-4 w-4" />
                 Sign In
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full">
-              <Link to="/register">Sign Up</Link>
+              <Link to="/auth/signup">Sign Up</Link>
             </Button>
           </div>
-        ) : (
+        ) : profile ? (
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-idolyst-purple/20 flex items-center justify-center">
-              <User className="w-6 h-6 text-idolyst-purple" />
-            </div>
+            <Avatar className="w-10 h-10">
+              <AvatarImage src={profile.avatar_url || ""} alt={profile.username || "User"} />
+              <AvatarFallback className="bg-idolyst-purple/20 text-idolyst-purple">
+                {profile.username ? profile.username.slice(0, 2).toUpperCase() : "U"}
+              </AvatarFallback>
+            </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-idolyst-gray-dark truncate">
-                John Doe
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-idolyst-gray-dark truncate">
+                  {profile.username || "User"}
+                </p>
+                <button 
+                  onClick={() => signOut()} 
+                  className="ml-2 text-idolyst-gray hover:text-idolyst-purple"
+                  title="Sign Out"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </div>
               <p className="text-xs text-idolyst-gray truncate">
-                @johndoe
+                {profile.full_name || profile.email}
               </p>
             </div>
           </div>
-        )}
+        ) : null}
       </SidebarFooter>
     </Sidebar>
   );
