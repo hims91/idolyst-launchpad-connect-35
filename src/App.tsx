@@ -13,6 +13,10 @@ import PitchHub from "./pages/PitchHub";
 import MentorSpace from "./pages/MentorSpace";
 import Ascend from "./pages/Ascend";
 import Profile from "./pages/Profile";
+import ProfileDetail from "./pages/ProfileDetail";
+import ProfileEdit from "./pages/ProfileEdit";
+import ActivityFeed from "./pages/ActivityFeed";
+import Settings from "./pages/Settings";
 import Messages from "./pages/Messages";
 import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
@@ -47,6 +51,27 @@ const App = () => (
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             
+            {/* Profile routes */}
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/profile/:id" element={<ProfileDetail />} />
+            <Route 
+              path="/profile/edit" 
+              element={
+                <ProtectedRoute>
+                  <ProfileEdit />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="/profile/:id/activity" element={<ActivityFeed />} />
+            <Route 
+              path="/settings" 
+              element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              } 
+            />
+            
             {/* Protected routes */}
             <Route 
               path="/mentor-space" 
@@ -61,14 +86,6 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Ascend />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/profile" 
-              element={
-                <ProtectedRoute>
-                  <Profile />
                 </ProtectedRoute>
               } 
             />

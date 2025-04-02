@@ -1,111 +1,120 @@
 
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { User, LogIn, UserPlus, LogOut } from "lucide-react";
+import { ExtendedProfile } from "@/types/profile";
+import { fetchExtendedProfile } from "@/api/profile";
 import { useAuth } from "@/providers/AuthProvider";
-import { fadeInUp, scaleAnimation } from "@/lib/animations";
-
 import Layout from "../components/layout/Layout";
+import ProfileHeader from "@/components/profile/ProfileHeader";
+import ProfileStats from "@/components/profile/ProfileStats";
+import ProfileActivity from "@/components/profile/ProfileActivity";
+import SocialLinks from "@/components/profile/SocialLinks";
+import ProfileTabs from "@/components/profile/ProfileTabs";
+import FollowersDialog from "@/components/profile/FollowersDialog";
+import { fadeInUp } from "@/lib/animations";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Link } from "react-router-dom";
+import { LogIn, Settings, User, UserPlus } from "lucide-react";
 
 const Profile = () => {
-  const { user, profile, isAuthenticated, signOut } = useAuth();
-
-  // If authenticated, display the user profile
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  
+  const [profile, setProfile] = useState<ExtendedProfile | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [followersDialogOpen, setFollowersDialogOpen] = useState<boolean>(false);
+  const [activeDialog, setActiveDialog] = useState<"followers" | "following">("followers");
+  
+  useEffect(() => {
+    if (authLoading) return;
+    
+    if (isAuthenticated && user) {
+      loadProfile(user.id);
+    }
+  }, [user, isAuthenticated, authLoading]);
+  
+  const loadProfile = async (userId: string) => {
+    setLoading(true);
+    const profileData = await fetchExtendedProfile(userId);
+    setProfile(profileData);
+    setLoading(false);
+  };
+  
+  const handleFollowersClick = () => {
+    if (!profile) return;
+    setActiveDialog("followers");
+    setFollowersDialogOpen(true);
+  };
+  
+  const handleFollowingClick = () => {
+    if (!profile) return;
+    setActiveDialog("following");
+    setFollowersDialogOpen(true);
+  };
+  
+  // Authenticated user view with profile data
   if (isAuthenticated && profile) {
     return (
       <Layout>
-        <div className="max-w-2xl mx-auto pb-20 md:pb-0">
-          <motion.div 
-            className="flex flex-col items-center justify-center py-8"
-            initial="hidden"
-            animate="visible"
-            variants={fadeInUp}
-          >
-            <Avatar className="h-24 w-24 mb-6">
-              <AvatarImage src={profile.avatar_url || ""} alt={profile.username || "User"} />
-              <AvatarFallback className="bg-idolyst-purple/20 text-idolyst-purple text-xl">
-                {profile.username ? profile.username.slice(0, 2).toUpperCase() : "U"}
-              </AvatarFallback>
-            </Avatar>
+        <div className="max-w-3xl mx-auto pb-20 md:pb-10">
+          <div className="flex justify-between items-center mb-6">
+            <motion.h1 
+              className="text-2xl font-bold gradient-text"
+              initial="hidden"
+              animate="visible"
+              variants={fadeInUp}
+            >
+              My Profile
+            </motion.h1>
             
-            <h1 className="text-3xl font-bold gradient-text mb-2">{profile.username || "User"}</h1>
-            {profile.full_name && (
-              <p className="text-lg text-idolyst-gray-dark mb-2">{profile.full_name}</p>
-            )}
-            
-            <div className="flex space-x-4 items-center mb-8">
-              <div className="text-center">
-                <p className="text-sm text-idolyst-gray">XP</p>
-                <p className="text-xl font-medium">{profile.xp}</p>
-              </div>
-              
-              <div className="h-8 w-px bg-gray-200"></div>
-              
-              <div className="text-center">
-                <p className="text-sm text-idolyst-gray">Roles</p>
-                <div className="flex space-x-1 mt-1">
-                  {profile.roles.map((role) => (
-                    <span 
-                      key={role.id}
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        role.role === "entrepreneur" 
-                          ? "bg-blue-100 text-blue-700" 
-                          : "bg-purple-100 text-purple-700"
-                      }`}
-                    >
-                      {role.role.charAt(0).toUpperCase() + role.role.slice(1)}
-                      {role.is_verified && " ✓"}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-            
-            <div className="w-full mb-8">
-              <h2 className="text-xl font-semibold mb-4 border-b pb-2">Bio</h2>
-              <p className="text-idolyst-gray-dark">
-                {profile.bio || "No bio yet. Edit your profile to add one!"}
-              </p>
-            </div>
-            
-            <div className="flex space-x-4">
-              <motion.div
-                variants={scaleAnimation}
-                initial="initial"
-                whileHover="hover"
-                whileTap="tap"
-              >
-                <Button className="gradient-bg hover-scale">
-                  Edit Profile
-                </Button>
-              </motion.div>
-              
-              <motion.div
-                variants={scaleAnimation}
-                initial="initial"
-                whileHover="hover"
-                whileTap="tap"
-              >
-                <Button 
-                  variant="outline" 
-                  className="hover-scale"
-                  onClick={() => signOut()}
-                >
-                  <LogOut className="mr-2 h-5 w-5" />
-                  Sign Out
-                </Button>
-              </motion.div>
-            </div>
-          </motion.div>
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={fadeInUp}
+            >
+              <Button variant="outline" asChild>
+                <Link to="/settings">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </Link>
+              </Button>
+            </motion.div>
+          </div>
+          
+          <ProfileHeader profile={profile} onRefresh={() => loadProfile(user!.id)} />
+          <ProfileStats profile={profile} />
+          <ProfileActivity profile={profile} />
+          <SocialLinks profile={profile} />
+          <ProfileTabs 
+            profile={profile} 
+            onFollowersClick={handleFollowersClick} 
+            onFollowingClick={handleFollowingClick}
+          />
+          
+          <FollowersDialog
+            userId={profile.id}
+            isOpen={followersDialogOpen}
+            onOpenChange={setFollowersDialogOpen}
+            initialTab={activeDialog}
+          />
         </div>
       </Layout>
     );
   }
-
-  // If not authenticated, display login/signup options
+  
+  // Loading state
+  if (loading || authLoading) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center min-h-[60vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-idolyst-purple"></div>
+        </div>
+      </Layout>
+    );
+  }
+  
+  // Not authenticated view
   return (
     <Layout>
       <div className="max-w-2xl mx-auto pb-20 md:pb-0 text-center">
@@ -124,41 +133,27 @@ const Profile = () => {
             Manage your profile, track your activity, and connect with other entrepreneurs and mentors.
           </p>
           
-          <div className="flex space-x-4">
-            <motion.div
-              variants={scaleAnimation}
-              initial="initial"
-              whileHover="hover"
-              whileTap="tap"
+          <div className="flex gap-4">
+            <Button 
+              className="gradient-bg hover-scale"
+              asChild
             >
-              <Button 
-                className="gradient-bg hover-scale"
-                asChild
-              >
-                <Link to="/auth/login">
-                  <LogIn className="mr-2 h-5 w-5" />
-                  Sign In
-                </Link>
-              </Button>
-            </motion.div>
+              <Link to="/auth/login">
+                <LogIn className="mr-2 h-5 w-5" />
+                Sign In
+              </Link>
+            </Button>
             
-            <motion.div
-              variants={scaleAnimation}
-              initial="initial"
-              whileHover="hover"
-              whileTap="tap"
+            <Button 
+              variant="outline" 
+              className="hover-scale"
+              asChild
             >
-              <Button 
-                variant="outline" 
-                className="hover-scale"
-                asChild
-              >
-                <Link to="/auth/signup">
-                  <UserPlus className="mr-2 h-5 w-5" />
-                  Create Account
-                </Link>
-              </Button>
-            </motion.div>
+              <Link to="/auth/signup">
+                <UserPlus className="mr-2 h-5 w-5" />
+                Create Account
+              </Link>
+            </Button>
           </div>
         </motion.div>
       </div>
