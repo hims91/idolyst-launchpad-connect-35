@@ -40,7 +40,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       // Create a complete user profile with roles
       const userProfile: UserProfile = {
-        ...mapSupabaseUser({ id: userId, email: profile.email })!,
+        id: profile.id, 
+        email: profile.email,
+        username: profile.username,
+        avatar_url: profile.avatar_url,
         full_name: profile.full_name,
         bio: profile.bio,
         xp: profile.xp,
