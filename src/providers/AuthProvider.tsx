@@ -1,9 +1,9 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { Session } from "@supabase/supabase-js";
+import { Session, User } from "@supabase/supabase-js";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { AuthContextType, AuthState, UserProfile } from "@/types/auth";
+import { AuthContextType, AuthState, UserProfile, mapSupabaseUser } from "@/types/auth";
 
 const initialState: AuthState = {
   user: null,
@@ -38,9 +38,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (rolesError) throw rolesError;
 
+      // Create a complete user profile with roles
+      const userProfile: UserProfile = {
+        ...mapSupabaseUser({ id: userId, email: profile.email })!,
+        full_name: profile.full_name,
+        bio: profile.bio,
+        xp: profile.xp,
+        last_active_tab: profile.last_active_tab,
+        roles: roles || [],
+        created_at: profile.created_at,
+      };
+
       setState(prev => ({
         ...prev,
-        profile: { ...profile, roles },
+        profile: userProfile,
         isLoading: false,
         isAuthenticated: true,
       }));
@@ -63,7 +74,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           if (event === 'SIGNED_IN' && currentSession) {
             setState(prev => ({
               ...prev,
-              user: currentSession.user,
+              user: mapSupabaseUser(currentSession.user),
               isAuthenticated: true,
             }));
 
@@ -79,7 +90,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           } else if (event === 'USER_UPDATED' && currentSession) {
             setState(prev => ({
               ...prev,
-              user: currentSession.user,
+              user: mapSupabaseUser(currentSession.user),
             }));
 
             // Fetch updated profile
@@ -96,7 +107,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (initialSession) {
         setState(prev => ({
           ...prev,
-          user: initialSession.user,
+          user: mapSupabaseUser(initialSession.user),
           isAuthenticated: true,
         }));
 

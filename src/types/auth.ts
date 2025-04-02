@@ -1,7 +1,9 @@
 
+import { User } from "@supabase/supabase-js";
+
 export interface AuthUser {
   id: string;
-  email: string;
+  email: string | undefined;
   username?: string;
   avatar_url?: string;
 }
@@ -63,3 +65,15 @@ export interface ResetPasswordFormData {
   password: string;
   confirmPassword: string;
 }
+
+// Helper function to convert Supabase User to AuthUser
+export const mapSupabaseUser = (user: User | null): AuthUser | null => {
+  if (!user) return null;
+  
+  return {
+    id: user.id,
+    email: user.email || "",
+    username: user.user_metadata?.username,
+    avatar_url: user.user_metadata?.avatar_url,
+  };
+};
