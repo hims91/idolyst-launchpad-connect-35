@@ -18,13 +18,6 @@ export const useSettingsSync = (
   useEffect(() => {
     if (!user?.id) return;
 
-    // Enable subscription for this table if not already enabled
-    const enableRealtime = async () => {
-      await supabase.rpc('supabase_realtime.enable_subscription');
-    };
-    
-    enableRealtime();
-
     // Create privacy settings channel
     const privacyChannel = supabase
       .channel('privacy-settings-changes')

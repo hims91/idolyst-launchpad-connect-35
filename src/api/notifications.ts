@@ -1,310 +1,238 @@
 
-
 import { supabase } from "@/integrations/supabase/client";
-import { Notification, NotificationPreferences, NotificationType } from "@/types/notifications";
-import { toast } from "@/hooks/use-toast";
+import { 
+  Notification, 
+  NotificationType, 
+  NotificationPreferences,
+  EmailDigestFrequency,
+  isValidEmailDigestFrequency
+} from "@/types/notifications";
 
-// Fetch all notifications for the current user
-export const fetchNotifications = async (): Promise<Notification[]> => {
+/**
+ * Fetches a user's notifications
+ * @param userId The user ID to fetch notifications for
+ * @param limit The maximum number of notifications to fetch
+ * @param offset Pagination offset
+ * @returns Array of notifications
+ */
+export const fetchNotifications = async (
+  userId: string,
+  limit: number = 20,
+  offset: number = 0
+): Promise<Notification[]> => {
   try {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) {
-      throw new Error("User not authenticated");
-    }
-    
+    if (!userId) return [];
+
     const { data, error } = await supabase
       .from("notifications")
       .select("*")
-      .eq("user_id", user.user.id)
-      .order("created_at", { ascending: false });
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error fetching notifications:", error);
+      return [];
+    }
+
     return data as Notification[];
-  } catch (error: any) {
-    console.error("Error fetching notifications:", error.message);
+  } catch (error) {
+    console.error("Error in fetchNotifications:", error);
     return [];
   }
 };
 
-// Mark a specific notification as read
-export const markNotificationAsRead = async (notificationId: string): Promise<boolean> => {
+/**
+ * Marks a notification as read
+ * @param notificationId The notification ID to mark as read
+ */
+export const markNotificationAsRead = async (
+  notificationId: string
+): Promise<boolean> => {
   try {
     const { error } = await supabase
       .from("notifications")
       .update({ is_read: true })
       .eq("id", notificationId);
 
-    if (error) throw error;
-    return true;
-  } catch (error: any) {
-    console.error("Error marking notification as read:", error.message);
-    return false;
-  }
-};
-
-// Mark all notifications as read
-export const markAllNotificationsAsRead = async (): Promise<boolean> => {
-  try {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) {
-      throw new Error("User not authenticated");
+    if (error) {
+      console.error("Error marking notification as read:", error);
+      return false;
     }
 
+    return true;
+  } catch (error) {
+    console.error("Error in markNotificationAsRead:", error);
+    return false;
+  }
+};
+
+/**
+ * Marks all notifications for a user as read
+ * @param userId The user ID to mark all notifications as read for
+ */
+export const markAllNotificationsAsRead = async (
+  userId: string
+): Promise<boolean> => {
+  try {
+    if (!userId) return false;
+
     const { error } = await supabase
       .from("notifications")
       .update({ is_read: true })
-      .eq("user_id", user.user.id)
-      .is("is_read", false);
-
-    if (error) throw error;
-    
-    toast({
-      title: "All notifications marked as read",
-    });
-    return true;
-  } catch (error: any) {
-    toast({
-      variant: "destructive",
-      title: "Error marking notifications as read",
-      description: error.message,
-    });
-    return false;
-  }
-};
-
-// Delete a notification
-export const deleteNotification = async (notificationId: string): Promise<boolean> => {
-  try {
-    const { error } = await supabase
-      .from("notifications")
-      .delete()
-      .eq("id", notificationId);
-
-    if (error) throw error;
-    return true;
-  } catch (error: any) {
-    console.error("Error deleting notification:", error.message);
-    return false;
-  }
-};
-
-// Fetch the count of unread notifications
-export const fetchUnreadNotificationsCount = async (): Promise<number> => {
-  try {
-    const { count, error } = await supabase
-      .from("notifications")
-      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
       .eq("is_read", false);
 
-    if (error) throw error;
-    return count || 0;
-  } catch (error: any) {
-    console.error("Error fetching unread notifications count:", error.message);
-    return 0;
+    if (error) {
+      console.error("Error marking all notifications as read:", error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error in markAllNotificationsAsRead:", error);
+    return false;
   }
 };
 
-// Fetch notification preferences
-export const fetchNotificationPreferences = async (): Promise<NotificationPreferences | null> => {
+/**
+ * Fetches notification preferences for a user
+ * @param userId The user ID to fetch preferences for
+ * @returns The notification preferences
+ */
+export const fetchNotificationPreferences = async (
+  userId: string
+): Promise<NotificationPreferences | null> => {
   try {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) {
-      throw new Error("User not authenticated");
-    }
+    if (!userId) return null;
 
     const { data, error } = await supabase
       .from("notification_preferences")
       .select("*")
-      .eq("user_id", user.user.id)
+      .eq("user_id", userId)
       .single();
 
-    if (error && error.code !== 'PGRST116') throw error; // PGRST116 is 'no rows returned'
-    
-    // If preferences don't exist, create default ones
-    if (!data) {
-      return createDefaultPreferences(user.user.id);
+    if (error) {
+      console.error("Error fetching notification preferences:", error);
+      return null;
     }
-    
-    // Validate email_digest_frequency
-    const emailDigestFrequency: EmailDigestFrequency = isValidEmailDigestFrequency(data.email_digest_frequency)
-      ? data.email_digest_frequency
-      : 'daily';
-    
-    // Return with validated value
-    return {
-      ...data,
-      email_digest_frequency: emailDigestFrequency
-    } as NotificationPreferences;
-  } catch (error: any) {
-    console.error("Error fetching notification preferences:", error.message);
-    return null;
-  }
-};
 
-// Create default notification preferences if not exist
-const createDefaultPreferences = async (userId: string): Promise<NotificationPreferences | null> => {
-  try {
-    const defaultPrefs = {
-      user_id: userId,
-      email_enabled: true,
-      push_enabled: true,
-      email_digest_frequency: 'daily' as EmailDigestFrequency,
-      new_follower: true,
-      new_message: true,
-      mentorship_booking: true,
-      mentorship_cancellation: true,
-      mentorship_reminder: true,
-      pitch_vote: true,
-      pitch_comment: true,
-      pitch_feedback: true,
-      level_up: true, 
-      badge_unlock: true,
-      leaderboard_shift: true,
-      launchpad_comment: true,
-      launchpad_reaction: true,
-      launchpad_repost: true,
-    };
-    
-    const { data, error } = await supabase
-      .from("notification_preferences")
-      .insert(defaultPrefs)
-      .select()
-      .single();
-    
-    if (error) throw error;
+    // Convert email_digest_frequency to proper type
+    if (data.email_digest_frequency && !isValidEmailDigestFrequency(data.email_digest_frequency)) {
+      data.email_digest_frequency = 'daily' as EmailDigestFrequency;
+    }
+
     return data as NotificationPreferences;
-  } catch (error: any) {
-    console.error("Error creating default preferences:", error.message);
+  } catch (error) {
+    console.error("Error in fetchNotificationPreferences:", error);
     return null;
   }
 };
 
-// Update notification preferences
+/**
+ * Updates notification preferences for a user
+ * @param userId The user ID to update preferences for
+ * @param preferences The new notification preferences
+ * @returns Boolean indicating success
+ */
 export const updateNotificationPreferences = async (
+  userId: string,
   preferences: Partial<NotificationPreferences>
-): Promise<NotificationPreferences | null> => {
+): Promise<boolean> => {
   try {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) {
-      throw new Error("User not authenticated");
-    }
-    
-    // Validate email_digest_frequency if present
-    if (preferences.email_digest_frequency && !isValidEmailDigestFrequency(preferences.email_digest_frequency)) {
-      throw new Error("Invalid email digest frequency value");
-    }
-    
-    // Check if preferences exist
-    const { data: existing } = await supabase
-      .from("notification_preferences")
-      .select("id")
-      .eq("user_id", user.user.id)
-      .single();
-    
-    let result;
-    
-    if (!existing) {
-      // Insert new preferences with user_id
-      const { data, error } = await supabase
-        .from("notification_preferences")
-        .insert({ ...preferences, user_id: user.user.id })
-        .select()
-        .single();
-        
-      if (error) throw error;
-      result = data;
-    } else {
-      // Update existing preferences
-      const { data, error } = await supabase
-        .from("notification_preferences")
-        .update(preferences)
-        .eq("user_id", user.user.id)
-        .select()
-        .single();
-        
-      if (error) throw error;
-      result = data;
-    }
-    
-    toast({
-      title: "Notification preferences updated",
-    });
-    
-    return result as NotificationPreferences;
-  } catch (error: any) {
-    toast({
-      variant: "destructive",
-      title: "Error updating notification preferences",
-      description: error.message,
-    });
-    return null;
-  }
-};
+    if (!userId) return false;
 
-// Mute notifications for a specified period
-export const muteNotifications = async (hours: number): Promise<boolean> => {
-  try {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) {
-      throw new Error("User not authenticated");
+    // Validate email digest frequency
+    if (
+      preferences.email_digest_frequency && 
+      !isValidEmailDigestFrequency(preferences.email_digest_frequency)
+    ) {
+      return false;
     }
-    
-    const muteUntil = new Date();
-    muteUntil.setHours(muteUntil.getHours() + hours);
-    
+
     const { error } = await supabase
       .from("notification_preferences")
-      .update({ muted_until: muteUntil.toISOString() })
-      .eq("user_id", user.user.id);
+      .update({
+        ...preferences,
+        updated_at: new Date().toISOString()
+      })
+      .eq("user_id", userId);
 
-    if (error) throw error;
-    
-    toast({
-      title: `Notifications muted for ${hours} hour${hours === 1 ? '' : 's'}`,
-    });
-    
+    if (error) {
+      console.error("Error updating notification preferences:", error);
+      return false;
+    }
+
     return true;
-  } catch (error: any) {
-    toast({
-      variant: "destructive",
-      title: "Error muting notifications",
-      description: error.message,
-    });
+  } catch (error) {
+    console.error("Error in updateNotificationPreferences:", error);
     return false;
   }
 };
 
-// Create a notification (typically would be done server-side, but included for completeness)
-export const createNotification = async (
+/**
+ * Mutes notifications for a specified duration
+ * @param userId The user ID to mute notifications for
+ * @param hours Number of hours to mute notifications for
+ * @returns Boolean indicating success
+ */
+export const muteNotifications = async (
   userId: string,
-  type: NotificationType,
-  title: string,
-  content: string,
-  relatedId?: string,
-  relatedType?: string,
-  actionUrl?: string
-): Promise<Notification | null> => {
+  hours: number
+): Promise<boolean> => {
   try {
-    // We need to cast the type to any to bypass the TypeScript error
-    // until the Supabase types are regenerated
-    const { data, error } = await supabase
-      .from("notifications")
-      .insert({
-        user_id: userId,
-        type: type as any, // Cast to bypass TypeScript error
-        title,
-        content,
-        related_id: relatedId,
-        related_type: relatedType,
-        action_url: actionUrl,
-      })
-      .select()
-      .single();
+    if (!userId || hours <= 0) return false;
 
-    if (error) throw error;
-    return data as Notification;
-  } catch (error: any) {
-    console.error("Error creating notification:", error.message);
-    return null;
+    const muteUntil = new Date();
+    muteUntil.setHours(muteUntil.getHours() + hours);
+
+    const { error } = await supabase
+      .from("notification_preferences")
+      .update({
+        muted_until: muteUntil.toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error("Error muting notifications:", error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error in muteNotifications:", error);
+    return false;
+  }
+};
+
+/**
+ * Unmutes notifications
+ * @param userId The user ID to unmute notifications for
+ * @returns Boolean indicating success
+ */
+export const unmuteNotifications = async (
+  userId: string
+): Promise<boolean> => {
+  try {
+    if (!userId) return false;
+
+    const { error } = await supabase
+      .from("notification_preferences")
+      .update({
+        muted_until: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error("Error unmuting notifications:", error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error in unmuteNotifications:", error);
+    return false;
   }
 };

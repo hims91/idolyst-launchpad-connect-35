@@ -1,6 +1,6 @@
 
 import { createContext, useContext, ReactNode } from 'react';
-import { useSettingsSync } from '@/hooks/use-settings-sync';
+import { useSettingsSync as useSettingsSyncHook } from '@/hooks/use-settings-sync';
 
 interface SettingsSyncContextType {
   refreshPrivacySettings: () => void;
@@ -25,7 +25,7 @@ export const SettingsSyncProvider = ({
   onPrivacyUpdate,
   onNotificationUpdate
 }: SettingsSyncProviderProps) => {
-  useSettingsSync(onPrivacyUpdate, onNotificationUpdate);
+  useSettingsSyncHook(onPrivacyUpdate, onNotificationUpdate);
 
   return (
     <SettingsSyncContext.Provider 

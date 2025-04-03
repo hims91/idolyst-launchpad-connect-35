@@ -1,8 +1,9 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { PrivacySettings } from '@/types/profile';
 import { fetchPrivacySettings, updatePrivacySettings } from '@/api/profile';
+import { toast } from '@/hooks/use-toast';
 
 export const usePrivacySettings = () => {
   const { user } = useAuth();
@@ -15,25 +16,31 @@ export const usePrivacySettings = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   // Fetch current privacy settings
-  useEffect(() => {
-    const loadPrivacySettings = async () => {
-      if (!user?.id) return;
-      
-      try {
-        setIsLoading(true);
-        const data = await fetchPrivacySettings(user.id);
-        if (data) {
-          setSettings(data);
-        }
-      } catch (error) {
-        console.error('Error fetching privacy settings:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const loadPrivacySettings = useCallback(async () => {
+    if (!user?.id) return;
     
-    loadPrivacySettings();
+    try {
+      setIsLoading(true);
+      const data = await fetchPrivacySettings(user.id);
+      if (data) {
+        setSettings(data);
+      }
+    } catch (error) {
+      console.error('Error fetching privacy settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load your privacy settings",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }, [user]);
+
+  // Load settings on mount or when user changes
+  useEffect(() => {
+    loadPrivacySettings();
+  }, [loadPrivacySettings]);
 
   // Update privacy settings
   const saveSettings = async (newSettings?: PrivacySettings): Promise<boolean> => {
@@ -44,10 +51,30 @@ export const usePrivacySettings = () => {
     
     try {
       const success = await updatePrivacySettings(user.id, settingsToSave);
-      if (success && newSettings) {
-        setSettings(newSettings);
+      if (success) {
+        if (newSettings) {
+          setSettings(newSettings);
+        }
+        toast({
+          title: "Success",
+          description: "Your privacy settings have been saved"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to save your privacy settings",
+          variant: "destructive"
+        });
       }
       return success;
+    } catch (error) {
+      console.error('Error saving privacy settings:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -64,6 +91,7 @@ export const usePrivacySettings = () => {
     isLoading,
     isSaving,
     saveSettings,
-    updateSetting
+    updateSetting,
+    refreshSettings: loadPrivacySettings
   };
 };
