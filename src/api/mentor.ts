@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Mentor, 
@@ -139,8 +140,8 @@ export const fetchMentor = async (mentorId: string) => {
     
   if (sessionError) throw sessionError;
   
-  // Safely extract IDs
-  const sessionIdArray: string[] = sessionIds ? sessionIds.map(item => item.id) : [];
+  // Extract session IDs
+  const sessionIdArray: string[] = (sessionIds || []).map(item => item.id);
   
   // Fetch recent reviews using the session IDs
   const { data: reviewsData, error: reviewsError } = await supabase
@@ -159,7 +160,7 @@ export const fetchMentor = async (mentorId: string) => {
       )
     `)
     .eq('is_public', true)
-    .in('session_id', sessionIdArray)
+    .in('session_id', sessionIdArray.length > 0 ? sessionIdArray : ['no-sessions'])
     .order('created_at', { ascending: false })
     .limit(5);
   
@@ -190,7 +191,7 @@ export const fetchMentor = async (mentorId: string) => {
     const { reviewer, session, ...reviewData } = review;
     return {
       ...reviewData,
-      reviewer: reviewer as unknown as ExtendedProfile || null,
+      reviewer: reviewer as unknown as ExtendedProfile,
       session: session || null
     };
   });
@@ -204,7 +205,7 @@ export const fetchMentor = async (mentorId: string) => {
     ...mentorDataOnly,
     profile: (profileData || {}) as ExtendedProfile,
     certifications: certificationData || [],
-    reviews: processedReviews as unknown as SessionReview[],
+    reviews: processedReviews as SessionReview[],
     availability: availabilityData || [],
     date_exceptions: exceptionData || [],
   };
@@ -372,7 +373,7 @@ export const fetchUserSessions = async () => {
   if (error) throw error;
   
   // Transform the data to match our types, handling potential null values
-  const sessions: MentorshipSession[] = data.map(item => {
+  const sessions: MentorshipSession[] = (data || []).map(item => {
     const { mentor, mentee, ...sessionData } = item;
     
     // Create a properly structured mentor object

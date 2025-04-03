@@ -1,3 +1,4 @@
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   applyAsMentor,
@@ -170,6 +171,7 @@ export const useSubmitReview = () => {
     }) => submitSessionReview(sessionId, rating, comment, isPublic),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['userSessions'] });
+      queryClient.invalidateQueries({ queryKey: ['mentor'] });
       toast({
         title: "Review Submitted",
         description: "Your review has been submitted successfully!",

@@ -1,5 +1,6 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import Layout from "@/components/layout/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,19 +9,35 @@ import ReviewForm from "@/components/mentorspace/ReviewForm";
 import EmptyState from "@/components/mentorspace/EmptyState";
 import { 
   useUserSessions, 
-  useMentorStatus
+  useMentorStatus,
+  useUpdateSessionStatus
 } from "@/hooks/use-mentors";
-import { MentorshipSession } from "@/types/mentor";
+import { MentorshipSession, SessionStatus } from "@/types/mentor";
 import { motion } from "framer-motion";
 import { pageTransition, listContainer } from "@/lib/animations";
 import { isAfter, parseISO } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 const SessionManagement = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [reviewSession, setReviewSession] = useState<MentorshipSession | null>(null);
-  const { data: sessions, isLoading } = useUserSessions();
+  const { data: sessions, isLoading, refetch } = useUserSessions();
   const { data: mentorStatus } = useMentorStatus();
+  const updateSessionStatus = useUpdateSessionStatus();
+  const { toast } = useToast();
   
   const isMentor = !!mentorStatus;
+
+  // Check if there's a session ID in the URL for reviewing
+  useEffect(() => {
+    const reviewId = searchParams.get("review");
+    if (reviewId && sessions) {
+      const sessionToReview = sessions.find(s => s.id === reviewId);
+      if (sessionToReview) {
+        setReviewSession(sessionToReview);
+      }
+    }
+  }, [searchParams, sessions]);
   
   const handleReview = (sessionId: string) => {
     const session = sessions?.find(s => s.id === sessionId);
@@ -31,6 +48,31 @@ const SessionManagement = () => {
   
   const handleReviewSuccess = () => {
     setReviewSession(null);
+    // Clear the review param from URL if it exists
+    if (searchParams.has("review")) {
+      searchParams.delete("review");
+      setSearchParams(searchParams);
+    }
+    refetch();
+    toast({
+      title: "Review Submitted",
+      description: "Thank you for your feedback!"
+    });
+  };
+  
+  const handleStatusChange = (sessionId: string, status: SessionStatus) => {
+    updateSessionStatus.mutate({
+      sessionId,
+      status
+    }, {
+      onSuccess: () => {
+        refetch();
+        toast({
+          title: "Session Updated",
+          description: `Session has been marked as ${status}.`
+        });
+      }
+    });
   };
   
   // Separate sessions by status for each view (mentor/mentee)
@@ -108,6 +150,7 @@ const SessionManagement = () => {
                       key={session.id} 
                       session={session} 
                       isMentor={true}
+                      onStatusChange={handleStatusChange}
                     />
                   ))}
                 </motion.div>
@@ -140,6 +183,7 @@ const SessionManagement = () => {
                     key={session.id} 
                     session={session}
                     onReview={handleReview}
+                    onStatusChange={handleStatusChange}
                   />
                 ))}
               </motion.div>
@@ -175,6 +219,7 @@ const SessionManagement = () => {
                           key={session.id} 
                           session={session} 
                           isMentor={true}
+                          onStatusChange={handleStatusChange}
                         />
                       ))}
                     </motion.div>
@@ -195,6 +240,7 @@ const SessionManagement = () => {
                           key={session.id} 
                           session={session}
                           onReview={handleReview}
+                          onStatusChange={handleStatusChange}
                         />
                       ))}
                     </motion.div>
