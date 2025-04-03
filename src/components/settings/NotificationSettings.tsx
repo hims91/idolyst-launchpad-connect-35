@@ -12,10 +12,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
+type EmailDigestFrequency = 'daily' | 'weekly' | 'never';
+
 interface NotificationPrefs {
   email_enabled: boolean;
   push_enabled: boolean;
-  email_digest_frequency: 'daily' | 'weekly' | 'never';
+  email_digest_frequency: EmailDigestFrequency;
   muted_until: string | null;
   launchpad_reaction: boolean;
   launchpad_comment: boolean;
@@ -76,7 +78,7 @@ export const NotificationSettings = () => {
           setPreferences({
             email_enabled: data.email_enabled,
             push_enabled: data.push_enabled,
-            email_digest_frequency: data.email_digest_frequency,
+            email_digest_frequency: (data.email_digest_frequency as EmailDigestFrequency) || 'daily',
             muted_until: data.muted_until,
             launchpad_reaction: data.launchpad_reaction,
             launchpad_comment: data.launchpad_comment,

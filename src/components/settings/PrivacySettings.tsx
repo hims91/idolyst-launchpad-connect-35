@@ -34,9 +34,9 @@ export const PrivacySettingsComponent = () => {
       
       if (data) {
         setSettings({
-          profile_visibility: data.profile_visibility,
-          messaging_permissions: data.messaging_permissions,
-          activity_visibility: data.activity_visibility,
+          profile_visibility: data.profile_visibility as PrivacySettings['profile_visibility'],
+          messaging_permissions: data.messaging_permissions as PrivacySettings['messaging_permissions'],
+          activity_visibility: data.activity_visibility as PrivacySettings['activity_visibility'],
         });
       }
     } catch (error) {
