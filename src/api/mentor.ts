@@ -11,7 +11,8 @@ import {
   TimeSlot, 
   MentorFilter,
   ExpertiseCategory,
-  SessionStatus
+  SessionStatus,
+  MentorStatus
 } from "@/types/mentor";
 import { ExtendedProfile } from "@/types/profile";
 import { format, addDays, isBefore, isAfter, parseISO, setHours, setMinutes } from "date-fns";
