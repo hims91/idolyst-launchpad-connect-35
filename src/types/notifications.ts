@@ -16,7 +16,8 @@ export type NotificationType =
   | 'launchpad_comment'
   | 'launchpad_reaction'
   | 'launchpad_repost'
-  | 'payment_success';
+  | 'payment_success'
+  | 'reward_claimed';
 
 export interface Notification {
   id: string;

@@ -79,6 +79,58 @@
 - `src/hooks/use-mentors.tsx` - Custom hooks for mentor-related data and operations
 - `src/types/mentor.ts` - TypeScript types for mentors, sessions, and reviews
 
+### Ascend Module (Gamification)
+
+The Ascend module is a comprehensive gamification system that rewards users for their activities on the platform with XP, badges, leaderboard rankings, and redeemable rewards.
+
+### Database Structure
+
+- **profiles**: Contains user XP and level information
+- **badges**: Badge definitions with names, descriptions, and icons
+- **user_badges**: Tracks which badges users have earned
+- **badge_progress**: Tracks progress towards earning badges
+- **rewards**: Available rewards that can be claimed with XP
+- **user_rewards**: Tracks rewards claimed by users
+- **xp_transactions**: Log of all XP earned or spent by users
+- **login_streaks**: Tracks daily login streaks
+- **leaderboard_history**: Historical record of user rankings
+
+### API Functionality
+
+- XP earning for various platform activities (posts, feedback, mentorship, etc.)
+- Badge awarding based on achievements and milestones
+- Leaderboard ranking system with weekly and monthly timeframes
+- Reward claiming system with XP expenditure
+- Login streak tracking and bonus XP for consecutive days
+
+### User Interface
+
+- **Dashboard**: Overview of user's XP, level, badges, rewards, and leaderboard position
+- **Badges Page**: Display of earned badges and progress towards locked badges
+- **Rewards Shop**: Allows users to claim rewards by spending XP
+- **XP History**: Chronological record of XP transactions
+- **Leaderboard**: Rankings of users by XP with position changes
+
+### Integration with Other Modules
+
+The Ascend module is deeply integrated with other platform features:
+
+- **Notifications**: Users receive notifications for level-ups, badge unlocks, and leaderboard position changes
+- **Profile**: User profiles display level, XP, and badges
+- **PitchHub**: Submitting ideas and providing feedback earns XP
+- **MentorSpace**: Completing mentorship sessions earns XP for both mentor and mentee
+- **Launchpad**: Engagement with content earns XP
+
+### Technical Implementation
+
+- Real-time XP updates using Supabase's realtime functionality
+- Database triggers for automatic XP awarding and badge unlocking
+- Row-level security policies to ensure data privacy
+- React components for badges, rewards, and leaderboard with animations
+- Redux state management for XP and gamification state
+
+This gamification system encourages platform engagement, creates a sense of progression, and rewards users for contributing positively to the community.
+
 ### Routes
 - `src/App.tsx` - Main route definitions and auth-protected routes
 

@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -44,6 +43,10 @@ import PitchHubIndex from "./pages/pitch-hub/Index";
 import PitchHubNew from "./pages/pitch-hub/New";
 import PitchHubDetail from "./pages/pitch-hub/Detail";
 import PitchHubLeaderboard from "./pages/pitch-hub/Leaderboard";
+
+// Ascend pages
+import AscendDashboard from "./pages/ascend/Dashboard";
+import AscendLeaderboard from "./pages/ascend/Leaderboard";
 
 // Create a new QueryClient instance
 const queryClient = new QueryClient();
@@ -133,15 +136,25 @@ const App = () => (
                   } 
                 />
                 
-                {/* Protected routes */}
+                {/* Ascend routes */}
                 <Route 
                   path="/ascend" 
                   element={
                     <ProtectedRoute>
-                      <Ascend />
+                      <AscendDashboard />
                     </ProtectedRoute>
                   } 
                 />
+                <Route 
+                  path="/ascend/leaderboard" 
+                  element={
+                    <ProtectedRoute>
+                      <AscendLeaderboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Protected routes */}
                 <Route 
                   path="/messages" 
                   element={
