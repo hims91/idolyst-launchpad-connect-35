@@ -967,6 +967,79 @@ export type Database = {
           },
         ]
       }
+      post_documents: {
+        Row: {
+          created_at: string
+          document_name: string
+          document_type: string
+          document_url: string
+          file_size: number
+          id: string
+          post_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_name: string
+          document_type: string
+          document_url: string
+          file_size: number
+          id?: string
+          post_id: string
+        }
+        Update: {
+          created_at?: string
+          document_name?: string
+          document_type?: string
+          document_url?: string
+          file_size?: number
+          id?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_documents_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_media: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          media_type: string
+          media_url: string
+          post_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          media_type: string
+          media_url: string
+          post_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          media_type?: string
+          media_url?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_media_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_reactions: {
         Row: {
           created_at: string
@@ -1094,10 +1167,15 @@ export type Database = {
       }
       posts: {
         Row: {
+          associated_event_date: string | null
+          associated_pitch_id: string | null
           category: string
           content: string
           created_at: string
+          embed_data: Json | null
+          embed_type: string | null
           engagement_score: number | null
+          event_details: Json | null
           id: string
           is_trending: boolean | null
           media_type: string | null
@@ -1111,10 +1189,15 @@ export type Database = {
           views_count: number | null
         }
         Insert: {
+          associated_event_date?: string | null
+          associated_pitch_id?: string | null
           category: string
           content: string
           created_at?: string
+          embed_data?: Json | null
+          embed_type?: string | null
           engagement_score?: number | null
+          event_details?: Json | null
           id?: string
           is_trending?: boolean | null
           media_type?: string | null
@@ -1128,10 +1211,15 @@ export type Database = {
           views_count?: number | null
         }
         Update: {
+          associated_event_date?: string | null
+          associated_pitch_id?: string | null
           category?: string
           content?: string
           created_at?: string
+          embed_data?: Json | null
+          embed_type?: string | null
           engagement_score?: number | null
+          event_details?: Json | null
           id?: string
           is_trending?: boolean | null
           media_type?: string | null
@@ -1144,7 +1232,15 @@ export type Database = {
           user_id?: string
           views_count?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posts_associated_pitch_id_fkey"
+            columns: ["associated_pitch_id"]
+            isOneToOne: false
+            referencedRelation: "pitch_ideas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       privacy_settings: {
         Row: {
@@ -1762,6 +1858,30 @@ export type Database = {
         }
         Returns: number
       }
+      get_post_documents: {
+        Args: {
+          post_id_param: string
+        }
+        Returns: Json
+      }
+      get_post_media: {
+        Args: {
+          post_id_param: string
+        }
+        Returns: Json
+      }
+      insert_post_documents: {
+        Args: {
+          document_records: Json
+        }
+        Returns: Json
+      }
+      insert_post_media: {
+        Args: {
+          media_records: Json
+        }
+        Returns: Json
+      }
       is_mentor: {
         Args: {
           user_id: string
@@ -1812,6 +1932,8 @@ export type Database = {
         | "launchpad_reaction"
         | "launchpad_repost"
         | "payment_success"
+        | "pitch_creation"
+        | "new_event"
       reaction_type:
         | "insightful"
         | "fundable"
