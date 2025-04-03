@@ -1,0 +1,93 @@
+
+import { supabase } from "@/integrations/supabase/client";
+import { PitchIdea, PitchFeedback } from '@/api/pitch';
+
+// Helper function to enrich pitch data with vote counts and user votes
+export const enrichPitchData = async (pitchIdeas: any[]): Promise<PitchIdea[]> => {
+  try {
+    // Get current user
+    const user = await supabase.auth.getUser();
+    const userId = user.data.user?.id;
+
+    // If there are no pitches, return an empty array
+    if (pitchIdeas.length === 0) return [];
+    
+    // Get all votes for these pitches
+    const pitchIds = pitchIdeas.map(pitch => pitch.id);
+    
+    const { data: votesData, error: votesError } = await supabase
+      .from('pitch_votes')
+      .select('*')
+      .in('pitch_id', pitchIds);
+
+    if (votesError) throw votesError;
+
+    // Get all feedback for these pitches
+    const { data: feedbackData, error: feedbackError } = await supabase
+      .from('pitch_feedback')
+      .select('*')
+      .in('pitch_id', pitchIds);
+
+    if (feedbackError) throw feedbackError;
+
+    // Process each pitch with its votes and feedback
+    return pitchIdeas.map(pitch => {
+      const pitchVotes = votesData?.filter(vote => vote.pitch_id === pitch.id) || [];
+      const upvotes = pitchVotes.filter(vote => vote.vote_type === 'upvote').length;
+      const downvotes = pitchVotes.filter(vote => vote.vote_type === 'downvote').length;
+      const userVote = userId ? 
+        pitchVotes.find(vote => vote.user_id === userId)?.vote_type : 
+        null;
+        
+      const pitchFeedback = feedbackData?.filter(feedback => feedback.pitch_id === pitch.id) || [];
+      const mentorFeedback = pitchFeedback.filter(feedback => feedback.is_mentor_feedback);
+      
+      return {
+        ...pitch,
+        vote_count: upvotes - downvotes,
+        user_vote: userVote,
+        feedback_count: pitchFeedback.length,
+        mentor_feedback_count: mentorFeedback.length
+      } as PitchIdea;
+    });
+  } catch (error) {
+    console.error('Error enriching pitch data:', error);
+    return pitchIdeas as PitchIdea[];
+  }
+};
+
+// Update the pitch_ideas query to use direct fields rather than JOINs
+export const getPitchWithAuthor = async (id: string) => {
+  try {
+    // First, get the pitch details
+    const { data: pitchData, error: pitchError } = await supabase
+      .from('pitch_ideas')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (pitchError) throw pitchError;
+    if (!pitchData) return null;
+
+    // Then get the author information separately
+    const { data: authorData, error: authorError } = await supabase
+      .from('profiles')
+      .select('id, username, full_name, avatar_url, bio')
+      .eq('id', pitchData.user_id)
+      .single();
+
+    if (authorError) {
+      console.warn('Could not fetch author data:', authorError);
+      // Don't fail the whole operation if we can't get author data
+    }
+
+    // Combine the pitch with its author
+    return {
+      ...pitchData,
+      author: authorData || null
+    };
+  } catch (error) {
+    console.error('Error fetching pitch with author:', error);
+    throw error;
+  }
+};

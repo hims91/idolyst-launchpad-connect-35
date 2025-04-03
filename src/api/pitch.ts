@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import { getTypedSupabaseClient } from "@/lib/supabase-types";
+import { enrichPitchData, getPitchWithAuthor } from './pitch-utils';
 
 // Get a typed Supabase client
 const typedSupabase = getTypedSupabaseClient(supabase);
@@ -89,11 +90,7 @@ export const getPitchIdeas = async (
   try {
     let query = typedSupabase
       .from('pitch_ideas')
-      .select(`
-        *,
-        author:profiles!pitch_ideas_user_id_fkey(username, full_name, avatar_url)
-      `)
-      .order('created_at', { ascending: false });
+      .select('*');
 
     // Apply time range filter
     if (timeRange !== 'all') {
@@ -125,8 +122,32 @@ export const getPitchIdeas = async (
 
     if (error) throw error;
 
-    // Post-process to calculate vote counts and add user's vote if authenticated
-    const processedData = await enrichPitchData(data || []);
+    // Now get all the author information separately
+    const userIds = [...new Set(data?.map(pitch => pitch.user_id) || [])];
+    
+    let authorProfiles = {};
+    if (userIds.length > 0) {
+      const { data: profilesData, error: profilesError } = await typedSupabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .in('id', userIds);
+      
+      if (!profilesError && profilesData) {
+        authorProfiles = profilesData.reduce((acc, profile) => {
+          acc[profile.id] = profile;
+          return acc;
+        }, {} as Record<string, any>);
+      }
+    }
+
+    // Add author information to each pitch
+    const pitchesWithAuthors = data?.map(pitch => ({
+      ...pitch,
+      author: authorProfiles[pitch.user_id] || null
+    })) || [];
+
+    // Process and enrich with votes/feedback data
+    const processedData = await enrichPitchData(pitchesWithAuthors);
 
     // Sort by votes if top filter is applied
     if (filter === 'top') {
@@ -148,21 +169,17 @@ export const getPitchIdeas = async (
 // Get a single pitch idea by ID with detailed information
 export const getPitchIdea = async (id: string) => {
   try {
-    const { data, error } = await typedSupabase
-      .from('pitch_ideas')
-      .select(`
-        *,
-        author:profiles!pitch_ideas_user_id_fkey(id, username, full_name, avatar_url, bio)
-      `)
-      .eq('id', id)
-      .single();
-
-    if (error) throw error;
-
-    if (!data) return null;
+    // First get the pitch with author using a more reliable approach
+    const pitch = await getPitchWithAuthor(id);
+    if (!pitch) return null;
 
     // Increment view count using RPC function
-    await typedSupabase.rpc('increment_pitch_view', { id });
+    try {
+      await typedSupabase.rpc('increment_pitch_view', { id });
+    } catch (e) {
+      console.warn('Failed to increment view count:', e);
+      // Don't fail if view count increment fails
+    }
 
     // Get votes for this pitch
     const votesResponse = await typedSupabase
@@ -170,17 +187,16 @@ export const getPitchIdea = async (id: string) => {
       .select('*')
       .eq('pitch_id', id);
 
+    if (votesResponse.error) throw votesResponse.error;
+
+    // Get feedback with authors separately
     const feedbackResponse = await typedSupabase
       .from('pitch_feedback')
-      .select(`
-        *,
-        author:profiles!pitch_feedback_user_id_fkey(id, username, full_name, avatar_url)
-      `)
+      .select('*')
       .eq('pitch_id', id)
       .order('is_mentor_feedback', { ascending: false })
       .order('created_at', { ascending: false });
 
-    if (votesResponse.error) throw votesResponse.error;
     if (feedbackResponse.error) throw feedbackResponse.error;
 
     // Calculate vote counts
@@ -198,29 +214,53 @@ export const getPitchIdea = async (id: string) => {
       }
     }
 
-    // Enhanced feedback with author info and mentor status
-    const enhancedFeedback = await Promise.all(
-      feedbackResponse.data.map(async (feedback) => {
-        // Check if the feedback author is a mentor
-        const { data: roleData } = await typedSupabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', feedback.user_id)
-          .eq('role', 'mentor')
-          .maybeSingle();
+    // Get all the user IDs from the feedback for author information
+    const feedbackUserIds = [...new Set(feedbackResponse.data.map(f => f.user_id))];
+    
+    let feedbackAuthors = {};
+    if (feedbackUserIds.length > 0) {
+      const { data: profilesData, error: profilesError } = await typedSupabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .in('id', feedbackUserIds);
+      
+      if (!profilesError && profilesData) {
+        feedbackAuthors = profilesData.reduce((acc, profile) => {
+          acc[profile.id] = profile;
+          return acc;
+        }, {} as Record<string, any>);
+      }
+    }
 
-        return {
-          ...feedback,
-          author: {
-            ...feedback.author,
-            is_mentor: !!roleData
-          }
-        } as PitchFeedback;
-      })
-    );
+    // Check which feedback authors are mentors
+    const mentorUserIds = [];
+    for (const id of feedbackUserIds) {
+      const { data: roleData } = await typedSupabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', id)
+        .eq('role', 'mentor')
+        .maybeSingle();
+      
+      if (roleData) {
+        mentorUserIds.push(id);
+      }
+    }
+
+    // Enhanced feedback with author info and mentor status
+    const enhancedFeedback = feedbackResponse.data.map(feedback => {
+      const author = feedbackAuthors[feedback.user_id] || {};
+      return {
+        ...feedback,
+        author: {
+          ...author,
+          is_mentor: mentorUserIds.includes(feedback.user_id)
+        }
+      } as PitchFeedback;
+    });
 
     return {
-      ...data,
+      ...pitch,
       vote_count: voteCount,
       user_vote: userVote,
       feedback: enhancedFeedback,
@@ -586,58 +626,5 @@ export const createPremiumPayment = async (pitchId: string, amount: number, paym
       variant: "destructive",
     });
     return null;
-  }
-};
-
-// Helper function to enrich pitch data with vote counts and user votes
-const enrichPitchData = async (pitchIdeas: any[]) => {
-  try {
-    // Get current user
-    const user = await typedSupabase.auth.getUser();
-    const userId = user.data.user?.id;
-
-    // Get all votes for these pitches
-    const pitchIds = pitchIdeas.map(pitch => pitch.id);
-    
-    if (pitchIds.length === 0) return [];
-    
-    const { data: votesData, error: votesError } = await typedSupabase
-      .from('pitch_votes')
-      .select('*')
-      .in('pitch_id', pitchIds);
-
-    if (votesError) throw votesError;
-
-    // Get all feedback for these pitches
-    const { data: feedbackData, error: feedbackError } = await typedSupabase
-      .from('pitch_feedback')
-      .select('*')
-      .in('pitch_id', pitchIds);
-
-    if (feedbackError) throw feedbackError;
-
-    // Process each pitch with its votes and feedback
-    return pitchIdeas.map(pitch => {
-      const pitchVotes = votesData.filter(vote => vote.pitch_id === pitch.id);
-      const upvotes = pitchVotes.filter(vote => vote.vote_type === 'upvote').length;
-      const downvotes = pitchVotes.filter(vote => vote.vote_type === 'downvote').length;
-      const userVote = userId ? 
-        pitchVotes.find(vote => vote.user_id === userId)?.vote_type : 
-        null;
-        
-      const pitchFeedback = feedbackData.filter(feedback => feedback.pitch_id === pitch.id);
-      const mentorFeedback = pitchFeedback.filter(feedback => feedback.is_mentor_feedback);
-      
-      return {
-        ...pitch,
-        vote_count: upvotes - downvotes,
-        user_vote: userVote,
-        feedback_count: pitchFeedback.length,
-        mentor_feedback_count: mentorFeedback.length
-      } as PitchIdea;
-    });
-  } catch (error) {
-    console.error('Error enriching pitch data:', error);
-    return pitchIdeas as PitchIdea[];
   }
 };

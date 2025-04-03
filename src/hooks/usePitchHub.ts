@@ -30,6 +30,7 @@ export const usePitchIdeas = (
     queryKey: ['pitchIdeas', filter, timeRange, tag, search, page],
     queryFn: () => getPitchIdeas(filter, timeRange, tag, page, 10, search),
     staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 2, // Retry twice for better resilience
   });
 
   const handleLoadMore = () => {
@@ -61,6 +62,7 @@ export const usePitchIdea = (id: string) => {
     queryFn: () => getPitchIdea(id),
     staleTime: 1000 * 60 * 5, // 5 minutes
     retry: 1, // Only retry once to avoid too many failed requests
+    enabled: !!id, // Only run query if id is provided
   });
 
   // Vote mutation
@@ -95,10 +97,12 @@ export const usePitchIdea = (id: string) => {
   });
 
   const handleVote = (voteType: 'upvote' | 'downvote') => {
+    if (!id) return;
     voteMutation.mutate({ pitchId: id, voteType });
   };
 
   const handleAddFeedback = (content: string) => {
+    if (!id) return;
     feedbackMutation.mutate({ pitchId: id, content });
   };
 
@@ -126,6 +130,7 @@ export const useLeaderboard = (timeRange: TimeRange = 'week') => {
     queryKey: ['leaderboard', timeRange],
     queryFn: () => getLeaderboardIdeas(timeRange),
     staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 2, // Retry a couple times
   });
 
   return {

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -74,6 +73,7 @@ const NewPitchIdea = () => {
       problem_statement: "",
       target_group: "",
       solution: "",
+      stage: 'ideation', // Add default value for stage
       tags: [],
       media_urls: [],
       is_premium: false,
@@ -145,7 +145,7 @@ const NewPitchIdea = () => {
     }
   };
 
-  // Handle form submission - FIXED VERSION
+  // Handle form submission - REVISED VERSION
   const onSubmit = async (values: PitchFormValues) => {
     if (!isAuthenticated) {
       toast({
@@ -159,6 +159,11 @@ const NewPitchIdea = () => {
     setIsSubmitting(true);
     
     try {
+      // Double check all required fields since we had issues before
+      if (!values.stage) {
+        values.stage = 'ideation'; // Set default if missing
+      }
+      
       // Ensure we have all required fields for the pitch idea
       const pitchData = {
         title: values.title,
@@ -167,12 +172,14 @@ const NewPitchIdea = () => {
         solution: values.solution,
         stage: values.stage,
         tags: values.tags,
-        media_urls: mediaUrls
+        media_urls: mediaUrls.length ? mediaUrls : null
       };
       
+      console.log("Submitting pitch data:", pitchData);
       const result = await createPitchIdea(pitchData);
       
       if (result) {
+        console.log("Pitch created successfully:", result.id);
         setPitchId(result.id);
         
         if (values.is_premium) {
