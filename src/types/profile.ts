@@ -1,4 +1,3 @@
-
 import { UserRole } from "./auth";
 
 // Profile types
@@ -48,6 +47,7 @@ export interface ExtendedProfile {
   recent_activity: ProfileActivity[];
   created_at: string;
   location?: string | null;
+  byline?: string | null;
 }
 
 export interface ProfileUpdatePayload {
@@ -58,6 +58,7 @@ export interface ProfileUpdatePayload {
   professional_details?: string;
   portfolio_url?: string;
   location?: string;
+  byline?: string;
 }
 
 export interface PrivacySettings {

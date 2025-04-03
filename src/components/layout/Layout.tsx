@@ -1,44 +1,45 @@
 
-import { ReactNode, useEffect } from "react";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import MobileNavigation from "./MobileNavigation";
-import WebSidebar from "./WebSidebar";
-import MobileHeader from "./MobileHeader";
+import React from 'react';
+import { Outlet } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import WebSidebar from './WebSidebar';
+import MobileNavigation from './MobileNavigation';
+import MobileHeader from './MobileHeader';
+import { useAuth } from '@/hooks/useAuth';
+import { Helmet } from 'react-helmet-async';
 
 interface LayoutProps {
-  children: ReactNode;
+  children?: React.ReactNode;
 }
 
-const Layout = ({ children }: LayoutProps) => {
-  // Add a class to the body to adjust spacing for mobile header
-  useEffect(() => {
-    document.body.classList.add('has-mobile-header');
-    
-    return () => {
-      document.body.classList.remove('has-mobile-header');
-    };
-  }, []);
+const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const { isAuthenticated } = useAuth();
   
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        {/* Web Sidebar - hidden on mobile */}
-        <WebSidebar />
-        
-        <div className="flex flex-col flex-1 w-full overflow-x-hidden">
-          {/* Mobile Header - visible only on mobile */}
-          <MobileHeader />
-          
-          {/* Main Content - adjusted padding for mobile header */}
-          <main className="flex-1 px-4 py-6 md:px-6 md:py-8 mt-12 md:mt-0">
-            {children}
-          </main>
-          
-          {/* Mobile Navigation - visible only on mobile */}
-          <MobileNavigation />
-        </div>
-      </div>
-    </SidebarProvider>
+    <div className="flex min-h-screen bg-idolyst-bg">
+      <Helmet>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossOrigin="anonymous" referrerPolicy="no-referrer" />
+      </Helmet>
+      
+      {/* Desktop Sidebar */}
+      <WebSidebar />
+      
+      {/* Mobile Header */}
+      <MobileHeader />
+      
+      {/* Main Content */}
+      <motion.main 
+        className="flex-1 md:ml-60 mt-12 md:mt-0"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        {children || <Outlet />}
+      </motion.main>
+      
+      {/* Mobile Navigation */}
+      <MobileNavigation />
+    </div>
   );
 };
 
