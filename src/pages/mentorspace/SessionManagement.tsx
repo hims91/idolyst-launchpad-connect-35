@@ -16,6 +16,13 @@ import { motion } from "framer-motion";
 import { pageTransition, listContainer } from "@/lib/animations";
 import { isAfter, parseISO } from "date-fns";
 
+// Define the expected prop types based on the SessionCard component
+interface SessionCardProps {
+  session: MentorshipSession;
+  onStatusChange?: (sessionId: string, status: SessionStatus) => void;
+  onReview?: (sessionId: string) => void;
+}
+
 const SessionManagement = () => {
   const [reviewSession, setReviewSession] = useState<MentorshipSession | null>(null);
   const { data: sessions, isLoading } = useUserSessions();
@@ -113,7 +120,6 @@ const SessionManagement = () => {
                     <SessionCard 
                       key={session.id} 
                       session={session} 
-                      viewType="mentor"
                       onStatusChange={handleStatusChange}
                     />
                   ))}
@@ -146,7 +152,6 @@ const SessionManagement = () => {
                   <SessionCard 
                     key={session.id} 
                     session={session} 
-                    viewType="mentee"
                     onStatusChange={handleStatusChange}
                     onReview={handleReview}
                   />
@@ -183,7 +188,6 @@ const SessionManagement = () => {
                         <SessionCard 
                           key={session.id} 
                           session={session} 
-                          viewType="mentor"
                           onStatusChange={handleStatusChange}
                         />
                       ))}
@@ -204,7 +208,6 @@ const SessionManagement = () => {
                         <SessionCard 
                           key={session.id} 
                           session={session} 
-                          viewType="mentee"
                           onStatusChange={handleStatusChange}
                           onReview={handleReview}
                         />

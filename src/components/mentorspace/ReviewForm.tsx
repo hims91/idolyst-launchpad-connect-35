@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { MentorshipSession } from "@/types/mentor";
 import { motion } from "framer-motion";
 import { fadeInUp } from "@/lib/animations";
-import { useSubmitSessionReview } from "@/hooks/use-mentors";
+import { useSubmitReview } from "@/hooks/use-mentors";
 
 interface ReviewFormProps {
   session: MentorshipSession;
@@ -25,7 +25,7 @@ const ReviewForm = ({
   const [isPublic, setIsPublic] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const submitReview = useSubmitSessionReview();
+  const submitReview = useSubmitReview();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

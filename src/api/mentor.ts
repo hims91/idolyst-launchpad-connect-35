@@ -1,49 +1,64 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { 
-  Mentor, MentorAvailability, MentorCertification, 
-  MentorFilter, MentorWithProfile, MentorshipSession, 
-  SessionReview, TimeSlot, DateException, SessionStatus
+  Mentor, 
+  MentorWithProfile, 
+  MentorCertification, 
+  MentorAvailability, 
+  DateException, 
+  MentorshipSession, 
+  SessionReview, 
+  TimeSlot, 
+  MentorFilter,
+  ExpertiseCategory,
+  SessionStatus
 } from "@/types/mentor";
 import { ExtendedProfile } from "@/types/profile";
-import { format, addDays, parseISO, isAfter, isSameDay } from "date-fns";
+import { format, addDays, isBefore, isAfter, parseISO, setHours, setMinutes } from "date-fns";
 
-// Fetching mentors with profiles
-export const fetchMentors = async (filter?: MentorFilter): Promise<MentorWithProfile[]> => {
+// Fetch all approved mentors, with optional filtering
+export const fetchMentors = async (filter?: MentorFilter) => {
   let query = supabase
     .from('mentors')
     .select(`
       *,
-      profiles!inner(
-        id, username, full_name, avatar_url, bio, xp,
-        user_roles!inner(role)
+      profile:id(
+        id, 
+        username, 
+        full_name, 
+        avatar_url, 
+        bio,
+        location
       )
     `)
     .eq('status', 'approved');
-
-  // Apply filters
+  
+  // Apply filters if provided
   if (filter) {
+    // Filter by expertise
     if (filter.expertise && filter.expertise.length > 0) {
-      query = query.overlaps('expertise', filter.expertise);
+      query = query.contains('expertise', filter.expertise);
     }
     
+    // Filter by price range
     if (filter.minPrice !== undefined) {
       query = query.gte('hourly_rate', filter.minPrice);
     }
-    
     if (filter.maxPrice !== undefined) {
       query = query.lte('hourly_rate', filter.maxPrice);
     }
     
+    // Filter by minimum rating
     if (filter.minRating !== undefined) {
       query = query.gte('avg_rating', filter.minRating);
     }
     
+    // Search query (name or bio)
     if (filter.searchQuery) {
-      query = query.or(`profiles.username.ilike.%${filter.searchQuery}%,profiles.full_name.ilike.%${filter.searchQuery}%,profiles.bio.ilike.%${filter.searchQuery}%`);
+      query = query.or(`profile.full_name.ilike.%${filter.searchQuery}%,bio.ilike.%${filter.searchQuery}%`);
     }
     
-    // Apply sorting
+    // Sorting
     if (filter.sortBy) {
       switch (filter.sortBy) {
         case 'rating':
@@ -60,215 +75,301 @@ export const fetchMentors = async (filter?: MentorFilter): Promise<MentorWithPro
           break;
       }
     } else {
-      // Default sort by featured and then rating
+      // Default sort by is_featured and then rating
       query = query.order('is_featured', { ascending: false }).order('avg_rating', { ascending: false });
     }
   } else {
-    // Default sort by featured and then rating
+    // Default sort by is_featured and then rating
     query = query.order('is_featured', { ascending: false }).order('avg_rating', { ascending: false });
   }
-
+  
   const { data, error } = await query;
-
-  if (error) {
-    console.error("Error fetching mentors:", error);
-    throw error;
-  }
-
-  // Process the data to match our MentorWithProfile type
-  return data.map(item => {
-    const profile = item.profiles as any;
-    const mentorData = {
-      ...item,
-      profile: {
-        ...profile,
-        roles: (profile.user_roles || []).map((ur: any) => ur.role)
-      }
+  
+  if (error) throw error;
+  
+  // Transform the data to match our MentorWithProfile type
+  const mentors: MentorWithProfile[] = data.map(item => {
+    const { profile: profileData, ...mentorData } = item;
+    return {
+      ...mentorData,
+      profile: profileData as ExtendedProfile
     };
-    return mentorData as unknown as MentorWithProfile;
   });
+  
+  return mentors;
 };
 
-// Fetch a single mentor with profile and certifications
-export const fetchMentor = async (mentorId: string): Promise<MentorWithProfile> => {
-  const { data, error } = await supabase
+// Fetch a single mentor by ID
+export const fetchMentor = async (mentorId: string) => {
+  // Fetch mentor data
+  const { data: mentorData, error: mentorError } = await supabase
     .from('mentors')
     .select(`
       *,
-      profiles!inner(
-        id, username, full_name, avatar_url, bio, professional_details, 
-        portfolio_url, xp, created_at,
-        user_roles!inner(role),
-        social_links(id, platform, url, icon)
+      profile:id(
+        id, 
+        username, 
+        full_name, 
+        avatar_url, 
+        bio,
+        location,
+        social_links
       )
     `)
     .eq('id', mentorId)
     .single();
-
-  if (error) {
-    console.error("Error fetching mentor:", error);
-    throw error;
-  }
-
-  // Get certifications
-  const { data: certifications, error: certError } = await supabase
+  
+  if (mentorError) throw mentorError;
+  
+  if (!mentorData) throw new Error('Mentor not found');
+  
+  // Fetch mentor certifications
+  const { data: certificationData, error: certificationError } = await supabase
     .from('mentor_certifications')
     .select('*')
     .eq('mentor_id', mentorId)
     .order('issue_date', { ascending: false });
-
-  if (certError) {
-    console.error("Error fetching certifications:", certError);
-    throw certError;
-  }
-
-  // Get reviews
-  const { data: reviews, error: reviewError } = await supabase
+  
+  if (certificationError) throw certificationError;
+  
+  // Fetch recent reviews
+  const { data: reviewsData, error: reviewsError } = await supabase
     .from('session_reviews')
     .select(`
       *,
-      mentorship_sessions!inner(mentor_id),
-      profiles!reviewer_id(id, username, full_name, avatar_url)
+      reviewer:reviewer_id(
+        id,
+        username,
+        full_name,
+        avatar_url
+      ),
+      session:session_id(
+        id,
+        session_date
+      )
     `)
-    .eq('mentorship_sessions.mentor_id', mentorId)
     .eq('is_public', true)
-    .order('created_at', { ascending: false });
-
-  if (reviewError) {
-    console.error("Error fetching reviews:", reviewError);
-    throw reviewError;
-  }
-
-  // Process the data
-  const profile = data.profiles as any;
+    .in('session_id', (subQuery) => {
+      return subQuery
+        .from('mentorship_sessions')
+        .select('id')
+        .eq('mentor_id', mentorId);
+    })
+    .order('created_at', { ascending: false })
+    .limit(5);
   
-  const mentor: MentorWithProfile = {
-    ...data as unknown as Mentor,
-    profile: {
-      ...profile,
-      roles: (profile.user_roles || []).map((ur: any) => ur.role),
-      social_links: profile.social_links || []
-    } as ExtendedProfile,
-    certifications: certifications as unknown as MentorCertification[],
-    reviews: reviews.map((review: any) => ({
-      ...review,
-      reviewer: review.profiles
-    })) as unknown as SessionReview[]
+  if (reviewsError) throw reviewsError;
+  
+  // Fetch availability
+  const { data: availabilityData, error: availabilityError } = await supabase
+    .from('mentor_availability')
+    .select('*')
+    .eq('mentor_id', mentorId);
+    
+  if (availabilityError) throw availabilityError;
+  
+  // Fetch date exceptions
+  const { data: exceptionData, error: exceptionError } = await supabase
+    .from('mentor_date_exceptions')
+    .select('*')
+    .eq('mentor_id', mentorId)
+    .gte('exception_date', format(new Date(), 'yyyy-MM-dd'));
+    
+  if (exceptionError) throw exceptionError;
+  
+  // Transform the data
+  const { profile: profileData, ...mentorDataOnly } = mentorData;
+  
+  const mentorWithProfile: MentorWithProfile & {
+    certifications: MentorCertification[];
+    reviews: SessionReview[];
+    availability: MentorAvailability[];
+    date_exceptions: DateException[];
+  } = {
+    ...mentorDataOnly,
+    profile: profileData as ExtendedProfile,
+    certifications: certificationData || [],
+    reviews: reviewsData || [],
+    availability: availabilityData || [],
+    date_exceptions: exceptionData || [],
   };
-
-  return mentor;
+  
+  return mentorWithProfile;
 };
 
-// Fetch mentor availability
-export const fetchMentorAvailability = async (mentorId: string): Promise<MentorAvailability[]> => {
+// Check if the current user is a mentor
+export const checkMentorStatus = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) throw new Error('Not authenticated');
+  
+  const { data, error } = await supabase
+    .from('mentors')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+  
+  if (error && error.code !== 'PGRST116') { // PGRST116 is "Row not found"
+    throw error;
+  }
+  
+  return data;
+};
+
+// Fetch mentor's availability
+export const fetchMentorAvailability = async (mentorId: string) => {
   const { data, error } = await supabase
     .from('mentor_availability')
     .select('*')
     .eq('mentor_id', mentorId);
-
-  if (error) {
-    console.error("Error fetching mentor availability:", error);
-    throw error;
-  }
-
-  return data as unknown as MentorAvailability[];
+  
+  if (error) throw error;
+  
+  return data;
 };
 
-// Fetch mentor date exceptions
-export const fetchMentorDateExceptions = async (mentorId: string): Promise<DateException[]> => {
+// Fetch mentor's date exceptions
+export const fetchMentorDateExceptions = async (mentorId: string) => {
   const { data, error } = await supabase
     .from('mentor_date_exceptions')
     .select('*')
-    .eq('mentor_id', mentorId);
-
-  if (error) {
-    console.error("Error fetching mentor date exceptions:", error);
-    throw error;
-  }
-
-  return data as unknown as DateException[];
+    .eq('mentor_id', mentorId)
+    .gte('exception_date', format(new Date(), 'yyyy-MM-dd'));
+  
+  if (error) throw error;
+  
+  return data;
 };
 
-// Get available time slots for a mentor
-export const fetchAvailableTimeSlots = async (mentorId: string, date: Date): Promise<TimeSlot[]> => {
-  // Get regular availability for the day of the week
-  const dayOfWeek = date.getDay(); // 0 is Sunday
-  const dateString = format(date, 'yyyy-MM-dd');
+// Calculate available time slots for a specific date
+export const fetchAvailableTimeSlots = async (mentorId: string, date: Date) => {
+  const formattedDate = format(date, 'yyyy-MM-dd');
+  const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
   
-  const { data: availability, error: availError } = await supabase
+  // Get mentor's regular availability for this day of the week
+  const { data: availabilityData, error: availabilityError } = await supabase
     .from('mentor_availability')
     .select('*')
     .eq('mentor_id', mentorId)
     .eq('day_of_week', dayOfWeek);
-
-  if (availError) {
-    console.error("Error fetching availability:", availError);
-    throw availError;
-  }
-
-  // Check for date exceptions
-  const { data: exceptions, error: exceptError } = await supabase
+  
+  if (availabilityError) throw availabilityError;
+  
+  // Check if this date is an exception
+  const { data: exceptionData, error: exceptionError } = await supabase
     .from('mentor_date_exceptions')
     .select('*')
     .eq('mentor_id', mentorId)
-    .eq('exception_date', dateString);
-
-  if (exceptError) {
-    console.error("Error fetching date exceptions:", exceptError);
-    throw exceptError;
-  }
-
-  // If the date is marked as unavailable, return empty array
-  if (exceptions && exceptions.length > 0 && !exceptions[0].is_available) {
+    .eq('exception_date', formattedDate)
+    .single();
+  
+  if (exceptionError && exceptionError.code !== 'PGRST116') throw exceptionError;
+  
+  // If date is explicitly marked as unavailable, return empty array
+  if (exceptionData && !exceptionData.is_available) {
     return [];
   }
-
-  // Get booked sessions for the date
-  const { data: sessions, error: sessionError } = await supabase
+  
+  // Get already booked sessions for this date
+  const { data: bookedSessionsData, error: bookedSessionsError } = await supabase
     .from('mentorship_sessions')
-    .select('*')
+    .select('start_time, end_time')
     .eq('mentor_id', mentorId)
-    .eq('session_date', dateString)
-    .not('status', 'eq', 'cancelled');
-
-  if (sessionError) {
-    console.error("Error fetching sessions:", sessionError);
-    throw sessionError;
-  }
-
-  if (!availability) {
-    return [];
-  }
-
-  // Convert regular availability to time slots
-  const timeSlots: TimeSlot[] = (availability as unknown as MentorAvailability[]).map(slot => ({
-    date: dateString,
-    start_time: slot.start_time,
-    end_time: slot.end_time,
-    is_available: true
-  }));
-
-  // Mark booked slots as unavailable
-  if (sessions) {
-    (sessions as unknown as MentorshipSession[]).forEach(session => {
-      const sessionStart = session.start_time;
-      const sessionEnd = session.end_time;
+    .eq('session_date', formattedDate)
+    .in('status', ['scheduled', 'rescheduled']);
+  
+  if (bookedSessionsError) throw bookedSessionsError;
+  
+  // Generate time slots based on availability
+  const timeSlots: TimeSlot[] = [];
+  
+  if (availabilityData && availabilityData.length > 0) {
+    for (const slot of availabilityData) {
+      const [startHour, startMinute] = slot.start_time.split(':').map(Number);
+      const [endHour, endMinute] = slot.end_time.split(':').map(Number);
       
-      timeSlots.forEach(slot => {
-        // If the slot overlaps with a booked session, mark it as unavailable
-        if (
-          (sessionStart >= slot.start_time && sessionStart < slot.end_time) ||
-          (sessionEnd > slot.start_time && sessionEnd <= slot.end_time) ||
-          (sessionStart <= slot.start_time && sessionEnd >= slot.end_time)
-        ) {
-          slot.is_available = false;
+      let slotTime = setMinutes(setHours(date, startHour), startMinute);
+      const slotEndTime = setMinutes(setHours(date, endHour), endMinute);
+      
+      // Create 30-minute intervals
+      while (isBefore(slotTime, slotEndTime)) {
+        const endTimeSlot = addDays(slotTime, 0);
+        endTimeSlot.setMinutes(endTimeSlot.getMinutes() + 30);
+        
+        if (isAfter(endTimeSlot, slotEndTime)) break;
+        
+        const startTimeString = format(slotTime, 'HH:mm');
+        const endTimeString = format(endTimeSlot, 'HH:mm');
+        
+        // Check if slot is already booked
+        const isBooked = bookedSessionsData?.some(session => {
+          return session.start_time <= startTimeString && session.end_time > startTimeString;
+        });
+        
+        if (!isBooked) {
+          timeSlots.push({
+            date: formattedDate,
+            start_time: startTimeString,
+            end_time: endTimeString,
+            is_available: true
+          });
         }
-      });
-    });
+        
+        slotTime = endTimeSlot;
+      }
+    }
   }
+  
+  return timeSlots;
+};
 
-  // Filter out unavailable slots
-  return timeSlots.filter(slot => slot.is_available);
+// Fetch user's mentorship sessions
+export const fetchUserSessions = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) throw new Error('Not authenticated');
+  
+  // Fetch sessions where user is either mentor or mentee
+  const { data, error } = await supabase
+    .from('mentorship_sessions')
+    .select(`
+      *,
+      mentor:mentor_id(
+        id,
+        hourly_rate,
+        profile:id(
+          id,
+          username,
+          full_name,
+          avatar_url
+        )
+      ),
+      mentee:mentee_id(
+        id,
+        username,
+        full_name,
+        avatar_url
+      )
+    `)
+    .or(`mentor_id.eq.${user.id},mentee_id.eq.${user.id}`)
+    .order('session_date', { ascending: false });
+  
+  if (error) throw error;
+  
+  // Transform the data to match our types
+  const sessions: MentorshipSession[] = data.map(item => {
+    const { mentor, mentee, ...sessionData } = item;
+    return {
+      ...sessionData,
+      mentor: mentor ? {
+        ...mentor,
+        profile: mentor.profile
+      } : undefined,
+      mentee: mentee || undefined
+    };
+  });
+  
+  return sessions;
 };
 
 // Book a mentorship session
@@ -280,14 +381,27 @@ export const bookMentorshipSession = async (
   startTime: string,
   endTime: string,
   price: number
-): Promise<MentorshipSession> => {
-  // Get current user
+) => {
   const { data: { user } } = await supabase.auth.getUser();
   
-  if (!user) {
-    throw new Error("User not authenticated");
+  if (!user) throw new Error('Not authenticated');
+  
+  // Check if the time slot is available
+  const { data: existingSessions, error: checkError } = await supabase
+    .from('mentorship_sessions')
+    .select('id')
+    .eq('mentor_id', mentorId)
+    .eq('session_date', date)
+    .or(`and(start_time.lte.${startTime},end_time.gt.${startTime}),and(start_time.lt.${endTime},end_time.gte.${endTime}),and(start_time.gte.${startTime},end_time.lte.${endTime})`)
+    .in('status', ['scheduled', 'rescheduled']);
+  
+  if (checkError) throw checkError;
+  
+  if (existingSessions && existingSessions.length > 0) {
+    throw new Error('This time slot is no longer available');
   }
-
+  
+  // Book the session
   const { data, error } = await supabase
     .from('mentorship_sessions')
     .insert({
@@ -298,88 +412,57 @@ export const bookMentorshipSession = async (
       session_date: date,
       start_time: startTime,
       end_time: endTime,
+      status: 'scheduled',
       price,
-      status: 'scheduled'
+      payment_status: true // Assuming payment is handled elsewhere
     })
     .select()
     .single();
-
-  if (error) {
-    console.error("Error booking mentorship session:", error);
-    throw error;
-  }
-
-  return data as unknown as MentorshipSession;
-};
-
-// Fetch user's sessions (as mentor or mentee)
-export const fetchUserSessions = async (): Promise<MentorshipSession[]> => {
-  // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
   
-  if (!user) {
-    throw new Error("User not authenticated");
-  }
-
-  const { data, error } = await supabase
-    .from('mentorship_sessions')
-    .select(`
-      *,
-      mentors!mentor_id(
-        *,
-        profiles!inner(id, username, full_name, avatar_url)
-      ),
-      profiles!mentee_id(id, username, full_name, avatar_url)
-    `)
-    .or(`mentor_id.eq.${user.id},mentee_id.eq.${user.id}`)
-    .order('session_date', { ascending: true })
-    .order('start_time', { ascending: true });
-
-  if (error) {
-    console.error("Error fetching sessions:", error);
-    throw error;
-  }
-
-  // Process the data
-  return (data || []).map(session => {
-    const mentor = session.mentors as any;
-    const mentee = session.profiles as any;
-    
-    return {
-      ...session,
-      mentor: mentor ? {
-        ...mentor,
-        profile: mentor.profiles
-      } : undefined,
-      mentee: mentee
-    } as unknown as MentorshipSession;
-  });
+  if (error) throw error;
+  
+  return data;
 };
 
 // Update session status
 export const updateSessionStatus = async (
-  sessionId: string, 
+  sessionId: string,
   status: SessionStatus,
   meetingLink?: string
-): Promise<MentorshipSession> => {
+) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) throw new Error('Not authenticated');
+  
+  // Check if user is authorized to update this session
+  const { data: sessionData, error: checkError } = await supabase
+    .from('mentorship_sessions')
+    .select('mentor_id, mentee_id')
+    .eq('id', sessionId)
+    .single();
+  
+  if (checkError) throw checkError;
+  
+  if (sessionData.mentor_id !== user.id && sessionData.mentee_id !== user.id) {
+    throw new Error('Not authorized to update this session');
+  }
+  
+  // Only mentors can set meeting links
   const updateData: any = { status };
-  if (meetingLink) {
+  if (meetingLink && sessionData.mentor_id === user.id) {
     updateData.meeting_link = meetingLink;
   }
-
+  
   const { data, error } = await supabase
     .from('mentorship_sessions')
     .update(updateData)
     .eq('id', sessionId)
     .select()
     .single();
-
-  if (error) {
-    console.error("Error updating session status:", error);
-    throw error;
-  }
-
-  return data as unknown as MentorshipSession;
+  
+  if (error) throw error;
+  
+  return data;
 };
 
 // Submit a review for a completed session
@@ -387,121 +470,150 @@ export const submitSessionReview = async (
   sessionId: string,
   rating: number,
   comment?: string,
-  isPublic = true
-): Promise<SessionReview> => {
-  // Get current user
+  isPublic: boolean = true
+) => {
   const { data: { user } } = await supabase.auth.getUser();
   
-  if (!user) {
-    throw new Error("User not authenticated");
-  }
-
-  const { data, error } = await supabase
-    .from('session_reviews')
-    .insert({
-      session_id: sessionId,
-      reviewer_id: user.id,
-      rating,
-      comment,
-      is_public: isPublic
-    })
-    .select()
+  if (!user) throw new Error('Not authenticated');
+  
+  // Check if user was a mentee in this session
+  const { data: sessionData, error: checkError } = await supabase
+    .from('mentorship_sessions')
+    .select('mentee_id, status')
+    .eq('id', sessionId)
     .single();
-
-  if (error) {
-    console.error("Error submitting review:", error);
-    throw error;
-  }
-
-  return data as unknown as SessionReview;
-};
-
-// Check if a user has applied to be a mentor
-export const checkMentorStatus = async (): Promise<Mentor | null> => {
-  // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
   
-  if (!user) {
-    return null;
+  if (checkError) throw checkError;
+  
+  if (sessionData.mentee_id !== user.id) {
+    throw new Error('Only mentees can review sessions');
   }
-
-  const { data, error } = await supabase
-    .from('mentors')
-    .select('*')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  if (error) {
-    console.error("Error checking mentor status:", error);
-    throw error;
+  
+  if (sessionData.status !== 'completed') {
+    throw new Error('Can only review completed sessions');
   }
-
-  return data as unknown as Mentor | null;
+  
+  // Check if a review already exists
+  const { data: existingReview, error: checkReviewError } = await supabase
+    .from('session_reviews')
+    .select('id')
+    .eq('session_id', sessionId)
+    .eq('reviewer_id', user.id)
+    .single();
+  
+  if (checkReviewError && checkReviewError.code !== 'PGRST116') throw checkReviewError;
+  
+  if (existingReview) {
+    // Update existing review
+    const { data, error } = await supabase
+      .from('session_reviews')
+      .update({
+        rating,
+        comment,
+        is_public: isPublic,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existingReview.id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return data;
+  } else {
+    // Create new review
+    const { data, error } = await supabase
+      .from('session_reviews')
+      .insert({
+        session_id: sessionId,
+        reviewer_id: user.id,
+        rating,
+        comment,
+        is_public: isPublic
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return data;
+  }
 };
 
 // Apply to become a mentor
 export const applyAsMentor = async (
   bio: string,
-  expertise: string[],
+  expertise: ExpertiseCategory[],
   hourlyRate: number,
   yearsExperience: number
-): Promise<Mentor> => {
-  // Get current user
+) => {
   const { data: { user } } = await supabase.auth.getUser();
   
-  if (!user) {
-    throw new Error("User not authenticated");
-  }
-
-  const { data, error } = await supabase
+  if (!user) throw new Error('Not authenticated');
+  
+  // Check if user already has a mentor profile
+  const { data: existingMentor, error: checkError } = await supabase
     .from('mentors')
-    .insert({
-      id: user.id,
-      bio,
-      expertise,
-      hourly_rate: hourlyRate,
-      years_experience: yearsExperience,
-      status: 'pending'
-    })
-    .select()
+    .select('id, status')
+    .eq('id', user.id)
     .single();
-
-  if (error) {
-    console.error("Error applying as mentor:", error);
-    throw error;
+  
+  if (checkError && checkError.code !== 'PGRST116') throw checkError;
+  
+  if (existingMentor) {
+    if (existingMentor.status === 'rejected') {
+      // If previously rejected, allow to reapply with status set back to pending
+      const { data, error } = await supabase
+        .from('mentors')
+        .update({
+          bio,
+          expertise,
+          hourly_rate: hourlyRate,
+          years_experience: yearsExperience,
+          status: 'pending',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      return data;
+    } else {
+      throw new Error(`You already have a mentor profile with status: ${existingMentor.status}`);
+    }
+  } else {
+    // Create new mentor profile
+    const { data, error } = await supabase
+      .from('mentors')
+      .insert({
+        id: user.id,
+        bio,
+        expertise,
+        hourly_rate: hourlyRate,
+        years_experience: yearsExperience
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return data;
   }
-
-  // Also add the mentor role to user_roles
-  const { error: roleError } = await supabase
-    .from('user_roles')
-    .insert({
-      user_id: user.id,
-      role: 'mentor',
-      is_verified: false
-    });
-
-  if (roleError) {
-    console.error("Error adding mentor role:", roleError);
-    // Don't throw, as the mentor record was created successfully
-  }
-
-  return data as unknown as Mentor;
 };
 
 // Update mentor profile
 export const updateMentorProfile = async (
   bio: string,
-  expertise: string[],
+  expertise: ExpertiseCategory[],
   hourlyRate: number,
   yearsExperience: number
-): Promise<Mentor> => {
-  // Get current user
+) => {
   const { data: { user } } = await supabase.auth.getUser();
   
-  if (!user) {
-    throw new Error("User not authenticated");
-  }
-
+  if (!user) throw new Error('Not authenticated');
+  
   const { data, error } = await supabase
     .from('mentors')
     .update({
@@ -514,16 +626,13 @@ export const updateMentorProfile = async (
     .eq('id', user.id)
     .select()
     .single();
-
-  if (error) {
-    console.error("Error updating mentor profile:", error);
-    throw error;
-  }
-
-  return data as unknown as Mentor;
+  
+  if (error) throw error;
+  
+  return data;
 };
 
-// Add mentor certification
+// Add a mentor certification
 export const addMentorCertification = async (
   title: string,
   issuer: string,
@@ -531,14 +640,20 @@ export const addMentorCertification = async (
   expiryDate?: string,
   credentialUrl?: string,
   imageUrl?: string
-): Promise<MentorCertification> => {
-  // Get current user
+) => {
   const { data: { user } } = await supabase.auth.getUser();
   
-  if (!user) {
-    throw new Error("User not authenticated");
-  }
-
+  if (!user) throw new Error('Not authenticated');
+  
+  // Check if user is a mentor
+  const { data: mentorData, error: checkError } = await supabase
+    .from('mentors')
+    .select('id')
+    .eq('id', user.id)
+    .single();
+  
+  if (checkError) throw checkError;
+  
   const { data, error } = await supabase
     .from('mentor_certifications')
     .insert({
@@ -552,104 +667,92 @@ export const addMentorCertification = async (
     })
     .select()
     .single();
-
-  if (error) {
-    console.error("Error adding certification:", error);
-    throw error;
-  }
-
-  return data as unknown as MentorCertification;
+  
+  if (error) throw error;
+  
+  return data;
 };
 
 // Update mentor availability
 export const updateMentorAvailability = async (
-  availabilitySlots: Omit<MentorAvailability, 'id' | 'mentor_id' | 'created_at' | 'updated_at'>[]
-): Promise<MentorAvailability[]> => {
-  // Get current user
+  availabilitySlots: Array<{
+    day_of_week: number;
+    start_time: string;
+    end_time: string;
+    is_recurring: boolean;
+  }>
+) => {
   const { data: { user } } = await supabase.auth.getUser();
   
-  if (!user) {
-    throw new Error("User not authenticated");
-  }
-
-  // First, delete all existing availability
+  if (!user) throw new Error('Not authenticated');
+  
+  // First delete all existing availability for this mentor
   const { error: deleteError } = await supabase
     .from('mentor_availability')
     .delete()
     .eq('mentor_id', user.id);
-
-  if (deleteError) {
-    console.error("Error deleting existing availability:", deleteError);
-    throw deleteError;
-  }
-
-  if (availabilitySlots.length === 0) {
+  
+  if (deleteError) throw deleteError;
+  
+  // If no slots provided, just return after clearing
+  if (!availabilitySlots || availabilitySlots.length === 0) {
     return [];
   }
-
-  // Then, insert new availability slots
-  const slotsWithMentorId = availabilitySlots.map(slot => ({
-    ...slot,
-    mentor_id: user.id
-  }));
-
+  
+  // Then insert the new availability slots
   const { data, error } = await supabase
     .from('mentor_availability')
-    .insert(slotsWithMentorId)
+    .insert(
+      availabilitySlots.map(slot => ({
+        mentor_id: user.id,
+        day_of_week: slot.day_of_week,
+        start_time: slot.start_time,
+        end_time: slot.end_time,
+        is_recurring: slot.is_recurring
+      }))
+    )
     .select();
-
-  if (error) {
-    console.error("Error updating availability:", error);
-    throw error;
-  }
-
-  return data as unknown as MentorAvailability[];
+  
+  if (error) throw error;
+  
+  return data;
 };
 
-// Add date exception (day off or extra availability)
+// Add a date exception (either mark a date as unavailable or as extra availability)
 export const addDateException = async (
   exceptionDate: string,
   isAvailable: boolean
-): Promise<DateException> => {
-  // Get current user
+) => {
   const { data: { user } } = await supabase.auth.getUser();
   
-  if (!user) {
-    throw new Error("User not authenticated");
-  }
-
+  if (!user) throw new Error('Not authenticated');
+  
   // Check if an exception already exists for this date
   const { data: existingException, error: checkError } = await supabase
     .from('mentor_date_exceptions')
-    .select('*')
+    .select('id')
     .eq('mentor_id', user.id)
     .eq('exception_date', exceptionDate)
-    .maybeSingle();
-
-  if (checkError) {
-    console.error("Error checking existing exception:", checkError);
-    throw checkError;
-  }
-
-  let result;
+    .single();
+  
+  if (checkError && checkError.code !== 'PGRST116') throw checkError;
   
   if (existingException) {
     // Update existing exception
     const { data, error } = await supabase
       .from('mentor_date_exceptions')
-      .update({ is_available: isAvailable })
+      .update({
+        is_available: isAvailable
+      })
       .eq('id', existingException.id)
       .select()
       .single();
-
-    if (error) {
-      console.error("Error updating date exception:", error);
-      throw error;
-    }
     
-    result = data;
+    if (error) throw error;
+    
+    return data;
   } else {
-    // Insert new exception
+    // Create new exception
     const { data, error } = await supabase
       .from('mentor_date_exceptions')
       .insert({
@@ -659,14 +762,9 @@ export const addDateException = async (
       })
       .select()
       .single();
-
-    if (error) {
-      console.error("Error adding date exception:", error);
-      throw error;
-    }
     
-    result = data;
+    if (error) throw error;
+    
+    return data;
   }
-
-  return result as unknown as DateException;
 };

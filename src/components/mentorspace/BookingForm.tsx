@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +7,7 @@ import { TimeSlot, MentorWithProfile } from "@/types/mentor";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { fadeInUp } from "@/lib/animations";
-import { useBookMentorshipSession } from "@/hooks/use-mentors";
+import { useBookSession } from "@/hooks/use-mentors";
 import { useNavigate } from "react-router-dom";
 
 interface BookingFormProps {
@@ -29,7 +28,7 @@ const BookingForm = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const navigate = useNavigate();
-  const bookSession = useBookMentorshipSession();
+  const bookSession = useBookSession();
 
   const formatDate = (date: Date) => format(date, 'yyyy-MM-dd');
   
