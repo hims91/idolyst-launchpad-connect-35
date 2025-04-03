@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,15 +23,22 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import { Loader } from "lucide-react";
 
 type FormData = z.infer<typeof signUpSchema>;
 
 const SignUp = () => {
-  const { signUp } = useAuth();
+  const { signUp, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/");
+    }
+  }, [isAuthenticated, navigate]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(signUpSchema),
@@ -55,22 +62,35 @@ const SignUp = () => {
       const metadata = {
         username: data.username,
         full_name: data.fullName || "",
+        roles: data.roles
       };
 
       // Sign up user
-      await signUp(data.email, data.password, metadata);
+      const { error } = await signUp(data.email, data.password, metadata);
       
-      // Show success message
-      toast({
-        title: "Account created!",
-        description: "Please check your email to verify your account.",
-      });
-      
-      // Redirect to login with a query param to show a success message
-      navigate("/auth/login?registered=true");
+      if (error) {
+        toast({
+          title: "Registration failed",
+          description: error.message || "Please check your information and try again",
+          variant: "destructive",
+        });
+      } else {
+        // Show success message
+        toast({
+          title: "Account created!",
+          description: "Please check your email to verify your account.",
+        });
+        
+        // Redirect to login with a query param to show a success message
+        navigate("/auth/login?registered=true");
+      }
     } catch (error: any) {
       console.error("Sign up error:", error);
-      // Error is handled in the AuthProvider, but we could add additional handling here
+      toast({
+        title: "Sign up error",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }

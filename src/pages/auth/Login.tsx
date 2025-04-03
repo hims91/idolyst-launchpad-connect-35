@@ -21,16 +21,19 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import { Loader } from "lucide-react";
 
 type FormData = z.infer<typeof loginSchema>;
 
 const Login = () => {
-  const { signIn, isAuthenticated } = useAuth();
+  const { signIn, isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Get redirect path from location state or default to home
+  const from = location.state?.from || "/";
   
   // Check for registered query param to show welcome toast
   useEffect(() => {
@@ -50,10 +53,10 @@ const Login = () => {
   
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/");
+    if (isAuthenticated && !authLoading) {
+      navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, authLoading, navigate, from]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(loginSchema),
@@ -67,11 +70,28 @@ const Login = () => {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
-      await signIn(data.email, data.password);
-      navigate("/"); // Redirect to home page after login
+      const { error } = await signIn(data.email, data.password);
+      
+      if (error) {
+        toast({
+          title: "Login failed",
+          description: error.message || "Please check your credentials and try again",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Login successful",
+          description: "Welcome back to Idolyst!",
+        });
+        navigate(from, { replace: true });
+      }
     } catch (error: any) {
-      // Error is handled in the AuthProvider
       console.error("Login error:", error);
+      toast({
+        title: "Login error",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -173,8 +193,6 @@ const Login = () => {
                 Log In
               </Button>
             </motion.div>
-            
-            {/* Future expansion: Social login buttons would go here */}
           </form>
         </Form>
       </motion.div>

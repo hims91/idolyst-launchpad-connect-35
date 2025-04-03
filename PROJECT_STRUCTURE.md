@@ -4,19 +4,22 @@
 
 ### Authentication
 - `src/hooks/useAuth.tsx` - Custom authentication hook to manage auth state
-- `src/providers/AuthProvider.tsx` - Auth context provider
-- `src/pages/auth/Login.tsx` - Login page
+- `src/providers/AuthProvider.tsx` - Auth context provider with comprehensive session management
+- `src/pages/auth/Login.tsx` - Login page with improved error handling and redirection
 - `src/pages/auth/SignUp.tsx` - Sign up page with role selection
 - `src/pages/auth/ForgotPassword.tsx` - Password recovery request page
 - `src/pages/auth/ResetPassword.tsx` - Reset password page
+- `src/pages/auth/Callback.tsx` - Auth callback handling for various authentication flows
+- `src/components/auth/ProtectedRoute.tsx` - Route protection with role-based access control
 - `src/components/auth/RoleSelector.tsx` - Role selection component
 - `src/components/auth/PasswordStrengthMeter.tsx` - Password strength indicator
+- `src/api/auth.ts` - Authentication API calls and helper functions
 
 ### Layout
 - `src/components/layout/Layout.tsx` - Main layout wrapper
-- `src/components/layout/WebSidebar.tsx` - Desktop sidebar navigation
+- `src/components/layout/WebSidebar.tsx` - Desktop sidebar navigation with authentication state
 - `src/components/layout/MobileNavigation.tsx` - Mobile bottom navigation
-- `src/components/layout/MobileHeader.tsx` - Mobile header
+- `src/components/layout/MobileHeader.tsx` - Mobile header with authentication state
 - `src/components/layout/AuthLayout.tsx` - Authentication pages layout
 
 ### Profile Module
@@ -155,7 +158,7 @@ This gamification system encourages platform engagement, creates a sense of prog
 - `src/lib/utils.ts` - General utilities for formatting, validation, and UI helpers
 - `src/lib/validation.ts` - Form validation schemas
 - `src/lib/animations.ts` - Animation utilities for Framer Motion transitions
-- `src/lib/supabase-types.ts` - TypeScript types for Supabase client
+- `src/lib/supabase-types.ts` - TypeScript types for Supabase client and database tables
 
 ### API
 - `src/api/auth.ts` - Authentication API calls
@@ -517,3 +520,75 @@ The Launchpad module serves as the main content hub where users engage with post
 - Optimistic UI updates for better perceived performance
 
 The Launchpad module is fully integrated with the authentication system, user profiles, and the Ascend gamification system, creating a cohesive experience across the platform.
+
+## Authentication System Implementation Details
+
+The authentication system in Idolyst is implemented using Supabase Auth with seamless integration across all application modules. Below are the key components and features:
+
+### Core Components
+
+1. **AuthProvider**:
+   - Central provider that manages the authentication state
+   - Handles session persistence across page reloads
+   - Maintains real-time user state with Supabase's onAuthStateChange subscription
+   - Prevents common Supabase auth deadlocks with proper timing of operations
+   - Fetches user profile and roles from the database
+   - Provides sign-in, sign-up, sign-out, and password reset functionality
+
+2. **useAuth Hook**:
+   - Custom React hook that provides access to authentication state and functions
+   - Returns authentication status, user data, profile data, and available actions
+
+3. **ProtectedRoute Component**:
+   - Guards routes that require authentication
+   - Supports role-based access control for special features
+   - Shows loading states during authentication checks
+   - Redirects to login with proper return paths
+
+4. **Auth Pages**:
+   - Login: Email/password authentication with proper error handling
+   - SignUp: New user registration with role selection
+   - ForgotPassword: Password recovery flow
+   - ResetPassword: Password update after recovery
+   - Callback: Handles Supabase auth redirects for actions like email verification
+
+### Features
+
+1. **Session Management**:
+   - Persistent sessions across page reloads and browser restarts
+   - Proper token refreshing to maintain authenticated state
+   - Clear session cleanup on logout
+
+2. **User Profile Integration**:
+   - Automatic user profile creation on signup
+   - Profile data fetching with authentication state
+   - Role management and permission checks
+
+3. **Role-Based Access Control**:
+   - Support for multiple user roles (entrepreneur, mentor)
+   - Role verification for protected routes and features
+   - Role-specific UI elements and capabilities
+
+4. **Mobile-First Experience**:
+   - Responsive authentication forms with animations
+   - Touch-friendly input elements
+   - Optimized layouts for all screen sizes
+
+5. **Security Best Practices**:
+   - Row-Level Security (RLS) policies for database tables
+   - Secure password handling
+   - Proper error messages without leaking sensitive information
+
+6. **UX Enhancements**:
+   - Form validation with helpful error messages
+   - Password strength meter during registration
+   - Loading states for all async operations
+   - Toast notifications for authentication events
+   - Elegant animations for transitions
+
+7. **Integration Points**:
+   - Layout components show different options based on auth state
+   - XP/streak tracking on successful logins
+   - Notification triggers for authentication events
+
+The authentication system serves as the foundation for all user-specific features across the platform, ensuring secure access while maintaining a seamless user experience.
