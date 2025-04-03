@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -37,6 +38,12 @@ import SessionManagement from "./pages/mentorspace/SessionManagement";
 import MentorApplication from "./pages/mentorspace/MentorApplication";
 import MentorProfilePage from "./pages/mentorspace/MentorProfilePage";
 
+// PitchHub pages
+import PitchHubIndex from "./pages/pitch-hub/Index";
+import PitchHubNew from "./pages/pitch-hub/New";
+import PitchHubDetail from "./pages/pitch-hub/Detail";
+import PitchHubLeaderboard from "./pages/pitch-hub/Leaderboard";
+
 // Create a new QueryClient instance
 const queryClient = new QueryClient();
 
@@ -54,6 +61,19 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/pitch-hub" element={<PitchHub />} />
                 <Route path="/mentor-space" element={<MentorSpace />} />
+                
+                {/* PitchHub routes */}
+                <Route path="/pitch-hub/index" element={<PitchHubIndex />} />
+                <Route path="/pitch-hub/leaderboard" element={<PitchHubLeaderboard />} />
+                <Route path="/pitch-hub/:id" element={<PitchHubDetail />} />
+                <Route 
+                  path="/pitch-hub/new" 
+                  element={
+                    <ProtectedRoute>
+                      <PitchHubNew />
+                    </ProtectedRoute>
+                  } 
+                />
                 
                 {/* Auth routes */}
                 <Route path="/auth/login" element={<Login />} />

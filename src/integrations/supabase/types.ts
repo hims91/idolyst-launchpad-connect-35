@@ -584,6 +584,213 @@ export type Database = {
           },
         ]
       }
+      pitch_drafts: {
+        Row: {
+          created_at: string
+          id: string
+          media_urls: string[] | null
+          problem_statement: string | null
+          solution: string | null
+          stage: Database["public"]["Enums"]["idea_stage"] | null
+          tags: string[] | null
+          target_group: string | null
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          media_urls?: string[] | null
+          problem_statement?: string | null
+          solution?: string | null
+          stage?: Database["public"]["Enums"]["idea_stage"] | null
+          tags?: string[] | null
+          target_group?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          media_urls?: string[] | null
+          problem_statement?: string | null
+          solution?: string | null
+          stage?: Database["public"]["Enums"]["idea_stage"] | null
+          tags?: string[] | null
+          target_group?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pitch_feedback: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_mentor_feedback: boolean
+          pitch_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_mentor_feedback?: boolean
+          pitch_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_mentor_feedback?: boolean
+          pitch_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pitch_feedback_pitch_id_fkey"
+            columns: ["pitch_id"]
+            isOneToOne: false
+            referencedRelation: "pitch_ideas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pitch_ideas: {
+        Row: {
+          created_at: string
+          id: string
+          is_premium: boolean
+          media_urls: string[] | null
+          problem_statement: string
+          solution: string
+          stage: Database["public"]["Enums"]["idea_stage"]
+          tags: string[]
+          target_group: string
+          title: string
+          updated_at: string
+          user_id: string
+          views_count: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_premium?: boolean
+          media_urls?: string[] | null
+          problem_statement: string
+          solution: string
+          stage: Database["public"]["Enums"]["idea_stage"]
+          tags: string[]
+          target_group: string
+          title: string
+          updated_at?: string
+          user_id: string
+          views_count?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_premium?: boolean
+          media_urls?: string[] | null
+          problem_statement?: string
+          solution?: string
+          stage?: Database["public"]["Enums"]["idea_stage"]
+          tags?: string[]
+          target_group?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          views_count?: number
+        }
+        Relationships: []
+      }
+      pitch_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          payment_id: string | null
+          payment_method: string
+          payment_status: string
+          pitch_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          payment_id?: string | null
+          payment_method: string
+          payment_status?: string
+          pitch_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          payment_id?: string | null
+          payment_method?: string
+          payment_status?: string
+          pitch_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pitch_payments_pitch_id_fkey"
+            columns: ["pitch_id"]
+            isOneToOne: false
+            referencedRelation: "pitch_ideas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pitch_votes: {
+        Row: {
+          created_at: string
+          id: string
+          pitch_id: string
+          user_id: string
+          vote_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pitch_id: string
+          user_id: string
+          vote_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pitch_id?: string
+          user_id?: string
+          vote_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pitch_votes_pitch_id_fkey"
+            columns: ["pitch_id"]
+            isOneToOne: false
+            referencedRelation: "pitch_ideas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       privacy_settings: {
         Row: {
           activity_visibility: string
@@ -857,10 +1064,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_pitch_vote_count: {
+        Args: {
+          pitch_id: string
+        }
+        Returns: number
+      }
       can_message: {
         Args: {
           sender_id: string
           recipient_id: string
+        }
+        Returns: boolean
+      }
+      is_mentor: {
+        Args: {
+          user_id: string
         }
         Returns: boolean
       }
@@ -877,6 +1096,14 @@ export type Database = {
         | "Sales"
         | "Operations"
         | "Data"
+      idea_stage:
+        | "ideation"
+        | "mvp"
+        | "investment"
+        | "pmf"
+        | "go_to_market"
+        | "growth"
+        | "maturity"
       mentor_status: "pending" | "approved" | "rejected"
       notification_type:
         | "new_follower"
