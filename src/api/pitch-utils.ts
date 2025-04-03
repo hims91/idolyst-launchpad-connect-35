@@ -91,3 +91,33 @@ export const getPitchWithAuthor = async (id: string) => {
     throw error;
   }
 };
+
+// Manually increment view count instead of using RPC 
+// (since the RPC function is not working in production)
+export const incrementPitchView = async (id: string) => {
+  try {
+    // First get current view count
+    const { data: currentData, error: getError } = await supabase
+      .from('pitch_ideas')
+      .select('views_count')
+      .eq('id', id)
+      .single();
+      
+    if (getError) {
+      console.error('Error getting current view count:', getError);
+      return;
+    }
+    
+    // Increment the view count
+    const { error: updateError } = await supabase
+      .from('pitch_ideas')
+      .update({ views_count: (currentData?.views_count || 0) + 1 })
+      .eq('id', id);
+      
+    if (updateError) {
+      console.error('Error updating view count:', updateError);
+    }
+  } catch (error) {
+    console.error('Error incrementing view count:', error);
+  }
+};

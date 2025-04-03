@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import { getTypedSupabaseClient } from "@/lib/supabase-types";
-import { enrichPitchData, getPitchWithAuthor } from './pitch-utils';
+import { enrichPitchData, getPitchWithAuthor, incrementPitchView } from './pitch-utils';
 
 // Get a typed Supabase client
 const typedSupabase = getTypedSupabaseClient(supabase);
@@ -173,9 +173,9 @@ export const getPitchIdea = async (id: string) => {
     const pitch = await getPitchWithAuthor(id);
     if (!pitch) return null;
 
-    // Increment view count using RPC function
+    // Increment view count using our custom function instead of RPC
     try {
-      await typedSupabase.rpc('increment_pitch_view', { id });
+      await incrementPitchView(id);
     } catch (e) {
       console.warn('Failed to increment view count:', e);
       // Don't fail if view count increment fails
@@ -189,7 +189,7 @@ export const getPitchIdea = async (id: string) => {
 
     if (votesResponse.error) throw votesResponse.error;
 
-    // Get feedback with authors separately
+    // Get feedback with authors separately without using JOIN
     const feedbackResponse = await typedSupabase
       .from('pitch_feedback')
       .select('*')
@@ -507,7 +507,8 @@ export const addFeedback = async (pitchId: string, content: string) => {
 
     const isMentor = !!mentorData;
 
-    const { data, error } = await typedSupabase
+    // Insert feedback
+    const { data: feedbackData, error: feedbackError } = await typedSupabase
       .from('pitch_feedback')
       .insert({
         pitch_id: pitchId,
@@ -515,13 +516,21 @@ export const addFeedback = async (pitchId: string, content: string) => {
         content,
         is_mentor_feedback: isMentor
       })
-      .select(`
-        *,
-        author:profiles!pitch_feedback_user_id_fkey(id, username, full_name, avatar_url)
-      `)
+      .select()
       .single();
 
-    if (error) throw error;
+    if (feedbackError) throw feedbackError;
+    
+    // Fetch the author information separately
+    const { data: authorData, error: authorError } = await typedSupabase
+      .from('profiles')
+      .select('id, username, full_name, avatar_url')
+      .eq('id', user.data.user.id)
+      .single();
+      
+    if (authorError) {
+      console.error('Error fetching author data:', authorError);
+    }
 
     toast({
       title: isMentor ? "Mentor feedback added" : "Comment added",
@@ -529,9 +538,9 @@ export const addFeedback = async (pitchId: string, content: string) => {
     });
 
     return {
-      ...data,
+      ...feedbackData,
       author: {
-        ...data.author,
+        ...authorData,
         is_mentor: isMentor
       }
     } as PitchFeedback;

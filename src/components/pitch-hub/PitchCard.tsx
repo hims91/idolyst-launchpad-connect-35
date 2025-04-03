@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
@@ -16,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import UserAvatar from '../shared/UserAvatar';
 import { PitchIdea, votePitch } from '@/api/pitch';
 import { toast } from '@/hooks/use-toast';
-import { useAuth } from '@/providers/AuthProvider'; // Updated import path
+import { useAuth } from '@/providers/AuthProvider'; // Consistent import path
 
 interface PitchCardProps {
   pitch: PitchIdea;

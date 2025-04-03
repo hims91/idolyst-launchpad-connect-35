@@ -1,7 +1,22 @@
 
 import { Database } from "@/integrations/supabase/types";
 
-export type NotificationType = Database["public"]["Enums"]["notification_type"];
+export type NotificationType = 
+  | 'new_follower'
+  | 'new_message' 
+  | 'mentorship_booking'
+  | 'mentorship_cancellation'
+  | 'mentorship_reminder'
+  | 'pitch_vote'
+  | 'pitch_comment'
+  | 'pitch_feedback'
+  | 'level_up' 
+  | 'badge_unlock'
+  | 'leaderboard_shift'
+  | 'launchpad_comment'
+  | 'launchpad_reaction'
+  | 'launchpad_repost'
+  | 'payment_success';
 
 export interface Notification {
   id: string;

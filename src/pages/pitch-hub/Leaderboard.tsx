@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import Layout from "@/components/layout/Layout";
@@ -7,7 +8,8 @@ import {
   ChevronLeft, 
   Calendar,
   Medal,
-  TrendingUp
+  TrendingUp,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,6 +23,7 @@ import { useLeaderboard } from '@/hooks/usePitchHub';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TimeRange } from '@/api/pitch';
 import LeaderboardCard from '@/components/pitch-hub/LeaderboardCard';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const LeaderboardPage = () => {
   const navigate = useNavigate();
@@ -28,7 +31,10 @@ const LeaderboardPage = () => {
   
   const { 
     leaderboard, 
-    isLoading 
+    isLoading,
+    isError,
+    error,
+    refetch
   } = useLeaderboard(timeRange);
   
   // Handle time range change
@@ -71,6 +77,20 @@ const LeaderboardPage = () => {
             </p>
           </div>
         </div>
+        
+        {/* Error message if there's an issue */}
+        {isError && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              There was a problem loading the leaderboard data.
+              <Button variant="outline" size="sm" className="ml-2" onClick={() => refetch()}>
+                Try Again
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
         
         {/* Time range selection */}
         <Tabs 
@@ -116,7 +136,7 @@ const LeaderboardPage = () => {
                   </CardContent>
                 </Card>
               ))
-            ) : leaderboard.slice(0, 3).map((idea, index) => (
+            ) : leaderboard && leaderboard.length >= 3 ? leaderboard.slice(0, 3).map((idea, index) => (
               <Card 
                 key={idea.id} 
                 className={`overflow-hidden border-t-4 ${
@@ -159,7 +179,7 @@ const LeaderboardPage = () => {
                   </p>
                 </CardContent>
               </Card>
-            ))}
+            )) : null}
           </div>
           
           {/* Rest of the leaderboard */}
@@ -185,7 +205,7 @@ const LeaderboardPage = () => {
                     <div className="h-6 w-12 bg-slate-200 rounded-md"></div>
                   </div>
                 ))
-              ) : leaderboard.length === 0 ? (
+              ) : !leaderboard || leaderboard.length === 0 ? (
                 <div className="py-12 text-center">
                   <Award className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg font-medium mb-2">No leaderboard data yet</h3>

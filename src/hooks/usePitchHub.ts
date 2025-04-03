@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -10,7 +11,7 @@ import {
   TimeRange,
   PitchIdea 
 } from '@/api/pitch';
-import { useAuth } from '@/providers/AuthProvider'; // Updated import path
+import { useAuth } from '@/providers/AuthProvider'; // Correct import path for consistency
 
 export const usePitchIdeas = (
   filter: FilterType = 'new',
@@ -131,6 +132,9 @@ export const useLeaderboard = (timeRange: TimeRange = 'week') => {
     queryFn: () => getLeaderboardIdeas(timeRange),
     staleTime: 1000 * 60 * 5, // 5 minutes
     retry: 2, // Retry a couple times
+    onError: (error) => {
+      console.error('Error fetching leaderboard:', error);
+    }
   });
 
   return {

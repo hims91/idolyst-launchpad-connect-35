@@ -1,230 +1,215 @@
 
-import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "@/providers/AuthProvider";
-import { supabase } from "@/integrations/supabase/client";
-import { Notification, NotificationGroup, NotificationPreferences } from "@/types/notifications";
-import { 
-  fetchNotifications, 
-  fetchUnreadNotificationsCount,
-  markNotificationAsRead,
-  markAllNotificationsAsRead,
-  deleteNotification,
-  fetchNotificationPreferences,
-  updateNotificationPreferences,
-  muteNotifications
-} from "@/api/notifications";
-import { format, isToday, isYesterday, parseISO } from "date-fns";
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Notification, NotificationGroup, NotificationPreferences } from '@/types/notifications';
+import { useAuth } from '@/providers/AuthProvider';
 
 export const useNotifications = () => {
-  const { isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
-  const [preferencesLoading, setPreferencesLoading] = useState(true);
   
   // Fetch notifications
-  const getNotifications = useCallback(async () => {
-    if (!isAuthenticated) return;
+  const fetchNotifications = async () => {
+    if (!user) return;
     
-    setLoading(true);
     try {
-      const data = await fetchNotifications();
-      setNotifications(data);
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
       
-      // Count unread
-      const unread = data.filter(n => !n.is_read).length;
-      setUnreadCount(unread);
+      if (error) throw error;
       
-      setError(null);
-    } catch (err: any) {
-      setError(err.message);
+      setNotifications(data || []);
+      setUnreadCount(data?.filter(n => !n.is_read).length || 0);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated]);
+  };
   
-  // Fetch preferences
-  const getPreferences = useCallback(async () => {
-    if (!isAuthenticated) return;
+  // Fetch notification preferences
+  const fetchPreferences = async () => {
+    if (!user) return;
     
-    setPreferencesLoading(true);
     try {
-      const data = await fetchNotificationPreferences();
-      setPreferences(data);
-    } catch (err) {
-      console.error("Error fetching notification preferences:", err);
-    } finally {
-      setPreferencesLoading(false);
-    }
-  }, [isAuthenticated]);
-  
-  // Mark notification as read
-  const markAsRead = useCallback(async (notificationId: string) => {
-    const success = await markNotificationAsRead(notificationId);
-    if (success) {
-      setNotifications(prev => 
-        prev.map(notification => 
-          notification.id === notificationId 
-            ? { ...notification, is_read: true } 
-            : notification
-        )
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
-    }
-    return success;
-  }, []);
-  
-  // Mark all as read
-  const markAllAsRead = useCallback(async () => {
-    const success = await markAllNotificationsAsRead();
-    if (success) {
-      setNotifications(prev => 
-        prev.map(notification => ({ ...notification, is_read: true }))
-      );
-      setUnreadCount(0);
-    }
-    return success;
-  }, []);
-  
-  // Delete notification
-  const removeNotification = useCallback(async (notificationId: string) => {
-    const success = await deleteNotification(notificationId);
-    if (success) {
-      const notification = notifications.find(n => n.id === notificationId);
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
-      if (notification && !notification.is_read) {
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      }
-    }
-    return success;
-  }, [notifications]);
-  
-  // Update preferences
-  const updatePreferences = useCallback(async (newPreferences: Partial<NotificationPreferences>) => {
-    const updated = await updateNotificationPreferences(newPreferences);
-    if (updated) {
-      setPreferences(updated);
-    }
-    return updated;
-  }, []);
-  
-  // Mute for period
-  const muteForPeriod = useCallback(async (hours: number) => {
-    const success = await muteNotifications(hours);
-    if (success && preferences) {
-      const muteUntil = new Date();
-      muteUntil.setHours(muteUntil.getHours() + hours);
-      setPreferences({
-        ...preferences,
-        muted_until: muteUntil.toISOString()
-      });
-    }
-    return success;
-  }, [preferences]);
-
-  // Group notifications by date
-  const groupedNotifications = useCallback((): NotificationGroup[] => {
-    const groups: Record<string, Notification[]> = {};
-    
-    notifications.forEach(notification => {
-      const date = parseISO(notification.created_at);
-      let groupKey: string;
+      // First check if preferences exist
+      const { data: existingPrefs, error: checkError } = await supabase
+        .from('notification_preferences')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
       
-      if (isToday(date)) {
-        groupKey = 'today';
-      } else if (isYesterday(date)) {
-        groupKey = 'yesterday';
-      } else {
-        groupKey = format(date, 'yyyy-MM-dd');
+      if (checkError) {
+        console.error('Error checking notification preferences:', checkError);
+        return;
       }
       
-      if (!groups[groupKey]) {
-        groups[groupKey] = [];
-      }
-      
-      groups[groupKey].push(notification);
-    });
-    
-    // Sort groups by date (most recent first)
-    return Object.entries(groups)
-      .map(([key, notifs]) => {
-        let title: string;
-        switch (key) {
-          case 'today':
-            title = 'Today';
-            break;
-          case 'yesterday':
-            title = 'Yesterday';
-            break;
-          default:
-            title = format(parseISO(key), 'MMMM d, yyyy');
+      // If no preferences exist, create default ones
+      if (!existingPrefs) {
+        const { data: newPrefs, error: insertError } = await supabase
+          .from('notification_preferences')
+          .insert({
+            user_id: user.id,
+            // Default values will be used from the schema
+          })
+          .select()
+          .single();
+        
+        if (insertError) {
+          console.error('Error creating notification preferences:', insertError);
+          return;
         }
         
-        return {
-          date: key,
-          title,
-          notifications: notifs
-        };
-      })
-      .sort((a, b) => {
-        if (a.date === 'today') return -1;
-        if (b.date === 'today') return 1;
-        if (a.date === 'yesterday') return -1;
-        if (b.date === 'yesterday') return 1;
-        return a.date > b.date ? -1 : 1;
-      });
-  }, [notifications]);
-
-  // Initial load
-  useEffect(() => {
-    if (isAuthenticated) {
-      getNotifications();
-      getPreferences();
+        setPreferences(newPrefs);
+      } else {
+        setPreferences(existingPrefs);
+      }
+    } catch (error) {
+      console.error('Error managing notification preferences:', error);
     }
-  }, [isAuthenticated, getNotifications, getPreferences]);
-
-  // Subscribe to realtime notifications
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    
-    const channel = supabase
-      .channel('notifications-changes')
-      .on('postgres_changes', 
-        { 
-          event: 'INSERT', 
-          schema: 'public', 
-          table: 'notifications',
-          filter: `user_id=eq.${supabase.auth.getUser().then(res => res.data.user?.id)}`
-        },
-        (payload) => {
-          const newNotification = payload.new as Notification;
-          setNotifications(prev => [newNotification, ...prev]);
-          setUnreadCount(prev => prev + 1);
+  };
+  
+  // Mark notification as read
+  const markAsRead = async (notificationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', notificationId);
+      
+      if (error) throw error;
+      
+      setNotifications(notifications.map(n => {
+        if (n.id === notificationId) {
+          return { ...n, is_read: true };
         }
-      )
-      .subscribe();
+        return n;
+      }));
+      
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+  
+  // Mark all as read
+  const markAllAsRead = async () => {
+    if (!user) return;
     
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [isAuthenticated]);
-
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false);
+      
+      if (error) throw error;
+      
+      setNotifications(notifications.map(n => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
+  };
+  
+  // Group notifications by date
+  const groupNotificationsByDate = (): NotificationGroup[] => {
+    const groups: NotificationGroup[] = [];
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    // Today's notifications
+    const todayNotifications = notifications.filter(n => {
+      const date = new Date(n.created_at);
+      return date.toDateString() === today.toDateString();
+    });
+    
+    if (todayNotifications.length > 0) {
+      groups.push({
+        date: today.toISOString(),
+        title: 'Today',
+        notifications: todayNotifications
+      });
+    }
+    
+    // Yesterday's notifications
+    const yesterdayNotifications = notifications.filter(n => {
+      const date = new Date(n.created_at);
+      return date.toDateString() === yesterday.toDateString();
+    });
+    
+    if (yesterdayNotifications.length > 0) {
+      groups.push({
+        date: yesterday.toISOString(),
+        title: 'Yesterday',
+        notifications: yesterdayNotifications
+      });
+    }
+    
+    // Earlier notifications
+    const earlierNotifications = notifications.filter(n => {
+      const date = new Date(n.created_at);
+      return date.toDateString() !== today.toDateString() && 
+             date.toDateString() !== yesterday.toDateString();
+    });
+    
+    if (earlierNotifications.length > 0) {
+      groups.push({
+        date: 'earlier',
+        title: 'Earlier',
+        notifications: earlierNotifications
+      });
+    }
+    
+    return groups;
+  };
+  
+  // Update notification preferences
+  const updatePreferences = async (newPrefs: Partial<NotificationPreferences>) => {
+    if (!user || !preferences) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('notification_preferences')
+        .update(newPrefs)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      setPreferences(data);
+      return data;
+    } catch (error) {
+      console.error('Error updating notification preferences:', error);
+      return null;
+    }
+  };
+  
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+      fetchPreferences();
+    }
+  }, [user]);
+  
   return {
     notifications,
-    groupedNotifications: groupedNotifications(),
     unreadCount,
     loading,
-    error,
     preferences,
-    preferencesLoading,
     markAsRead,
     markAllAsRead,
-    removeNotification,
-    updatePreferences,
-    muteForPeriod,
-    refreshNotifications: getNotifications,
-    refreshPreferences: getPreferences
+    fetchNotifications,
+    groupNotificationsByDate,
+    updatePreferences
   };
 };
