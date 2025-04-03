@@ -33,6 +33,16 @@
 - `src/components/profile/ProfileTabs.tsx` - Tabs for profile content (posts, ideas, etc.)
 - `src/components/profile/FollowersDialog.tsx` - Dialog for followers/following lists
 
+### Notification System
+- `src/pages/Notifications.tsx` - Notifications listing page with chronological grouping
+- `src/components/settings/NotificationSettings.tsx` - Notification preferences management
+- `src/components/notifications/NotificationIcon.tsx` - Icon components for different notification types
+- `src/components/notifications/NotificationItem.tsx` - Individual notification component with actions
+- `src/components/notifications/EmptyNotifications.tsx` - Empty state for notifications
+- `src/api/notifications.ts` - API functions for notifications (fetch, mark as read, etc.)
+- `src/hooks/use-notifications.tsx` - Custom hook for managing notifications state and realtime updates
+- `src/types/notifications.ts` - TypeScript types for notifications and preferences
+
 ### Routes
 - `src/App.tsx` - Main route definitions and auth-protected routes
 
@@ -48,12 +58,14 @@
 ### API
 - `src/api/auth.ts` - Authentication API calls
 - `src/api/profile.ts` - Profile-related API calls
+- `src/api/notifications.ts` - Notification-related API calls
 - `src/integrations/supabase/client.ts` - Supabase client
 
 ### Types
 - `src/types/auth.ts` - Authentication related types
 - `src/types/profile.ts` - Profile module related types
 - `src/types/user.ts` - User profile related types
+- `src/types/notifications.ts` - Notification system related types
 
 ## Profile Module Implementation Details
 
@@ -116,3 +128,59 @@
 - Profile actions tied to authentication state
 - Role-based feature access
 - Protected routes for authenticated users only
+
+## Notification System Implementation Details
+
+### Core Features
+1. **Notification Center**:
+   - Chronological listing of notifications with visual indicators for unread items
+   - Grouping by date (Today, Yesterday, Older)
+   - "Mark all as read" functionality
+   - Swipe-to-dismiss gesture on mobile
+   - Real-time updates when new notifications arrive
+
+2. **Notification Types**:
+   - Social interactions: new followers, messages
+   - Mentorship: session bookings, cancellations, reminders
+   - PitchHub: votes, comments, mentor feedback
+   - Ascend: level-ups, badge unlocks, leaderboard shifts
+   - Launchpad: comments, reactions, reposts
+
+3. **Notification Preferences**:
+   - Fine-grained control over which notifications to receive
+   - Delivery method settings (in-app, push, email)
+   - Email digest frequency options (daily, weekly, never)
+   - Temporary muting capabilities (1 hour, 4 hours, 24 hours)
+
+4. **UI/UX Features**:
+   - Unread notification badges in navigation
+   - Custom icons and colors for different notification types
+   - Smooth animations for new notifications
+   - Empty state for no notifications
+   - Mobile-first responsive design
+
+### Database Schema
+- **notifications**: Stores notification data including type, content, read status, and links to related content
+- **notification_preferences**: Stores user preferences for each notification type and delivery method
+
+### Row-Level Security (RLS)
+- Users can only see and update their own notifications
+- RLS policies ensure secure access to notification data
+- RLS policies protect notification preference settings
+
+### Real-time Features
+- New notifications appear immediately using Supabase Realtime subscriptions
+- Unread count badges update in real-time across the interface
+- Notification status changes (read/unread) sync across devices
+
+### Integration Points
+- WebSidebar and MobileHeader display unread notification counts
+- Settings page includes a dedicated Notifications tab for preferences
+- Notification items link directly to relevant content (posts, messages, etc.)
+
+### Animations and Transitions
+- Fade and slide animations for notification items
+- Staggered loading of notification groups
+- Subtle pulse animation for unread notification badges
+- Scale effects on buttons and interactive elements
+- Smooth transitions between notification states

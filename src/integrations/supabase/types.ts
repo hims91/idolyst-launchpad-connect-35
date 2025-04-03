@@ -69,6 +69,86 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          badge_unlock: boolean | null
+          email_digest_frequency: string | null
+          email_enabled: boolean | null
+          id: string
+          launchpad_comment: boolean | null
+          launchpad_reaction: boolean | null
+          launchpad_repost: boolean | null
+          leaderboard_shift: boolean | null
+          level_up: boolean | null
+          mentorship_booking: boolean | null
+          mentorship_cancellation: boolean | null
+          mentorship_reminder: boolean | null
+          muted_until: string | null
+          new_follower: boolean | null
+          new_message: boolean | null
+          pitch_comment: boolean | null
+          pitch_feedback: boolean | null
+          pitch_vote: boolean | null
+          push_enabled: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          badge_unlock?: boolean | null
+          email_digest_frequency?: string | null
+          email_enabled?: boolean | null
+          id?: string
+          launchpad_comment?: boolean | null
+          launchpad_reaction?: boolean | null
+          launchpad_repost?: boolean | null
+          leaderboard_shift?: boolean | null
+          level_up?: boolean | null
+          mentorship_booking?: boolean | null
+          mentorship_cancellation?: boolean | null
+          mentorship_reminder?: boolean | null
+          muted_until?: string | null
+          new_follower?: boolean | null
+          new_message?: boolean | null
+          pitch_comment?: boolean | null
+          pitch_feedback?: boolean | null
+          pitch_vote?: boolean | null
+          push_enabled?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          badge_unlock?: boolean | null
+          email_digest_frequency?: string | null
+          email_enabled?: boolean | null
+          id?: string
+          launchpad_comment?: boolean | null
+          launchpad_reaction?: boolean | null
+          launchpad_repost?: boolean | null
+          leaderboard_shift?: boolean | null
+          level_up?: boolean | null
+          mentorship_booking?: boolean | null
+          mentorship_cancellation?: boolean | null
+          mentorship_reminder?: boolean | null
+          muted_until?: string | null
+          new_follower?: boolean | null
+          new_message?: boolean | null
+          pitch_comment?: boolean | null
+          pitch_feedback?: boolean | null
+          pitch_vote?: boolean | null
+          push_enabled?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_settings: {
         Row: {
           comment: boolean
@@ -117,6 +197,53 @@ export type Database = {
             foreignKeyName: "notification_settings_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          action_url: string | null
+          content: string
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          related_id: string | null
+          related_type: string | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Insert: {
+          action_url?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          related_id?: string | null
+          related_type?: string | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Update: {
+          action_url?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          related_id?: string | null
+          related_type?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -357,6 +484,21 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      notification_type:
+        | "new_follower"
+        | "new_message"
+        | "mentorship_booking"
+        | "mentorship_cancellation"
+        | "mentorship_reminder"
+        | "pitch_vote"
+        | "pitch_comment"
+        | "pitch_feedback"
+        | "level_up"
+        | "badge_unlock"
+        | "leaderboard_shift"
+        | "launchpad_comment"
+        | "launchpad_reaction"
+        | "launchpad_repost"
       user_role: "entrepreneur" | "mentor"
     }
     CompositeTypes: {

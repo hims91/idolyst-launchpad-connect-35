@@ -13,10 +13,15 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import IdolystLogo from "../shared/IdolystLogo";
+import { useNotifications } from "@/hooks/use-notifications";
 
 const WebSidebar = () => {
   const location = useLocation();
   const { isAuthenticated, profile, signOut } = useAuth();
+  const { unreadCount } = useNotifications();
+  
+  // Placeholder for unread messages
+  const unreadMessages = 0; // This would be fetched from a messaging service
   
   const navItems = [
     {
@@ -55,13 +60,13 @@ const WebSidebar = () => {
       name: "Messages",
       icon: MessageSquare,
       path: "/messages",
-      badge: 3,
+      badge: unreadMessages,
     },
     {
       name: "Notifications",
       icon: Bell,
       path: "/notifications",
-      badge: 5,
+      badge: unreadCount,
     },
   ];
 
@@ -130,8 +135,8 @@ const WebSidebar = () => {
                       )} />
                       {item.name}
                       
-                      {item.badge && (
-                        <span className="absolute right-3 bg-idolyst-purple text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                      {(item.badge && item.badge > 0) && (
+                        <span className="absolute right-3 bg-red-500 text-white text-xs rounded-full min-w-5 h-5 flex items-center justify-center px-1 animate-pulse">
                           {item.badge > 9 ? '9+' : item.badge}
                         </span>
                       )}
