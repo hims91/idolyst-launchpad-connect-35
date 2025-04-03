@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { UserPlus, Users, GitPullRequest, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
@@ -13,22 +14,22 @@ const ProfileStats: React.FC<ProfileStatsProps> = ({ profile }) => {
   const stats = [
     {
       name: "Following",
-      value: profile.followingCount || 0,
+      value: profile.following_count || 0,
       icon: UserPlus
     },
     {
       name: "Followers",
-      value: profile.followersCount || 0,
+      value: profile.followers_count || 0,
       icon: Users 
     },
     {
       name: "Pitches",
-      value: profile.pitchesCount || 0,
+      value: profile.pitches_count || 0,
       icon: GitPullRequest
     },
     {
       name: "Comments",
-      value: profile.commentsCount || 0,
+      value: profile.comments_count || 0,
       icon: MessageSquare
     }
   ];

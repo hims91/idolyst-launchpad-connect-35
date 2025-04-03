@@ -1,4 +1,5 @@
 
+
 import { Variants } from "framer-motion";
 
 // Fade in animation
@@ -97,3 +98,43 @@ export const pulse: Variants = {
     transition: { duration: 1, repeat: Infinity, repeatType: "loop" }
   }
 };
+
+// Add the missing animations below:
+
+// Bell animation 
+export const bellAnimation: Variants = {
+  hidden: { rotate: 0 },
+  visible: { 
+    rotate: [0, 15, -15, 10, -10, 5, -5, 0],
+    transition: { duration: 0.5 }
+  }
+};
+
+// Scale animation for buttons and interactive elements
+export const scaleAnimation = {
+  initial: { scale: 1 },
+  hover: { scale: 1.05, transition: { duration: 0.2 } },
+  tap: { scale: 0.95, transition: { duration: 0.1 } }
+};
+
+// Page transition animation
+export const pageTransition = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { 
+      duration: 0.4,
+      when: "beforeChildren",
+      staggerChildren: 0.1
+    } 
+  },
+  exit: { 
+    opacity: 0, 
+    y: -20, 
+    transition: { 
+      duration: 0.3 
+    } 
+  }
+};
+

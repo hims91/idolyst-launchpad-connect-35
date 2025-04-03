@@ -37,6 +37,8 @@ export interface ExtendedProfile {
   xp: number;
   followers_count: number;
   following_count: number;
+  pitches_count?: number; // Added
+  comments_count?: number; // Added
   social_links: SocialLink[];
   badges: Badge[];
   professional_details: string | null;
