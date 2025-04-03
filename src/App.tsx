@@ -1,4 +1,4 @@
-
+import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -29,90 +29,93 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import AuthCallback from "./pages/auth/Callback";
 
+// Create a new QueryClient instance
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Index />} />
-            <Route path="/pitch-hub" element={<PitchHub />} />
-            
-            {/* Auth routes */}
-            <Route path="/auth/login" element={<Login />} />
-            <Route path="/auth/signup" element={<SignUp />} />
-            <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-            <Route path="/auth/reset-password" element={<ResetPassword />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/unauthorized" element={<Unauthorized />} />
-            
-            {/* Profile routes */}
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/profile/:id" element={<ProfileDetail />} />
-            <Route 
-              path="/profile/edit" 
-              element={
-                <ProtectedRoute>
-                  <ProfileEdit />
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="/profile/:id/activity" element={<ActivityFeed />} />
-            <Route 
-              path="/settings" 
-              element={
-                <ProtectedRoute>
-                  <Settings />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Protected routes */}
-            <Route 
-              path="/mentor-space" 
-              element={
-                <ProtectedRoute>
-                  <MentorSpace />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/ascend" 
-              element={
-                <ProtectedRoute>
-                  <Ascend />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/messages" 
-              element={
-                <ProtectedRoute>
-                  <Messages />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/notifications" 
-              element={
-                <ProtectedRoute>
-                  <Notifications />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Catch all */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<Index />} />
+              <Route path="/pitch-hub" element={<PitchHub />} />
+              
+              {/* Auth routes */}
+              <Route path="/auth/login" element={<Login />} />
+              <Route path="/auth/signup" element={<SignUp />} />
+              <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+              <Route path="/auth/reset-password" element={<ResetPassword />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/unauthorized" element={<Unauthorized />} />
+              
+              {/* Profile routes */}
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/profile/:id" element={<ProfileDetail />} />
+              <Route 
+                path="/profile/edit" 
+                element={
+                  <ProtectedRoute>
+                    <ProfileEdit />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route path="/profile/:id/activity" element={<ActivityFeed />} />
+              <Route 
+                path="/settings" 
+                element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Protected routes */}
+              <Route 
+                path="/mentor-space" 
+                element={
+                  <ProtectedRoute>
+                    <MentorSpace />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/ascend" 
+                element={
+                  <ProtectedRoute>
+                    <Ascend />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/messages" 
+                element={
+                  <ProtectedRoute>
+                    <Messages />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/notifications" 
+                element={
+                  <ProtectedRoute>
+                    <Notifications />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Catch all */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </React.StrictMode>
 );
 
 export default App;
