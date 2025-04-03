@@ -3,7 +3,7 @@ import { Message } from "@/types/messages";
 import { format } from "date-fns";
 import UserAvatar from "@/components/shared/UserAvatar";
 import { cn } from "@/lib/utils";
-import { DocumentIcon, ImageIcon, FileIcon } from "lucide-react";
+import { FileText, Image as ImageIcon, File } from "lucide-react";
 
 interface MessageItemProps {
   message: Message;
@@ -47,7 +47,7 @@ const MessageItem = ({
           className="mt-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           onClick={() => window.open(message.media_url, "_blank")}
         >
-          <DocumentIcon className="h-6 w-6 text-purple-600 dark:text-purple-400 mr-3" />
+          <FileText className="h-6 w-6 text-purple-600 dark:text-purple-400 mr-3" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">Document attachment</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">Click to open</p>
@@ -62,7 +62,7 @@ const MessageItem = ({
         className="mt-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
         onClick={() => window.open(message.media_url, "_blank")}
       >
-        <FileIcon className="h-6 w-6 text-blue-600 dark:text-blue-400 mr-3" />
+        <File className="h-6 w-6 text-blue-600 dark:text-blue-400 mr-3" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">File attachment</p>
           <p className="text-xs text-gray-500 dark:text-gray-400">Click to download</p>

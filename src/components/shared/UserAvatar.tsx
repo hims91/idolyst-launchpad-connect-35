@@ -2,7 +2,10 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface UserAvatarProps {
-  user: {
+  src?: string;
+  fallbackText?: string;
+  className?: string;
+  user?: {
     id: string;
     name: string;
     image?: string;
@@ -12,11 +15,14 @@ interface UserAvatarProps {
   status?: "online" | "offline" | "away";
 }
 
-const UserAvatar = ({ 
-  user, 
-  size = "md", 
-  showStatus = false, 
-  status = "offline" 
+const UserAvatar = ({
+  src,
+  fallbackText,
+  className = "",
+  user,
+  size = "md",
+  showStatus = false,
+  status = "offline"
 }: UserAvatarProps) => {
   const sizeClasses = {
     sm: "h-8 w-8",
@@ -30,17 +36,23 @@ const UserAvatar = ({
     away: "bg-amber-400"
   };
   
-  const initials = user.name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  // Use either the provided fallback text or get initials from user name
+  const initials = fallbackText || (user?.name
+    ? user.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "?");
+
+  // Use either the provided src or the user's image
+  const imageSrc = src || user?.image;
 
   return (
     <div className="relative">
-      <Avatar className={`${sizeClasses[size]}`}>
-        <AvatarImage src={user.image} alt={user.name} />
+      <Avatar className={`${sizeClasses[size]} ${className}`}>
+        <AvatarImage src={imageSrc} alt={user?.name || "Avatar"} />
         <AvatarFallback className="bg-idolyst-purple/20 text-idolyst-purple">
           {initials}
         </AvatarFallback>

@@ -1,4 +1,3 @@
-
 import { useRef, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ConversationWithDetails, Message as MessageType } from "@/types/messages";
@@ -71,6 +70,8 @@ const ConversationView = ({
   
   if (!otherUser) return null;
 
+  const avatarFallbackText = otherUser.username?.[0] || otherUser.full_name?.[0] || "?";
+
   return (
     <>
       {/* Conversation header */}
@@ -78,7 +79,7 @@ const ConversationView = ({
         <div className="flex items-center flex-1">
           <UserAvatar
             src={otherUser.avatar_url || ""}
-            fallbackText={otherUser.username?.[0] || otherUser.full_name?.[0] || "?"}
+            fallbackText={avatarFallbackText}
             className="h-10 w-10"
           />
           

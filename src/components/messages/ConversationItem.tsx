@@ -34,6 +34,9 @@ const ConversationItem = ({ conversation, isSelected }: ConversationItemProps) =
       : "📎 Attachment"
     : "";
 
+  // Create a fallback text for the avatar
+  const avatarFallbackText = otherUser.username?.[0] || otherUser.full_name?.[0] || "?";
+
   return (
     <div
       className={`px-4 py-3 flex items-start hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors ${
@@ -42,7 +45,7 @@ const ConversationItem = ({ conversation, isSelected }: ConversationItemProps) =
     >
       <UserAvatar
         src={otherUser.avatar_url || ""}
-        fallbackText={otherUser.username?.[0] || otherUser.full_name?.[0] || "?"}
+        fallbackText={avatarFallbackText}
         className={`h-10 w-10 ${!is_read && !isSelected ? "ring-2 ring-blue-400 ring-offset-2" : ""}`}
       />
       

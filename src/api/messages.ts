@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Conversation, 
@@ -266,7 +265,10 @@ export const markMessagesAsRead = async (conversationId: string): Promise<boolea
 };
 
 // Create a new conversation
-export const createConversation = async (recipientId: string, initialMessage: string): Promise<{ conversation: ConversationWithDetails | null, error?: string }> => {
+export const createConversation = async (
+  recipientId: string, 
+  initialMessage: string
+): Promise<{ conversation: ConversationWithDetails | null, error?: string }> => {
   try {
     const user = await supabase.auth.getUser();
     const userId = user.data.user?.id;
@@ -291,24 +293,25 @@ export const createConversation = async (recipientId: string, initialMessage: st
     // Check if a conversation already exists between these users
     const { data: existingConvs, error: existingError } = await supabase
       .from("conversation_participants")
-      .select(`
-        conversation_id,
-        other_participants:conversation_participants!inner(user_id)
-      `)
+      .select("conversation_id")
       .eq("user_id", userId);
 
     if (existingError) throw existingError;
 
-    let existingConversationId = null;
-    
+    // For each conversation the current user is in, check if the recipient is also in it
+    let existingConversationId: string | null = null;
+
     if (existingConvs && existingConvs.length > 0) {
-      // Look for a conversation where the other user is the recipient
       for (const conv of existingConvs) {
-        const hasRecipient = conv.other_participants.some(
-          (p: { user_id: string }) => p.user_id === recipientId
-        );
-        
-        if (hasRecipient) {
+        // Check if the recipient is in this conversation
+        const { data: otherParticipant, error: otherParticipantError } = await supabase
+          .from("conversation_participants")
+          .select("user_id")
+          .eq("conversation_id", conv.conversation_id)
+          .eq("user_id", recipientId)
+          .single();
+
+        if (otherParticipant && !otherParticipantError) {
           existingConversationId = conv.conversation_id;
           break;
         }
