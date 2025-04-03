@@ -78,6 +78,14 @@ export function NotificationSettings() {
     }));
   };
   
+  // Fixed this function to properly handle string value from Select component
+  const handleEmailDigestChange = (value: string) => {
+    setLocalPrefs(prev => ({
+      ...prev,
+      email_digest_frequency: value
+    }));
+  };
+  
   const handleMuteNotifications = async (hours: number) => {
     await muteForPeriod(hours);
   };
@@ -157,7 +165,7 @@ export function NotificationSettings() {
                 </div>
                 <Select
                   value={localPrefs.email_digest_frequency}
-                  onValueChange={(value) => handleToggleType('email_digest_frequency', value)}
+                  onValueChange={handleEmailDigestChange}
                 >
                   <SelectTrigger className="w-32">
                     <SelectValue placeholder="Select..." />

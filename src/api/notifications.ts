@@ -110,9 +110,20 @@ export const fetchNotificationPreferences = async (): Promise<NotificationPrefer
 
 // Update notification preferences
 export const updateNotificationPreferences = async (
-  preferences: Partial<NotificationPreferences>
+  preferences: Partial<NotificationPreferences> & { user_id?: string }
 ): Promise<NotificationPreferences | null> => {
   try {
+    const user = await supabase.auth.getUser();
+    const userId = user.data.user?.id;
+    
+    if (!userId) throw new Error("User not authenticated");
+    
+    // Always ensure user_id is set
+    const preferencesWithUserId = {
+      ...preferences,
+      user_id: userId,
+    };
+    
     // Check if preferences exist
     const { data: existing } = await supabase
       .from("notification_preferences")
@@ -125,7 +136,7 @@ export const updateNotificationPreferences = async (
       // Insert new preferences
       const { data, error } = await supabase
         .from("notification_preferences")
-        .insert(preferences)
+        .insert(preferencesWithUserId)
         .select()
         .single();
         
@@ -165,10 +176,15 @@ export const muteNotifications = async (hours: number): Promise<boolean> => {
     const muteUntil = new Date();
     muteUntil.setHours(muteUntil.getHours() + hours);
     
+    const user = await supabase.auth.getUser();
+    const userId = user.data.user?.id;
+    
+    if (!userId) throw new Error("User not authenticated");
+    
     const { error } = await supabase
       .from("notification_preferences")
       .update({ muted_until: muteUntil.toISOString() })
-      .is("user_id", supabase.auth.getUser().then(res => res.data.user?.id));
+      .eq("user_id", userId);
 
     if (error) throw error;
     
