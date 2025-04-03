@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -22,7 +23,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import { IdeaStage, createPitchIdea, savePitchDraft } from '@/api/pitch';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/providers/AuthProvider';
 import MediaUploader from '@/components/pitch-hub/MediaUploader';
 import TagSelector from '@/components/pitch-hub/TagSelector';
 import StageSelector from '@/components/pitch-hub/StageSelector';
