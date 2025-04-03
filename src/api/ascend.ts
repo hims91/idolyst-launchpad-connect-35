@@ -145,8 +145,8 @@ export const getUserStats = async (userId: string): Promise<UserStats | null> =>
     return {
       xp: profileData.xp,
       level: profileData.level,
-      rank: leaderboardError ? null : leaderboardData.weekly_rank,
-      rankChange: leaderboardError ? 0 : leaderboardData.weekly_change,
+      rank: leaderboardError ? null : leaderboardData?.weekly_rank,
+      rankChange: leaderboardError ? 0 : leaderboardData?.weekly_change || 0,
       streakDays: streakError ? 0 : streakData?.current_streak || 0,
       badgesCount: badgesError ? 0 : badgesCount || 0,
       nextLevelXp: nextLevelXp,
@@ -203,40 +203,60 @@ export const getUserBadgesWithProgress = async (userId: string): Promise<any[]> 
     if (badgesError) throw badgesError;
 
     // Get badge progress for badges not yet earned
+    // Fixed query to handle the relationship properly
     const { data: badgeProgress, error: progressError } = await typedSupabase
       .from('badge_progress')
       .select(`
         id,
         badge_id,
         current_progress,
-        target_progress,
-        badges (
-          id,
-          name,
-          description,
-          icon
-        )
+        target_progress
       `)
       .eq('user_id', userId);
 
     if (progressError) throw progressError;
 
-    // Combine earned badges with progress badges
+    // Get badges for the badge progress
+    const badgeIds = badgeProgress?.map(progress => progress.badge_id) || [];
+    let badgeDetails: any[] = [];
+    
+    if (badgeIds.length > 0) {
+      const { data: badges, error: badgesDetailError } = await typedSupabase
+        .from('badges')
+        .select('id, name, description, icon')
+        .in('id', badgeIds);
+        
+      if (!badgesDetailError) {
+        badgeDetails = badges || [];
+      }
+    }
+
+    // Combine earned badges with badge details
     const earnedBadges = (userBadges || []).map(badge => ({
-      ...badge.badges,
+      id: badge.badges?.id || badge.badge_id,
+      name: badge.badges?.name || 'Unknown Badge',
+      description: badge.badges?.description || '',
+      icon: badge.badges?.icon || '',
       earnedAt: badge.earned_at,
       isEarned: true,
       progress: 100,
       progressPercent: 100
     }));
 
-    const inProgressBadges = (badgeProgress || []).map(progress => ({
-      ...progress.badges,
-      isEarned: false,
-      progress: progress.current_progress,
-      target: progress.target_progress,
-      progressPercent: Math.round((progress.current_progress / progress.target_progress) * 100)
-    }));
+    // Combine progress badges with badge details
+    const inProgressBadges = (badgeProgress || []).map(progress => {
+      const badgeDetail = badgeDetails.find(b => b.id === progress.badge_id);
+      return {
+        id: progress.badge_id,
+        name: badgeDetail?.name || 'Unknown Badge',
+        description: badgeDetail?.description || '',
+        icon: badgeDetail?.icon || '',
+        isEarned: false,
+        progress: progress.current_progress,
+        target: progress.target_progress,
+        progressPercent: Math.round((progress.current_progress / progress.target_progress) * 100)
+      };
+    });
 
     return [...earnedBadges, ...inProgressBadges];
   } catch (error) {
@@ -265,17 +285,47 @@ export const getAvailableRewards = async (): Promise<Reward[]> => {
 // Function to get user's claimed rewards
 export const getUserRewards = async (userId: string): Promise<UserReward[]> => {
   try {
-    const { data, error } = await typedSupabase
+    const { data: userRewards, error: userRewardsError } = await typedSupabase
       .from('user_rewards')
       .select(`
-        *,
-        reward:rewards (*)
+        id,
+        user_id,
+        reward_id,
+        claimed_at,
+        expires_at,
+        is_used,
+        used_at
       `)
       .eq('user_id', userId)
       .order('claimed_at', { ascending: false });
 
-    if (error) throw error;
-    return data as unknown as UserReward[] || [];
+    if (userRewardsError) throw userRewardsError;
+    
+    // Get the reward details for each user reward
+    const rewardIds = userRewards?.map(reward => reward.reward_id) || [];
+    let rewardDetails: any[] = [];
+    
+    if (rewardIds.length > 0) {
+      const { data: rewards, error: rewardsError } = await typedSupabase
+        .from('rewards')
+        .select('*')
+        .in('id', rewardIds);
+        
+      if (!rewardsError) {
+        rewardDetails = rewards || [];
+      }
+    }
+    
+    // Combine user rewards with reward details
+    const userRewardsWithDetails = (userRewards || []).map(userReward => {
+      const rewardDetail = rewardDetails.find(r => r.id === userReward.reward_id);
+      return {
+        ...userReward,
+        reward: rewardDetail
+      };
+    });
+    
+    return userRewardsWithDetails;
   } catch (error) {
     console.error('Error fetching user rewards:', error);
     return [];
@@ -423,15 +473,39 @@ export const getLeaderboard = async (timeRange: 'week' | 'month' | 'all' = 'week
         weekly_change,
         monthly_change,
         snapshot_date,
-        created_at,
-        profile:profiles (id, username, full_name, avatar_url, level)
+        created_at
       `)
       .eq('snapshot_date', latestSnapshot.snapshot_date)
       .order(timeRange === 'week' ? 'weekly_rank' : 'monthly_rank', { ascending: true })
       .limit(50);
 
     if (leaderboardError) throw leaderboardError;
-    return leaderboardData as unknown as LeaderboardEntry[] || [];
+    
+    // Fetch profiles separately and join them manually
+    const userIds = leaderboardData?.map(entry => entry.user_id) || [];
+    let profilesData: any[] = [];
+    
+    if (userIds.length > 0) {
+      const { data: profiles, error: profilesError } = await typedSupabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url, level')
+        .in('id', userIds);
+        
+      if (!profilesError) {
+        profilesData = profiles || [];
+      }
+    }
+    
+    // Join leaderboard data with profiles
+    const leaderboardWithProfiles = (leaderboardData || []).map(entry => {
+      const profile = profilesData.find(p => p.id === entry.user_id);
+      return {
+        ...entry,
+        profile
+      };
+    });
+
+    return leaderboardWithProfiles;
   } catch (error) {
     console.error('Error fetching leaderboard data:', error);
     return [];
@@ -442,7 +516,40 @@ export const getLeaderboard = async (timeRange: 'week' | 'month' | 'all' = 'week
 export const updateLoginStreak = async (userId: string): Promise<void> => {
   try {
     // Call the RPC function to update the login streak
-    await typedSupabase.rpc('update_login_streak', { user_id_param: userId });
+    const { error } = await typedSupabase.rpc('update_login_streak', { user_id_param: userId });
+    
+    if (error) {
+      console.error('Error updating login streak via RPC:', error);
+      
+      // Fallback: update streak directly
+      // Check if a streak record exists
+      const { data: streakData } = await typedSupabase
+        .from('login_streaks')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+        
+      if (streakData) {
+        // Update existing streak
+        await typedSupabase
+          .from('login_streaks')
+          .update({
+            last_login_date: new Date().toISOString().split('T')[0],
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', userId);
+      } else {
+        // Create new streak
+        await typedSupabase
+          .from('login_streaks')
+          .insert({
+            user_id: userId,
+            last_login_date: new Date().toISOString().split('T')[0],
+            current_streak: 1,
+            max_streak: 1
+          });
+      }
+    }
   } catch (error) {
     console.error('Error updating login streak:', error);
   }

@@ -9,6 +9,44 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      badge_progress: {
+        Row: {
+          badge_id: string
+          created_at: string
+          current_progress: number
+          id: string
+          target_progress: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          created_at?: string
+          current_progress?: number
+          id?: string
+          target_progress: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          created_at?: string
+          current_progress?: number
+          id?: string
+          target_progress?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "badge_progress_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       badges: {
         Row: {
           created_at: string
@@ -131,6 +169,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      leaderboard_history: {
+        Row: {
+          created_at: string
+          id: string
+          monthly_change: number
+          monthly_rank: number
+          snapshot_date: string
+          user_id: string
+          weekly_change: number
+          weekly_rank: number
+          xp: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          monthly_change?: number
+          monthly_rank: number
+          snapshot_date?: string
+          user_id: string
+          weekly_change?: number
+          weekly_rank: number
+          xp: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          monthly_change?: number
+          monthly_rank?: number
+          snapshot_date?: string
+          user_id?: string
+          weekly_change?: number
+          weekly_rank?: number
+          xp?: number
+        }
+        Relationships: []
+      }
+      login_streaks: {
+        Row: {
+          created_at: string
+          current_streak: number
+          id: string
+          last_login_date: string
+          max_streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_login_date?: string
+          max_streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_login_date?: string
+          max_streak?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       mentor_availability: {
         Row: {
@@ -835,6 +939,7 @@ export type Database = {
           full_name: string | null
           id: string
           last_active_tab: string
+          level: number
           portfolio_url: string | null
           professional_details: string | null
           updated_at: string
@@ -849,6 +954,7 @@ export type Database = {
           full_name?: string | null
           id: string
           last_active_tab?: string
+          level?: number
           portfolio_url?: string | null
           professional_details?: string | null
           updated_at?: string
@@ -863,11 +969,48 @@ export type Database = {
           full_name?: string | null
           id?: string
           last_active_tab?: string
+          level?: number
           portfolio_url?: string | null
           professional_details?: string | null
           updated_at?: string
           username?: string | null
           xp?: number
+        }
+        Relationships: []
+      }
+      rewards: {
+        Row: {
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          is_active: boolean
+          name: string
+          type: string
+          updated_at: string
+          xp_cost: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          icon: string
+          id?: string
+          is_active?: boolean
+          name: string
+          type: string
+          updated_at?: string
+          xp_cost: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          type?: string
+          updated_at?: string
+          xp_cost?: number
         }
         Relationships: []
       }
@@ -1024,6 +1167,44 @@ export type Database = {
           },
         ]
       }
+      user_rewards: {
+        Row: {
+          claimed_at: string
+          expires_at: string | null
+          id: string
+          is_used: boolean
+          reward_id: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean
+          reward_id: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean
+          reward_id?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_rewards_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "rewards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1059,6 +1240,39 @@ export type Database = {
           },
         ]
       }
+      xp_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          id: string
+          reference_id: string | null
+          reference_type: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description: string
+          id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1082,6 +1296,12 @@ export type Database = {
           user_id: string
         }
         Returns: boolean
+      }
+      update_login_streak: {
+        Args: {
+          user_id_param: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
