@@ -131,7 +131,18 @@ export const fetchMentor = async (mentorId: string) => {
   
   if (certificationError) throw certificationError;
   
-  // Fetch recent reviews
+  // Get session IDs for this mentor first to use in the reviews query
+  const { data: sessionIds, error: sessionError } = await supabase
+    .from('mentorship_sessions')
+    .select('id')
+    .eq('mentor_id', mentorId);
+    
+  if (sessionError) throw sessionError;
+  
+  // Safely extract IDs
+  const sessionIdArray: string[] = sessionIds ? sessionIds.map(item => item.id) : [];
+  
+  // Fetch recent reviews using the session IDs
   const { data: reviewsData, error: reviewsError } = await supabase
     .from('session_reviews')
     .select(`
@@ -148,13 +159,7 @@ export const fetchMentor = async (mentorId: string) => {
       )
     `)
     .eq('is_public', true)
-    .in('session_id', 
-      supabase
-        .from('mentorship_sessions')
-        .select('id')
-        .eq('mentor_id', mentorId)
-        .then(({ data }) => data ? data.map(item => item.id) : [])
-    )
+    .in('session_id', sessionIdArray)
     .order('created_at', { ascending: false })
     .limit(5);
   
@@ -180,6 +185,16 @@ export const fetchMentor = async (mentorId: string) => {
   // Transform the data
   const { profile: profileData, ...mentorDataOnly } = mentorData;
   
+  // Process reviews data with proper type handling
+  const processedReviews = (reviewsData || []).map(review => {
+    const { reviewer, session, ...reviewData } = review;
+    return {
+      ...reviewData,
+      reviewer: reviewer as unknown as ExtendedProfile || null,
+      session: session || null
+    };
+  });
+  
   const mentorWithProfile: MentorWithProfile & {
     certifications: MentorCertification[];
     reviews: SessionReview[];
@@ -189,14 +204,7 @@ export const fetchMentor = async (mentorId: string) => {
     ...mentorDataOnly,
     profile: (profileData || {}) as ExtendedProfile,
     certifications: certificationData || [],
-    reviews: (reviewsData || []).map(review => {
-      const { reviewer, session, ...reviewData } = review;
-      return {
-        ...reviewData,
-        reviewer: reviewer as ExtendedProfile,
-        session: session
-      };
-    }) as unknown as SessionReview[],
+    reviews: processedReviews as unknown as SessionReview[],
     availability: availabilityData || [],
     date_exceptions: exceptionData || [],
   };
@@ -366,23 +374,28 @@ export const fetchUserSessions = async () => {
   // Transform the data to match our types, handling potential null values
   const sessions: MentorshipSession[] = data.map(item => {
     const { mentor, mentee, ...sessionData } = item;
+    
+    // Create a properly structured mentor object
+    const mentorObject = mentor ? {
+      id: mentor.id,
+      hourly_rate: mentor.hourly_rate,
+      profile: mentor.profile as unknown as ExtendedProfile || {} as ExtendedProfile,
+      bio: '',
+      expertise: [] as ExpertiseCategory[],
+      years_experience: 0,
+      is_featured: false,
+      avg_rating: 0,
+      total_sessions: 0,
+      total_reviews: 0,
+      status: 'approved',
+      created_at: '',
+      updated_at: ''
+    } : undefined;
+    
     return {
       ...sessionData,
-      mentor: mentor ? {
-        ...mentor,
-        profile: mentor.profile as ExtendedProfile,
-        bio: '',
-        expertise: [] as ExpertiseCategory[],
-        years_experience: 0,
-        is_featured: false,
-        avg_rating: 0,
-        total_sessions: 0,
-        total_reviews: 0,
-        status: 'approved',
-        created_at: '',
-        updated_at: ''
-      } : undefined,
-      mentee: mentee as ExtendedProfile
+      mentor: mentorObject,
+      mentee: mentee as unknown as ExtendedProfile || {} as ExtendedProfile
     };
   });
   

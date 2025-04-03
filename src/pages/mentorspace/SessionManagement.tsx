@@ -8,10 +8,9 @@ import ReviewForm from "@/components/mentorspace/ReviewForm";
 import EmptyState from "@/components/mentorspace/EmptyState";
 import { 
   useUserSessions, 
-  useUpdateSessionStatus,
   useMentorStatus
 } from "@/hooks/use-mentors";
-import { MentorshipSession, SessionStatus } from "@/types/mentor";
+import { MentorshipSession } from "@/types/mentor";
 import { motion } from "framer-motion";
 import { pageTransition, listContainer } from "@/lib/animations";
 import { isAfter, parseISO } from "date-fns";
@@ -20,13 +19,8 @@ const SessionManagement = () => {
   const [reviewSession, setReviewSession] = useState<MentorshipSession | null>(null);
   const { data: sessions, isLoading } = useUserSessions();
   const { data: mentorStatus } = useMentorStatus();
-  const updateSessionStatus = useUpdateSessionStatus();
   
   const isMentor = !!mentorStatus;
-  
-  const handleStatusChange = (sessionId: string, status: SessionStatus) => {
-    updateSessionStatus.mutate({ sessionId, status });
-  };
   
   const handleReview = (sessionId: string) => {
     const session = sessions?.find(s => s.id === sessionId);
@@ -145,6 +139,7 @@ const SessionManagement = () => {
                   <SessionCard 
                     key={session.id} 
                     session={session}
+                    onReview={handleReview}
                   />
                 ))}
               </motion.div>
@@ -199,6 +194,7 @@ const SessionManagement = () => {
                         <SessionCard 
                           key={session.id} 
                           session={session}
+                          onReview={handleReview}
                         />
                       ))}
                     </motion.div>
