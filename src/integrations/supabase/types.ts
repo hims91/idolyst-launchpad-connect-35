@@ -895,6 +895,230 @@ export type Database = {
           },
         ]
       }
+      post_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          parent_id: string | null
+          post_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          post_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          post_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "post_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          reaction_type: Database["public"]["Enums"]["reaction_type"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          reaction_type: Database["public"]["Enums"]["reaction_type"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          reaction_type?: Database["public"]["Enums"]["reaction_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_reposts: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_reposts_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_saves: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_saves_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_shares: {
+        Row: {
+          created_at: string
+          id: string
+          platform: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          platform: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          platform?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_shares_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          category: string
+          content: string
+          created_at: string
+          engagement_score: number | null
+          id: string
+          is_trending: boolean | null
+          media_type: string | null
+          media_url: string | null
+          poll_data: Json | null
+          tags: string[] | null
+          updated_at: string
+          url: string | null
+          url_preview: Json | null
+          user_id: string
+          views_count: number | null
+        }
+        Insert: {
+          category: string
+          content: string
+          created_at?: string
+          engagement_score?: number | null
+          id?: string
+          is_trending?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
+          poll_data?: Json | null
+          tags?: string[] | null
+          updated_at?: string
+          url?: string | null
+          url_preview?: Json | null
+          user_id: string
+          views_count?: number | null
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string
+          engagement_score?: number | null
+          id?: string
+          is_trending?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
+          poll_data?: Json | null
+          tags?: string[] | null
+          updated_at?: string
+          url?: string | null
+          url_preview?: Json | null
+          user_id?: string
+          views_count?: number | null
+        }
+        Relationships: []
+      }
       privacy_settings: {
         Row: {
           activity_visibility: string
@@ -1341,6 +1565,12 @@ export type Database = {
         | "launchpad_reaction"
         | "launchpad_repost"
         | "payment_success"
+      reaction_type:
+        | "insightful"
+        | "fundable"
+        | "innovative"
+        | "collab_worthy"
+        | "like"
       session_status: "scheduled" | "completed" | "cancelled" | "rescheduled"
       user_role: "entrepreneur" | "mentor"
     }

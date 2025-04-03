@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -48,6 +47,9 @@ import PitchHubLeaderboard from "./pages/pitch-hub/Leaderboard";
 import AscendDashboard from "./pages/ascend/Dashboard";
 import AscendLeaderboard from "./pages/ascend/Leaderboard";
 
+// Launchpad pages
+import PostPage from "./pages/launchpad/Post";
+
 // Create a new QueryClient instance
 const queryClient = new QueryClient();
 
@@ -66,6 +68,9 @@ const App = () => (
                 <Route path="/pitch-hub" element={<PitchHub />} />
                 <Route path="/mentor-space" element={<MentorSpace />} />
                 <Route path="/ascend" element={<Ascend />} />
+                
+                {/* Launchpad routes */}
+                <Route path="/launchpad/post/:id" element={<PostPage />} />
                 
                 {/* PitchHub routes */}
                 <Route path="/pitch-hub/index" element={<PitchHubIndex />} />
