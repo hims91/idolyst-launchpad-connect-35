@@ -96,6 +96,31 @@ export const markAllNotificationsAsRead = async (
 };
 
 /**
+ * Deletes a notification
+ * @param notificationId The notification ID to delete
+ */
+export const deleteNotification = async (
+  notificationId: string
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from("notifications")
+      .delete()
+      .eq("id", notificationId);
+
+    if (error) {
+      console.error("Error deleting notification:", error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error in deleteNotification:", error);
+    return false;
+  }
+};
+
+/**
  * Fetches notification preferences for a user
  * @param userId The user ID to fetch preferences for
  * @returns The notification preferences

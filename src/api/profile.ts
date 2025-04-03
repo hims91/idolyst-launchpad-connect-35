@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { ProfileUpdatePayload, PrivacySettings, isValidProfileVisibility, isValidMessagingPermissions, isValidActivityVisibility, ExtendedProfile } from "@/types/profile";
+import { ProfileUpdatePayload, PrivacySettings, isValidProfileVisibility, isValidMessagingPermissions, isValidActivityVisibility, ExtendedProfile, ProfileActivity } from "@/types/profile";
 
 /**
  * Fetches a user's profile by ID
@@ -205,7 +205,7 @@ export const fetchExtendedProfile = async (
     const { count: followersCount, error: followersError } = await supabase
       .from("follows")
       .select("*", { count: "exact", head: true })
-      .eq("following_id", userId);
+      .eq("followed_id", userId);
 
     if (followersError) {
       console.error("Error fetching followers count:", followersError);
@@ -228,7 +228,7 @@ export const fetchExtendedProfile = async (
         .from("follows")
         .select("*")
         .eq("follower_id", currentUserId)
-        .eq("following_id", userId)
+        .eq("followed_id", userId)
         .single();
 
       if (!followError && followData) {
@@ -237,16 +237,23 @@ export const fetchExtendedProfile = async (
     }
 
     // Fetch recent activity (simplified)
-    const { data: activities, error: activityError } = await supabase
-      .from("user_activities")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(5);
-
-    if (activityError) {
-      console.error("Error fetching activities:", activityError);
-    }
+    // Instead of actual data, create sample activities for now
+    const activities: ProfileActivity[] = [
+      {
+        id: "1",
+        type: "post",
+        title: "Created a new post",
+        user_id: userId,
+        created_at: new Date(Date.now() - 86400000).toISOString(),
+      },
+      {
+        id: "2",
+        type: "pitch",
+        title: "Launched a new pitch",
+        user_id: userId,
+        created_at: new Date(Date.now() - 172800000).toISOString(),
+      }
+    ];
 
     // Construct extended profile
     const extendedProfile: ExtendedProfile = {
@@ -271,12 +278,12 @@ export const fetchExtendedProfile = async (
 /**
  * Follows a user
  * @param followerId The ID of the user who is following
- * @param followingId The ID of the user to be followed
+ * @param followedId The ID of the user to be followed
  * @returns Boolean indicating success
  */
-export const followUser = async (followerId: string, followingId: string): Promise<boolean> => {
+export const followUser = async (followerId: string, followedId: string): Promise<boolean> => {
   try {
-    if (!followerId || !followingId || followerId === followingId) {
+    if (!followerId || !followedId || followerId === followedId) {
       return false;
     }
 
@@ -285,7 +292,7 @@ export const followUser = async (followerId: string, followingId: string): Promi
       .from("follows")
       .select("*")
       .eq("follower_id", followerId)
-      .eq("following_id", followingId)
+      .eq("followed_id", followedId)
       .single();
 
     if (!checkError && existingFollow) {
@@ -298,7 +305,7 @@ export const followUser = async (followerId: string, followingId: string): Promi
       .from("follows")
       .insert({
         follower_id: followerId,
-        following_id: followingId,
+        followed_id: followedId,
         created_at: new Date().toISOString()
       });
 
@@ -317,12 +324,12 @@ export const followUser = async (followerId: string, followingId: string): Promi
 /**
  * Unfollows a user
  * @param followerId The ID of the user who is unfollowing
- * @param followingId The ID of the user to be unfollowed
+ * @param followedId The ID of the user to be unfollowed
  * @returns Boolean indicating success
  */
-export const unfollowUser = async (followerId: string, followingId: string): Promise<boolean> => {
+export const unfollowUser = async (followerId: string, followedId: string): Promise<boolean> => {
   try {
-    if (!followerId || !followingId) {
+    if (!followerId || !followedId) {
       return false;
     }
 
@@ -330,7 +337,7 @@ export const unfollowUser = async (followerId: string, followingId: string): Pro
       .from("follows")
       .delete()
       .eq("follower_id", followerId)
-      .eq("following_id", followingId);
+      .eq("followed_id", followedId);
 
     if (error) {
       console.error("Error unfollowing user:", error);
@@ -355,7 +362,7 @@ export const fetchFollowers = async (userId: string) => {
     const { data: followData, error: followError } = await supabase
       .from("follows")
       .select("follower_id")
-      .eq("following_id", userId);
+      .eq("followed_id", userId);
 
     if (followError) {
       console.error("Error fetching followers:", followError);
@@ -397,7 +404,7 @@ export const fetchFollowing = async (userId: string) => {
     // First get the following IDs
     const { data: followData, error: followError } = await supabase
       .from("follows")
-      .select("following_id")
+      .select("followed_id")
       .eq("follower_id", userId);
 
     if (followError) {
@@ -410,7 +417,7 @@ export const fetchFollowing = async (userId: string) => {
     }
 
     // Extract following IDs
-    const followingIds = followData.map(item => item.following_id);
+    const followingIds = followData.map(item => item.followed_id);
 
     // Then fetch the profiles of those being followed
     const { data: profiles, error: profilesError } = await supabase

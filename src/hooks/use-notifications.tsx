@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Notification, NotificationGroup, NotificationPreferences } from '@/types/notifications';
-import { useAuth } from '@/providers/AuthProvider';
+import { Notification, NotificationGroup, NotificationPreferences, isValidEmailDigestFrequency } from '@/types/notifications';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   fetchNotifications, 
   markNotificationAsRead, 
@@ -21,11 +22,11 @@ export const useNotifications = () => {
   const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
   
   const fetchUserNotifications = async () => {
-    if (!user) return;
+    if (!user?.id) return;
     
     try {
       setLoading(true);
-      const data = await fetchNotifications();
+      const data = await fetchNotifications(user.id);
       
       setNotifications(data || []);
       setUnreadCount(data?.filter(n => !n.is_read).length || 0);
@@ -37,11 +38,11 @@ export const useNotifications = () => {
   };
   
   const fetchUserPreferences = async () => {
-    if (!user) return;
+    if (!user?.id) return;
     
     try {
       setPreferencesLoading(true);
-      const prefs = await fetchNotificationPreferences();
+      const prefs = await fetchNotificationPreferences(user.id);
       setPreferences(prefs);
     } catch (error) {
       console.error('Error fetching notification preferences:', error);
@@ -73,10 +74,10 @@ export const useNotifications = () => {
   };
   
   const markAllAsRead = async (): Promise<boolean> => {
-    if (!user) return false;
+    if (!user?.id) return false;
     
     try {
-      const success = await markAllNotificationsAsRead();
+      const success = await markAllNotificationsAsRead(user.id);
       
       if (success) {
         setNotifications(notifications.map(n => ({ ...n, is_read: true })));
@@ -158,32 +159,36 @@ export const useNotifications = () => {
     return groups;
   };
   
-  const updatePreferences = async (newPrefs: Partial<NotificationPreferences>): Promise<NotificationPreferences | null> => {
-    if (!user || !preferences) return null;
+  const updatePreferences = async (newPrefs: Partial<NotificationPreferences>): Promise<boolean> => {
+    if (!user?.id || !preferences) return false;
     
     try {
       if (newPrefs.email_digest_frequency && !isValidEmailDigestFrequency(newPrefs.email_digest_frequency)) {
         throw new Error("Invalid email digest frequency");
       }
       
-      const updatedPrefs = await updateNotificationPreferences(newPrefs);
+      const success = await updateNotificationPreferences(user.id, newPrefs);
       
-      if (updatedPrefs) {
-        setPreferences(updatedPrefs);
+      if (success) {
+        setPreferences({
+          ...preferences,
+          ...newPrefs
+        });
+        return true;
       }
       
-      return updatedPrefs;
+      return false;
     } catch (error) {
       console.error('Error updating notification preferences:', error);
-      return null;
+      return false;
     }
   };
   
   const muteForPeriod = async (hours: number): Promise<boolean> => {
-    if (!user) return false;
+    if (!user?.id) return false;
     
     try {
-      const success = await muteNotifications(hours);
+      const success = await muteNotifications(user.id, hours);
       
       if (success && preferences) {
         const muteUntil = new Date();
