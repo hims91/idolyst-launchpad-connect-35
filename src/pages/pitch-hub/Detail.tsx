@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
@@ -35,7 +34,7 @@ import UserAvatar from '@/components/shared/UserAvatar';
 import FeedbackCard from '@/components/pitch-hub/FeedbackCard';
 import { toast } from '@/hooks/use-toast';
 import { usePitchIdea } from '@/hooks/usePitchHub';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/providers/AuthProvider';
 
 // Chart components
 import {
