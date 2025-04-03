@@ -4,149 +4,29 @@ import { Variants } from "framer-motion";
 // Fade in animation
 export const fadeIn: Variants = {
   hidden: { opacity: 0 },
-  visible: { 
-    opacity: 1,
-    transition: { 
-      duration: 0.3 
-    }
-  },
-  exit: { 
-    opacity: 0,
-    transition: { 
-      duration: 0.2 
-    }
-  }
+  visible: { opacity: 1, transition: { duration: 0.6 } }
 };
 
-// Fade in animation from bottom
+// Fade in up animation
 export const fadeInUp: Variants = {
-  hidden: { 
-    opacity: 0, 
-    y: 20 
-  },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    transition: { 
-      duration: 0.5 
-    }
-  },
-  exit: { 
-    opacity: 0,
-    y: 20,
-    transition: { 
-      duration: 0.3 
-    }
-  }
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
 };
 
-// Slide in from left
-export const slideInLeft: Variants = {
-  hidden: { 
-    x: -100, 
-    opacity: 0 
-  },
-  visible: { 
-    x: 0, 
-    opacity: 1,
-    transition: { 
-      duration: 0.4 
-    }
-  },
-  exit: { 
-    x: -100, 
-    opacity: 0,
-    transition: { 
-      duration: 0.3 
-    }
-  }
+// Fade in down animation
+export const fadeInDown: Variants = {
+  hidden: { opacity: 0, y: -20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
 };
 
-// Slide in from right
-export const slideInRight: Variants = {
-  hidden: { 
-    x: 100, 
-    opacity: 0 
-  },
-  visible: { 
-    x: 0, 
-    opacity: 1,
-    transition: { 
-      duration: 0.4 
-    }
-  },
-  exit: { 
-    x: 100, 
-    opacity: 0,
-    transition: { 
-      duration: 0.3 
-    }
-  }
-};
-
-// Scale animation
-export const scaleAnimation: Variants = {
-  hidden: { 
-    scale: 0.9, 
-    opacity: 0 
-  },
-  visible: { 
-    scale: 1, 
-    opacity: 1,
-    transition: { 
-      duration: 0.3 
-    }
-  },
-  exit: { 
-    scale: 0.9, 
-    opacity: 0,
-    transition: { 
-      duration: 0.2 
-    }
-  }
-};
-
-// Scale in animation (quick pop in)
+// Scale in animation
 export const scaleIn: Variants = {
-  hidden: { 
-    scale: 0.8, 
-    opacity: 0 
-  },
-  visible: { 
-    scale: 1, 
-    opacity: 1,
-    transition: { 
-      type: "spring", 
-      stiffness: 500, 
-      damping: 25 
-    }
-  },
-  exit: { 
-    scale: 0.8, 
-    opacity: 0,
-    transition: { 
-      duration: 0.15 
-    }
-  }
+  hidden: { opacity: 0, scale: 0.8 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.6 } }
 };
 
-// List item staggered animation
-export const listItem: Variants = {
-  hidden: { 
-    opacity: 0, 
-    y: 10 
-  },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    transition: { 
-      duration: 0.3 
-    }
-  }
-};
-
-// Container for staggered animations
-export const listContainer: Variants = {
+// Stagger container animation
+export const staggerContainer: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -156,92 +36,64 @@ export const listContainer: Variants = {
   }
 };
 
-// Stagger container - for staggered entry of child elements
-export const staggerContainer: Variants = {
-  hidden: { opacity: 0 },
+// Stagger item animation
+export const staggerItem: Variants = {
+  hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
+    y: 0,
+    transition: { duration: 0.3 }
+  }
+};
+
+// Pop in animation
+export const popIn: Variants = {
+  hidden: { opacity: 0, scale: 0.5 },
+  visible: { 
+    opacity: 1, 
+    scale: 1,
     transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2
+      type: "spring",
+      stiffness: 300,
+      damping: 20
     }
   }
 };
 
-// Stagger item - for individual items within a staggered container
-export const staggerItem: Variants = {
-  hidden: { 
-    opacity: 0, 
-    y: 20 
-  },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    transition: { 
-      duration: 0.4,
-      ease: "easeOut"
-    }
+// Slide in from right
+export const slideInRight: Variants = {
+  hidden: { opacity: 0, x: 100 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.5 } }
+};
+
+// Slide in from left
+export const slideInLeft: Variants = {
+  hidden: { opacity: 0, x: -100 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.5 } }
+};
+
+// Rotate in animation
+export const rotateIn: Variants = {
+  hidden: { opacity: 0, rotate: -45 },
+  visible: { opacity: 1, rotate: 0, transition: { duration: 0.5 } }
+};
+
+// Bounce animation
+export const bounce: Variants = {
+  hidden: { opacity: 0, y: 0 },
+  visible: {
+    opacity: 1,
+    y: [0, -20, 0, -10, 0, -5, 0],
+    transition: { duration: 1 }
   }
 };
 
 // Pulse animation
 export const pulse: Variants = {
-  hidden: { 
-    scale: 1 
-  },
-  visible: { 
-    scale: [1, 1.05, 1],
-    transition: { 
-      repeat: Infinity, 
-      repeatType: "reverse", 
-      duration: 1.5 
-    }
-  }
-};
-
-// Page transition
-export const pageTransition: Variants = {
-  hidden: { 
-    opacity: 0 
-  },
-  visible: { 
+  hidden: { opacity: 0, scale: 1 },
+  visible: {
     opacity: 1,
-    transition: { 
-      duration: 0.5, 
-      when: "beforeChildren" 
-    }
-  },
-  exit: { 
-    opacity: 0,
-    transition: { 
-      duration: 0.3, 
-      when: "afterChildren" 
-    }
-  }
-};
-
-// Notification bell animation
-export const bellAnimation: Variants = {
-  hidden: { 
-    rotate: 0 
-  },
-  visible: { 
-    rotate: [0, 15, -15, 10, -10, 0],
-    transition: { 
-      duration: 1 
-    }
-  }
-};
-
-// Button hover animation
-export const buttonHover: Variants = {
-  hover: { 
-    scale: 1.05,
-    transition: { 
-      duration: 0.2 
-    }
-  },
-  tap: { 
-    scale: 0.95 
+    scale: [1, 1.05, 1, 1.03, 1],
+    transition: { duration: 1, repeat: Infinity, repeatType: "loop" }
   }
 };

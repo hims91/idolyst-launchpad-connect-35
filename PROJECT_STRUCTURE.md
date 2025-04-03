@@ -83,7 +83,7 @@
 
 The Ascend module is a comprehensive gamification system that rewards users for their activities on the platform with XP, badges, leaderboard rankings, and redeemable rewards.
 
-### Database Structure
+#### Database Structure
 
 - **profiles**: Contains user XP and level information
 - **badges**: Badge definitions with names, descriptions, and icons
@@ -95,7 +95,7 @@ The Ascend module is a comprehensive gamification system that rewards users for 
 - **login_streaks**: Tracks daily login streaks
 - **leaderboard_history**: Historical record of user rankings
 
-### API Functionality
+#### API Functionality
 
 - XP earning for various platform activities (posts, feedback, mentorship, etc.)
 - Badge awarding based on achievements and milestones
@@ -103,7 +103,7 @@ The Ascend module is a comprehensive gamification system that rewards users for 
 - Reward claiming system with XP expenditure
 - Login streak tracking and bonus XP for consecutive days
 
-### User Interface
+#### User Interface
 
 - **Dashboard**: Overview of user's XP, level, badges, rewards, and leaderboard position
 - **Badges Page**: Display of earned badges and progress towards locked badges
@@ -111,7 +111,7 @@ The Ascend module is a comprehensive gamification system that rewards users for 
 - **XP History**: Chronological record of XP transactions
 - **Leaderboard**: Rankings of users by XP with position changes
 
-### Integration with Other Modules
+#### Integration with Other Modules
 
 The Ascend module is deeply integrated with other platform features:
 
@@ -121,13 +121,27 @@ The Ascend module is deeply integrated with other platform features:
 - **MentorSpace**: Completing mentorship sessions earns XP for both mentor and mentee
 - **Launchpad**: Engagement with content earns XP
 
-### Technical Implementation
+#### Technical Implementation
 
 - Real-time XP updates using Supabase's realtime functionality
 - Database triggers for automatic XP awarding and badge unlocking
 - Row-level security policies to ensure data privacy
 - React components for badges, rewards, and leaderboard with animations
-- Redux state management for XP and gamification state
+- XP visualization with progress bars and level indicators
+
+#### Key Components
+
+- **XpProgress**: Shows progress towards next level with animated indicators
+- **BadgeCard**: Displays badge info with earned/locked states and progress
+- **RewardCard**: Shows available rewards with claim buttons
+- **XpTransactionList**: Records recent XP activities with visual cues
+- **AscendStats**: Mini-component for embedding in profile pages
+
+#### Pages
+
+- **Ascend**: Entry point with options to view dashboard or leaderboard
+- **Dashboard**: Main view with personal XP stats, badges, rewards
+- **Leaderboard**: Rankings with weekly/monthly toggle and position changes
 
 This gamification system encourages platform engagement, creates a sense of progression, and rewards users for contributing positively to the community.
 

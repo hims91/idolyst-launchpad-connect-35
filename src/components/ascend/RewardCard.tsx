@@ -1,9 +1,15 @@
 
 import React from 'react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { useIconByName } from "@/hooks/use-icon-by-name";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 interface RewardCardProps {
@@ -25,70 +31,85 @@ const RewardCard: React.FC<RewardCardProps> = ({
   onClaim,
   isLoading = false
 }) => {
-  const IconComponent = useIconByName(icon);
+  const Icon = useIconByName(icon);
   const canClaim = currentXp >= xpCost;
   
   return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      transition={{ type: "spring", stiffness: 400, damping: 10 }}
-      className="h-full"
-    >
+    <TooltipProvider>
       <Card className={cn(
-        "h-full overflow-hidden",
-        canClaim && "border-indigo-200 dark:border-indigo-800"
+        "overflow-hidden h-full border transition-all",
+        canClaim ? "border-purple-200 dark:border-purple-800" : "border-gray-200 dark:border-gray-800"
       )}>
-        <CardContent className="pt-6 px-6">
-          <div className="flex items-start mb-4">
-            <div className={cn(
-              "w-12 h-12 rounded-full flex items-center justify-center mr-4",
-              canClaim 
-                ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400" 
-                : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
-            )}>
-              {IconComponent && <IconComponent className="w-6 h-6" />}
-            </div>
+        <CardContent className="p-4 pt-6">
+          <div className="flex flex-col items-center text-center mb-4">
+            <motion.div
+              className={cn(
+                "w-14 h-14 flex items-center justify-center rounded-full mb-3",
+                canClaim ? "bg-purple-100 dark:bg-purple-900/30" : "bg-gray-100 dark:bg-gray-800"
+              )}
+              whileHover={{ scale: 1.05 }}
+              transition={{ duration: 0.2 }}
+            >
+              {Icon && <Icon className={cn(
+                "h-7 w-7",
+                canClaim ? "text-purple-600 dark:text-purple-400" : "text-gray-400 dark:text-gray-500"
+              )} />}
+            </motion.div>
             
-            <div>
-              <h3 className="font-medium text-base mb-1">{name}</h3>
-              <p className="text-sm text-muted-foreground">{description}</p>
+            <h3 className="text-base font-medium mb-1">{name}</h3>
+            <p className="text-sm text-muted-foreground">{description}</p>
+          </div>
+          
+          <div className="border-t border-border pt-3">
+            <div className="flex justify-between items-center">
+              <div>
+                <div className="text-xs text-muted-foreground uppercase">Cost</div>
+                <div className="font-bold text-lg">
+                  {xpCost} <span className="text-sm font-normal">XP</span>
+                </div>
+              </div>
+              
+              <div className="text-right">
+                <div className="text-xs text-muted-foreground uppercase">Your XP</div>
+                <div className={cn(
+                  "font-medium",
+                  canClaim ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"
+                )}>
+                  {currentXp} XP
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>
         
-        <CardFooter className="flex flex-col items-start pt-0 px-6 pb-6 gap-3">
-          <div className="w-full bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-md p-2 flex justify-between items-center">
-            <span className="text-sm font-medium">Cost:</span>
-            <span className={cn(
-              "font-bold",
-              canClaim ? "text-indigo-600 dark:text-indigo-400" : "text-gray-500"
-            )}>
-              {xpCost} XP
-            </span>
-          </div>
-          
-          {!canClaim && (
-            <p className="text-xs text-amber-600 dark:text-amber-400">
-              You need {xpCost - currentXp} more XP to claim this reward.
-            </p>
+        <CardFooter className="p-4 pt-0">
+          {canClaim ? (
+            <Button 
+              className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600"
+              onClick={onClaim}
+              disabled={isLoading}
+            >
+              {isLoading ? "Claiming..." : "Claim Reward"}
+            </Button>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  className="w-full"
+                  variant="outline"
+                  disabled
+                >
+                  Need {xpCost - currentXp} more XP
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>You need {xpCost - currentXp} more XP to claim this reward</p>
+              </TooltipContent>
+            </Tooltip>
           )}
-          
-          <Button 
-            onClick={onClaim} 
-            variant={canClaim ? "default" : "outline"}
-            className={cn(
-              "w-full",
-              canClaim 
-                ? "bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600" 
-                : "text-gray-500"
-            )}
-            disabled={!canClaim || isLoading}
-          >
-            {isLoading ? "Claiming..." : canClaim ? "Claim Reward" : "Not Enough XP"}
-          </Button>
         </CardFooter>
       </Card>
-    </motion.div>
+    </TooltipProvider>
   );
 };
 
