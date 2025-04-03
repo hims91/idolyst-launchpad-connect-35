@@ -1,32 +1,32 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Loader2, ArrowLeft, Send } from 'lucide-react';
+import Layout from '@/components/layout/Layout';
+import PostCard from '@/components/launchpad/PostCard';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Avatar } from '@/components/ui/avatar';
+import { getPostById, Comment, addComment, getComments } from '@/api/launchpad';
+import { useAuth } from '@/hooks/useAuth';
+import UserAvatar from '@/components/shared/UserAvatar';
 
-import React, { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
-import { format } from "date-fns";
-import { ArrowLeft, Send, Loader2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import Layout from "@/components/layout/Layout";
-import PostCard from "@/components/launchpad/PostCard";
-import UserAvatar from "@/components/shared/UserAvatar";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "@/components/ui/use-toast";
-import { useAuth } from "@/hooks/useAuth";
-import { getPostById, getComments, addComment, Post, Comment } from "@/api/launchpad";
-
-const PostPage = () => {
+const PostPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  const [post, setPost] = useState<Post | null>(null);
+  const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  
   const [comments, setComments] = useState<Comment[]>([]);
-  const [loadingComments, setLoadingComments] = useState(true);
-  const [comment, setComment] = useState("");
+  const [commentsLoading, setCommentsLoading] = useState(true);
+  
+  const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [replyTo, setReplyTo] = useState<Comment | null>(null);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
   
   useEffect(() => {
     const fetchPost = async () => {
@@ -35,103 +35,161 @@ const PostPage = () => {
       try {
         setLoading(true);
         const fetchedPost = await getPostById(id);
-        setPost(fetchedPost);
         
         if (fetchedPost) {
-          // Load comments
-          setLoadingComments(true);
-          const fetchedComments = await getComments(fetchedPost.id);
-          setComments(fetchedComments);
+          setPost(fetchedPost);
+          setError(null);
+        } else {
+          throw new Error('Post not found');
         }
-      } catch (error) {
-        console.error("Error fetching post:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load the post. It may have been deleted or is unavailable.",
-          variant: "destructive",
-        });
-        navigate("/");
+      } catch (err) {
+        console.error("Error fetching post:", err);
+        setError(err instanceof Error ? err : new Error('Failed to fetch post'));
       } finally {
         setLoading(false);
-        setLoadingComments(false);
       }
     };
     
     fetchPost();
-  }, [id, navigate]);
+  }, [id]);
   
-  const handlePostUpdate = (updatedPost: Post) => {
-    setPost(updatedPost);
-  };
+  useEffect(() => {
+    const fetchComments = async () => {
+      if (!id) return;
+      
+      try {
+        setCommentsLoading(true);
+        const fetchedComments = await getComments(id);
+        setComments(fetchedComments);
+      } catch (err) {
+        console.error("Error fetching comments:", err);
+      } finally {
+        setCommentsLoading(false);
+      }
+    };
+    
+    fetchComments();
+  }, [id]);
   
-  const handleAddComment = async () => {
-    if (!comment.trim() || !post || !user) return;
+  const handleCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user || !newComment.trim() || !id) return;
     
     try {
       setSubmitting(true);
       
-      const newComment = await addComment(
-        post.id,
-        comment,
-        replyTo?.id
+      const comment = await addComment(
+        id, 
+        newComment, 
+        replyingTo || undefined
       );
       
-      if (newComment) {
-        toast({
-          title: "Comment added",
-          description: replyTo ? "Your reply has been posted" : "Your comment has been posted",
-        });
+      if (comment) {
+        if (replyingTo) {
+          setComments(prevComments => 
+            prevComments.map(c => 
+              c.id === replyingTo
+                ? { ...c, replies: [...(c.replies || []), comment] }
+                : c
+            )
+          );
+        } else {
+          setComments(prev => [comment, ...prev]);
+        }
         
-        setComment("");
-        setReplyTo(null);
+        setNewComment('');
+        setReplyingTo(null);
         
-        // Update comment count on post
-        setPost(prev => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            comments_count: (prev.comments_count || 0) + 1
-          };
-        });
-        
-        // Refresh comments
-        const updatedComments = await getComments(post.id);
-        setComments(updatedComments);
+        if (post) {
+          setPost({
+            ...post,
+            comments_count: (post.comments_count || 0) + 1
+          });
+        }
       }
-    } catch (error) {
-      console.error("Error adding comment:", error);
+    } catch (err) {
+      console.error("Error adding comment:", err);
     } finally {
       setSubmitting(false);
     }
   };
   
-  const formatDateTime = (dateString: string) => {
-    try {
-      return format(new Date(dateString), "MMM d, yyyy 'at' h:mm a");
-    } catch (e) {
-      return "Invalid date";
-    }
-  };
+  const renderComment = (comment: Comment) => (
+    <motion.div
+      key={comment.id}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      className="mb-4 last:mb-0"
+    >
+      <div className="flex gap-3">
+        <UserAvatar
+          user={{
+            id: comment.user_id,
+            name: comment.author?.full_name || "User",
+            image: comment.author?.avatar_url
+          }}
+          className="h-8 w-8"
+        />
+        
+        <div className="flex-1">
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
+            <div className="flex justify-between">
+              <p className="font-medium text-sm">
+                {comment.author?.full_name || "User"}
+              </p>
+              <span className="text-xs text-gray-500">
+                {new Date(comment.created_at).toLocaleString()}
+              </span>
+            </div>
+            <p className="text-sm mt-1 whitespace-pre-line">{comment.content}</p>
+          </div>
+          
+          {user && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs mt-1 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+              onClick={() => setReplyingTo(comment.id)}
+            >
+              Reply
+            </Button>
+          )}
+          
+          {comment.replies && comment.replies.length > 0 && (
+            <div className="mt-2 pl-4 border-l-2 border-gray-200 dark:border-gray-700 space-y-3">
+              {comment.replies.map(renderComment)}
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
   
   if (loading) {
     return (
       <Layout>
-        <div className="max-w-2xl mx-auto flex items-center justify-center p-8">
-          <Loader2 className="h-8 w-8 animate-spin text-idolyst-purple" />
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-10 w-10 text-idolyst-purple animate-spin" />
         </div>
       </Layout>
     );
   }
   
-  if (!post) {
+  if (error || !post) {
     return (
       <Layout>
-        <div className="max-w-2xl mx-auto p-4">
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold mb-2">Post not found</h2>
-            <p className="text-idolyst-gray mb-6">The post you're looking for doesn't exist or has been deleted.</p>
-            <Button asChild className="gradient-bg">
-              <Link to="/">Back to Home</Link>
+        <div className="max-w-2xl mx-auto py-10">
+          <div className="text-center">
+            <h1 className="text-xl font-semibold text-red-500 mb-4">
+              {error?.message || "Post not found"}
+            </h1>
+            <Button 
+              onClick={() => navigate('/')} 
+              className="gradient-bg hover-scale"
+            >
+              Back to Home
             </Button>
           </div>
         </div>
@@ -142,228 +200,128 @@ const PostPage = () => {
   return (
     <Layout>
       <Helmet>
-        <title>{post.author?.full_name || "User"}'s Post on Idolyst Launchpad</title>
-        <meta name="description" content={post.content.substring(0, 160)} />
-        <meta property="og:title" content={`${post.author?.full_name || "User"}'s Post on Idolyst`} />
-        <meta property="og:description" content={post.content.substring(0, 160)} />
+        <title>{`${post.author?.full_name}'s Post on ${post.category} | Idolyst`}</title>
+        <meta 
+          name="description" 
+          content={post.content.substring(0, 160)} 
+        />
+        <meta property="og:title" content={`${post.author?.full_name}'s Post | Idolyst`} />
+        <meta 
+          property="og:description" 
+          content={post.content.substring(0, 160)}
+        />
+        {post.media_url && (
+          <meta property="og:image" content={post.media_url} />
+        )}
         <meta property="og:type" content="article" />
-        {post.media_url && <meta property="og:image" content={post.media_url} />}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={`${post.author?.full_name || "User"}'s Post on Idolyst`} />
-        <meta name="twitter:description" content={post.content.substring(0, 160)} />
-        {post.media_url && <meta name="twitter:image" content={post.media_url} />}
+        <link rel="canonical" href={`${window.location.origin}/launchpad/post/${post.id}`} />
       </Helmet>
       
-      <div className="max-w-2xl mx-auto pb-20 md:pb-0">
-        <div className="flex items-center mb-6">
+      <div className="max-w-2xl mx-auto pb-20 md:pb-10">
+        <div className="mb-4">
           <Button
             variant="ghost"
-            size="icon"
+            size="sm"
             onClick={() => navigate(-1)}
-            className="mr-2"
+            className="flex items-center text-sm text-gray-500 hover:text-gray-800"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-4 w-4 mr-1" /> Back
           </Button>
-          <h1 className="text-xl font-bold">Post</h1>
         </div>
         
-        <PostCard post={post} onUpdate={handlePostUpdate} isDetail />
+        <PostCard post={post} onUpdate={setPost} isDetail={true} />
         
-        {/* Comments section */}
         <div className="mt-6">
-          <h2 className="text-lg font-semibold mb-4">
-            {post.comments_count || 0} {(post.comments_count === 1) ? "Comment" : "Comments"}
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">
+              Comments ({post.comments_count || 0})
+            </h2>
+          </div>
           
-          {/* Add comment form */}
-          <div className="mb-6">
-            {replyTo && (
-              <div className="bg-gray-50 p-3 rounded-t-md flex justify-between items-start">
-                <div className="flex items-start">
-                  <span className="text-sm text-idolyst-gray mr-2">Replying to:</span>
-                  <div>
-                    <span className="text-sm font-medium">{replyTo.author?.full_name || "User"}</span>
-                    <p className="text-xs text-idolyst-gray line-clamp-1">{replyTo.content}</p>
-                  </div>
+          {user ? (
+            <form onSubmit={handleCommentSubmit} className="mb-8">
+              {replyingTo && (
+                <div className="mb-2 flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                  <span className="text-sm">
+                    Replying to comment
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    type="button"
+                    onClick={() => setReplyingTo(null)}
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-1" /> Cancel
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs"
-                  onClick={() => setReplyTo(null)}
-                >
-                  Cancel
-                </Button>
-              </div>
-            )}
-            
-            <div className="flex items-start gap-3 mb-1">
-              {user ? (
-                <UserAvatar 
+              )}
+              
+              <div className="flex gap-3">
+                <UserAvatar
                   user={{
                     id: user.id,
                     name: user.profile?.full_name || user.email || "User",
                     image: user.profile?.avatar_url
                   }}
-                  size="sm"
-                />
-              ) : (
-                <UserAvatar user={{ id: "guest", name: "Guest" }} size="sm" />
-              )}
-              
-              <div className="flex-1">
-                <Textarea
-                  placeholder={user ? "Add a comment..." : "Sign in to comment"}
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  disabled={!user || submitting}
-                  className="resize-none min-h-[80px]"
+                  className="h-10 w-10"
                 />
                 
-                <div className="flex justify-end mt-2">
+                <div className="relative flex-1">
+                  <Textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Write a comment..."
+                    className="pr-10 min-h-[80px] resize-none"
+                    disabled={submitting}
+                  />
                   <Button
-                    onClick={handleAddComment}
-                    disabled={!user || !comment.trim() || submitting}
-                    className="gradient-bg"
+                    type="submit"
+                    size="sm"
+                    className="absolute right-2 bottom-2 h-8 w-8 p-0 rounded-full gradient-bg hover-scale"
+                    disabled={submitting || !newComment.trim()}
                   >
                     {submitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Posting...
-                      </>
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <>
-                        <Send className="h-4 w-4 mr-2" />
-                        {replyTo ? "Reply" : "Comment"}
-                      </>
+                      <Send className="h-4 w-4" />
                     )}
                   </Button>
                 </div>
               </div>
+            </form>
+          ) : (
+            <div className="flex items-center justify-between p-4 mb-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <p className="text-sm">Sign in to join the conversation</p>
+              <Button
+                onClick={() => navigate('/auth/login')}
+                className="gradient-bg hover-scale"
+                size="sm"
+              >
+                Sign In
+              </Button>
             </div>
-            
-            {!user && (
-              <div className="text-center mt-2">
-                <Button asChild variant="link" className="text-idolyst-purple">
-                  <Link to="/auth/login">Sign in to comment</Link>
-                </Button>
-              </div>
-            )}
-          </div>
+          )}
           
-          <Separator />
-          
-          {/* Comments list */}
-          <div className="mt-6 space-y-6">
-            {loadingComments ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-idolyst-purple" />
+          <AnimatePresence mode="popLayout">
+            {commentsLoading ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="h-6 w-6 text-idolyst-purple animate-spin" />
               </div>
-            ) : comments.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-idolyst-gray">No comments yet. Be the first to comment!</p>
+            ) : comments.length > 0 ? (
+              <div className="space-y-6">
+                {comments.map(renderComment)}
               </div>
             ) : (
-              <AnimatePresence>
-                {comments.map((comment, index) => (
-                  <motion.div
-                    key={comment.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="mb-6"
-                  >
-                    <CommentItem 
-                      comment={comment} 
-                      onReply={() => setReplyTo(comment)}
-                    />
-                    
-                    {/* Replies */}
-                    {comment.replies && comment.replies.length > 0 && (
-                      <div className="ml-12 mt-3 space-y-4">
-                        {comment.replies.map((reply) => (
-                          <CommentItem 
-                            key={reply.id} 
-                            comment={reply}
-                            onReply={() => setReplyTo(reply)}
-                            isReply
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+              <div className="text-center py-8">
+                <p className="text-gray-500">
+                  No comments yet. Be the first to comment!
+                </p>
+              </div>
             )}
-          </div>
+          </AnimatePresence>
         </div>
       </div>
     </Layout>
-  );
-};
-
-interface CommentItemProps {
-  comment: Comment;
-  onReply: () => void;
-  isReply?: boolean;
-}
-
-const CommentItem: React.FC<CommentItemProps> = ({ comment, onReply, isReply = false }) => {
-  const { user } = useAuth();
-  
-  const formatDateTime = (dateString: string) => {
-    try {
-      return format(new Date(dateString), "MMM d, yyyy 'at' h:mm a");
-    } catch (e) {
-      return "Invalid date";
-    }
-  };
-  
-  return (
-    <div className="flex gap-3">
-      <Link to={`/profile/${comment.user_id}`}>
-        <UserAvatar
-          user={{
-            id: comment.user_id,
-            name: comment.author?.full_name || "Unknown",
-            image: comment.author?.avatar_url
-          }}
-          size="sm"
-        />
-      </Link>
-      
-      <div className="flex-1">
-        <div className="bg-gray-50 rounded-md p-3">
-          <div className="flex justify-between">
-            <Link 
-              to={`/profile/${comment.user_id}`}
-              className="font-medium text-idolyst-gray-dark hover:text-idolyst-purple"
-            >
-              {comment.author?.full_name || "Unknown"}
-            </Link>
-            <span className="text-xs text-idolyst-gray">
-              {formatDateTime(comment.created_at)}
-            </span>
-          </div>
-          
-          <p className="text-idolyst-gray-dark mt-1 whitespace-pre-wrap">
-            {comment.content}
-          </p>
-        </div>
-        
-        {/* Reply button */}
-        {user && !isReply && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs mt-1"
-            onClick={onReply}
-          >
-            Reply
-          </Button>
-        )}
-      </div>
-    </div>
   );
 };
 

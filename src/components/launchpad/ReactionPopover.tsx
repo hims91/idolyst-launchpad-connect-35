@@ -1,127 +1,128 @@
 
-import React from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ThumbsUp, Lightbulb, DollarSign, Sparkles, Users } from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { ReactionType } from "@/api/launchpad";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/components/ui/use-toast";
+import React, { useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Lightbulb, Rocket, Sparkles, Link, Heart } from 'lucide-react';
+import { ReactionType } from '@/api/launchpad';
 
 interface ReactionPopoverProps {
-  postId: string;
-  children: React.ReactNode;
-  currentReaction: ReactionType | null;
+  isOpen: boolean;
+  onClose: () => void;
   onReaction: (type: ReactionType) => void;
+  currentReaction: ReactionType | null;
 }
 
-const REACTIONS: { type: ReactionType; icon: React.ReactNode; label: string; color: string }[] = [
-  { 
-    type: 'like', 
-    icon: <ThumbsUp className="h-4 w-4" />,
-    label: 'Like',
-    color: 'bg-idolyst-purple text-white hover:bg-idolyst-purple-dark'
-  },
-  { 
-    type: 'insightful', 
-    icon: <Lightbulb className="h-4 w-4" />,
-    label: 'Insightful',
-    color: 'bg-blue-500 text-white hover:bg-blue-600' 
-  },
-  { 
-    type: 'fundable', 
-    icon: <DollarSign className="h-4 w-4" />,
-    label: 'Fundable', 
-    color: 'bg-green-500 text-white hover:bg-green-600'
-  },
-  { 
-    type: 'innovative', 
-    icon: <Sparkles className="h-4 w-4" />,
-    label: 'Innovative',
-    color: 'bg-purple-500 text-white hover:bg-purple-600' 
-  },
-  { 
-    type: 'collab_worthy', 
-    icon: <Users className="h-4 w-4" />,
-    label: 'Collab Worthy',
-    color: 'bg-amber-500 text-white hover:bg-amber-600' 
-  }
-];
-
-const ReactionPopover: React.FC<ReactionPopoverProps> = ({ 
-  postId, 
-  children, 
-  currentReaction, 
-  onReaction 
+const ReactionPopover: React.FC<ReactionPopoverProps> = ({
+  isOpen,
+  onClose,
+  onReaction,
+  currentReaction,
 }) => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [isOpen, setIsOpen] = React.useState(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
   
-  const handleReaction = (type: ReactionType) => {
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to react to posts",
-        variant: "destructive",
-      });
-      return;
-    }
+  // Close popover when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
     
-    setIsOpen(false);
-    onReaction(type);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [onClose]);
+  
+  // Reaction options
+  const reactions = [
+    { 
+      type: 'insightful' as ReactionType, 
+      icon: <Lightbulb className="h-5 w-5" />, 
+      label: 'Insightful',
+      gradient: 'from-yellow-400 to-yellow-600'
+    },
+    { 
+      type: 'fundable' as ReactionType, 
+      icon: <Rocket className="h-5 w-5" />, 
+      label: 'Fundable',
+      gradient: 'from-green-400 to-green-600'
+    },
+    { 
+      type: 'innovative' as ReactionType, 
+      icon: <Sparkles className="h-5 w-5" />, 
+      label: 'Innovative',
+      gradient: 'from-blue-400 to-blue-600'
+    },
+    { 
+      type: 'collab_worthy' as ReactionType, 
+      icon: <Link className="h-5 w-5" />, 
+      label: 'Collab Worthy',
+      gradient: 'from-purple-400 to-purple-600'
+    },
+    { 
+      type: 'like' as ReactionType, 
+      icon: <Heart className="h-5 w-5" />, 
+      label: 'Like',
+      gradient: 'from-pink-400 to-pink-600'
+    }
+  ];
+  
+  if (!isOpen) return null;
+  
+  // Animation variants for the container and buttons
+  const containerVariants = {
+    hidden: { opacity: 0, scale: 0.8, y: 10 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      transition: { 
+        duration: 0.2, 
+        ease: "easeOut",
+        staggerChildren: 0.05
+      }
+    },
+    exit: { opacity: 0, scale: 0.8, y: 10, transition: { duration: 0.15 } }
   };
   
-  // Special handling for direct click on the button
-  const handleDirectClick = () => {
-    if (user) {
-      onReaction('like');
-    } else {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to react to posts",
-        variant: "destructive",
-      });
-    }
+  const buttonVariants = {
+    hidden: { opacity: 0, scale: 0.8 },
+    visible: { opacity: 1, scale: 1, transition: { type: "spring", stiffness: 300, damping: 15 } }
   };
   
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
-        <div>
-          {React.cloneElement(React.Children.only(children) as React.ReactElement, {
-            onClick: handleDirectClick,
-            onMouseEnter: () => setIsOpen(true)
-          })}
-        </div>
-      </PopoverTrigger>
-      <PopoverContent 
-        className="w-auto p-1 flex items-center space-x-1"
-        sideOffset={5}
-        onMouseLeave={() => setIsOpen(false)}
-      >
-        <AnimatePresence>
-          {REACTIONS.map((reaction) => (
-            <motion.button
-              key={reaction.type}
-              className={`rounded-full p-2 ${reaction.color} transition-all duration-300`}
-              whileHover={{ scale: 1.2 }}
-              whileTap={{ scale: 0.95 }}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              onClick={() => handleReaction(reaction.type)}
-              title={reaction.label}
-            >
-              {reaction.icon}
-            </motion.button>
-          ))}
-        </AnimatePresence>
-      </PopoverContent>
-    </Popover>
+    <motion.div
+      ref={popoverRef}
+      className="absolute left-0 bottom-full mb-2 z-50 p-2 bg-white dark:bg-gray-800 rounded-xl shadow-xl border"
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      variants={containerVariants}
+    >
+      <div className="flex gap-2">
+        {reactions.map((reaction) => (
+          <motion.button
+            key={reaction.type}
+            className={`relative p-2 rounded-full transition-transform
+              ${currentReaction === reaction.type ? 'scale-110 ring-2 ring-offset-2 ring-idolyst-purple' : 'hover:scale-110'}
+              bg-gradient-to-r ${reaction.gradient} text-white`}
+            onClick={() => {
+              onReaction(reaction.type);
+              onClose();
+            }}
+            variants={buttonVariants}
+            whileHover={{ y: -4 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            {reaction.icon}
+            <span className="sr-only">{reaction.label}</span>
+            
+            {/* Tooltip */}
+            <span className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+              {reaction.label}
+            </span>
+          </motion.button>
+        ))}
+      </div>
+    </motion.div>
   );
 };
 

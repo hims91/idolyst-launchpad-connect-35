@@ -1,128 +1,208 @@
 
-import React, { useState, useEffect } from "react";
-import { useInView } from "react-intersection-observer";
-import { motion, AnimatePresence } from "framer-motion";
-import { Loader2 } from "lucide-react";
-import PostCard from "./PostCard";
-import EmptyState from "../shared/EmptyState";
-import { getPosts, FeedType, Post } from "@/api/launchpad";
+import React, { useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
+import PostCard from './PostCard';
+import { FeedType } from '@/api/launchpad';
+import useLaunchpadPosts from '@/hooks/useLaunchpadPosts';
+import { Loader2, RefreshCw, ArrowUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 interface LaunchpadFeedProps {
   feedType: FeedType;
   category?: string;
 }
 
-const LaunchpadFeed = ({ feedType, category }: LaunchpadFeedProps) => {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+const LaunchpadFeed: React.FC<LaunchpadFeedProps> = ({ feedType, category }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   
-  // Setup IntersectionObserver for infinite scrolling
+  const { 
+    posts, 
+    loading, 
+    error, 
+    hasMore, 
+    loadMore, 
+    refresh,
+    updatePost 
+  } = useLaunchpadPosts({ feedType, category });
+  
+  // Infinite scroll implementation
   const { ref, inView } = useInView({
     threshold: 0.1,
     triggerOnce: false,
   });
   
-  // Fetch posts when component mounts or when feed type changes
+  // Load more when bottom is reached
   useEffect(() => {
-    const fetchPosts = async () => {
-      setLoading(true);
-      
-      try {
-        const fetchedPosts = await getPosts(feedType, category, 1);
-        setPosts(fetchedPosts);
-        setHasMore(fetchedPosts.length === 10); // If we get back 10 posts, there may be more
-        setPage(1);
-      } catch (error) {
-        console.error("Error fetching posts:", error);
-      } finally {
-        setLoading(false);
-      }
+    if (inView && hasMore && !loading) {
+      loadMore();
+    }
+  }, [inView, hasMore, loading, loadMore]);
+  
+  // State for back-to-top button
+  const [showBackToTop, setShowBackToTop] = React.useState(false);
+  
+  // Show back-to-top button when scrolled down
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 500);
     };
     
-    fetchPosts();
-  }, [feedType, category]);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
   
-  // Load more posts when the user scrolls down
-  useEffect(() => {
-    const loadMorePosts = async () => {
-      if (inView && hasMore && !loading) {
-        setLoading(true);
-        
-        try {
-          const nextPage = page + 1;
-          const morePosts = await getPosts(feedType, category, nextPage);
-          
-          if (morePosts.length === 0) {
-            setHasMore(false);
-          } else {
-            setPosts(prevPosts => [...prevPosts, ...morePosts]);
-            setPage(nextPage);
-            setHasMore(morePosts.length === 10);
-          }
-        } catch (error) {
-          console.error("Error loading more posts:", error);
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-    
-    loadMorePosts();
-  }, [inView, hasMore, page, loading, feedType, category]);
-  
-  // Handle post update (e.g. after a reaction)
-  const handlePostUpdate = (updatedPost: Post) => {
-    setPosts(prevPosts => 
-      prevPosts.map(post => 
-        post.id === updatedPost.id ? updatedPost : post
-      )
-    );
+  // Scroll to top function
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   
-  // Empty state
-  if (!loading && posts.length === 0) {
+  // Show empty state for following feed when not logged in
+  if (feedType === 'following' && !user) {
     return (
-      <EmptyState 
-        title={feedType === 'following' ? "No posts from people you follow" : "No posts yet"}
-        description={feedType === 'following' ? "Follow users to see their posts here" : "Be the first one to post!"}
-        actionText="Create a post"
-        actionLink="#create-post"
-        icon="post"
-      />
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-md"
+        >
+          <h3 className="text-xl font-semibold mb-4">Sign in to see posts from people you follow</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            Connect with founders, mentors, and others in the startup ecosystem.
+          </p>
+          <Button 
+            className="gradient-bg hover-scale"
+            onClick={() => navigate('/auth/login')}
+          >
+            Sign In
+          </Button>
+        </motion.div>
+      </div>
     );
   }
   
+  // Show loading state
+  if (loading && posts.length === 0) {
+    return (
+      <div className="flex justify-center py-10">
+        <Loader2 className="h-10 w-10 text-idolyst-purple animate-spin" />
+      </div>
+    );
+  }
+  
+  // Show error state
+  if (error && posts.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-10 text-center">
+        <p className="text-red-500 mb-4">Failed to load posts</p>
+        <Button 
+          variant="outline" 
+          className="flex items-center gap-2"
+          onClick={refresh}
+        >
+          <RefreshCw className="h-4 w-4" />
+          Try Again
+        </Button>
+      </div>
+    );
+  }
+  
+  // Empty state when no posts
+  if (posts.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-md"
+        >
+          <h3 className="text-xl font-semibold mb-2">No posts found</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            {feedType === 'following' 
+              ? "Follow more people to see their posts here." 
+              : "Be the first to share something!"}
+          </p>
+          {user && (
+            <Button 
+              className="gradient-bg hover-scale"
+              onClick={() => navigate('/')}
+            >
+              Explore Trending Posts
+            </Button>
+          )}
+        </motion.div>
+      </div>
+    );
+  }
+  
+  // Render posts
   return (
-    <div className="space-y-4 pb-20">
-      <AnimatePresence initial={false}>
-        {posts.map((post, index) => (
-          <motion.div 
-            key={post.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3, delay: index * 0.05 }}
-          >
-            <PostCard post={post} onUpdate={handlePostUpdate} />
-          </motion.div>
-        ))}
+    <>
+      <AnimatePresence mode="popLayout">
+        <div className="space-y-6">
+          {posts.map((post, index) => (
+            <motion.div
+              key={post.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ 
+                duration: 0.4, 
+                delay: index < 5 ? index * 0.1 : 0 // Stagger animation only for first few posts
+              }}
+            >
+              <PostCard 
+                post={post} 
+                onUpdate={updatePost}
+              />
+            </motion.div>
+          ))}
+          
+          {/* Loading more indicator */}
+          {loading && posts.length > 0 && (
+            <div className="flex justify-center py-4">
+              <Loader2 className="h-6 w-6 text-idolyst-purple animate-spin" />
+            </div>
+          )}
+          
+          {/* End of results message */}
+          {!hasMore && !loading && posts.length > 5 && (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <p>You've reached the end of the feed</p>
+            </div>
+          )}
+          
+          {/* Intersection observer reference element */}
+          {hasMore && <div ref={ref} className="h-10" />}
+        </div>
       </AnimatePresence>
       
-      {/* Loading indicator and infinite scroll trigger */}
-      <div 
-        ref={ref} 
-        className="flex justify-center py-8"
-      >
-        {loading && (
-          <div className="flex items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-idolyst-purple" />
-            <span className="ml-2 text-sm text-idolyst-gray">Loading more posts...</span>
-          </div>
+      {/* Back to Top Button */}
+      <AnimatePresence>
+        {showBackToTop && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="fixed bottom-24 md:bottom-10 right-6 z-50"
+          >
+            <Button
+              variant="default"
+              size="icon"
+              className="h-12 w-12 rounded-full shadow-lg gradient-bg hover-scale"
+              onClick={scrollToTop}
+            >
+              <ArrowUp className="h-6 w-6" />
+            </Button>
+          </motion.div>
         )}
-      </div>
-    </div>
+      </AnimatePresence>
+    </>
   );
 };
 
