@@ -245,7 +245,10 @@ export const getUserBadgesWithProgress = async (userId: string): Promise<any[]> 
 
     // Combine progress badges with badge details
     const inProgressBadges = (badgeProgress || []).map(progress => {
+      // Find the matching badge detail
       const badgeDetail = badgeDetails.find(b => b.id === progress.badge_id);
+      
+      // Fixed: Use badgeDetail directly, not badgeDetails array
       return {
         id: progress.badge_id,
         name: badgeDetail?.name || 'Unknown Badge',
