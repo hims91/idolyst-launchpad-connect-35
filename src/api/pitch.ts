@@ -2,6 +2,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
+import { getTypedSupabaseClient } from "@/lib/supabase-types";
+
+// Get a typed Supabase client
+const typedSupabase = getTypedSupabaseClient(supabase);
 
 export type IdeaStage = 
   | 'ideation'
@@ -30,11 +34,14 @@ export interface PitchIdea {
     username: string;
     full_name: string;
     avatar_url: string | null;
+    id?: string;
+    bio?: string;
   };
   vote_count?: number;
   user_vote?: 'upvote' | 'downvote' | null;
   feedback_count?: number;
   mentor_feedback_count?: number;
+  feedback?: PitchFeedback[];
 }
 
 export interface PitchDraft {
@@ -64,6 +71,7 @@ export interface PitchFeedback {
     full_name: string;
     avatar_url: string | null;
     is_mentor?: boolean;
+    id?: string;
   };
 }
 
@@ -80,13 +88,11 @@ export const getPitchIdeas = async (
   search?: string
 ) => {
   try {
-    let query = supabase
+    let query = typedSupabase
       .from('pitch_ideas')
       .select(`
         *,
-        author:profiles!pitch_ideas_user_id_fkey(username, full_name, avatar_url),
-        vote_count:pitch_votes(pitch_id, vote_type),
-        feedback_count:pitch_feedback!inner(id, is_mentor_feedback)
+        author:profiles!pitch_ideas_user_id_fkey(username, full_name, avatar_url)
       `)
       .order('created_at', { ascending: false });
 
@@ -109,13 +115,6 @@ export const getPitchIdeas = async (
     // Apply search filter
     if (search) {
       query = query.or(`title.ilike.%${search}%,problem_statement.ilike.%${search}%,solution.ilike.%${search}%`);
-    }
-
-    // Apply sorting based on filter
-    if (filter === 'top') {
-      // Sort by votes (requires post-processing)
-    } else if (filter === 'mentor') {
-      query = query.eq('pitch_feedback.is_mentor_feedback', true);
     }
 
     // Apply pagination
@@ -150,7 +149,7 @@ export const getPitchIdeas = async (
 // Get a single pitch idea by ID with detailed information
 export const getPitchIdea = async (id: string) => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('pitch_ideas')
       .select(`
         *,
@@ -164,15 +163,15 @@ export const getPitchIdea = async (id: string) => {
     if (!data) return null;
 
     // Increment view count using RPC function
-    await supabase.rpc('increment_pitch_view', { id });
+    await typedSupabase.rpc('increment_pitch_view', { id });
 
     // Get votes for this pitch
-    const votesResponse = await supabase
+    const votesResponse = await typedSupabase
       .from('pitch_votes')
       .select('*')
       .eq('pitch_id', id);
 
-    const feedbackResponse = await supabase
+    const feedbackResponse = await typedSupabase
       .from('pitch_feedback')
       .select(`
         *,
@@ -191,10 +190,10 @@ export const getPitchIdea = async (id: string) => {
     const voteCount = upvotes - downvotes;
 
     // Check current user's vote
-    const user = supabase.auth.getUser();
+    const user = await typedSupabase.auth.getUser();
     let userVote = null;
-    if (user) {
-      const userVoteData = votesResponse.data.find(vote => vote.user_id === (user as any).data?.user?.id);
+    if (user.data.user) {
+      const userVoteData = votesResponse.data.find(vote => vote.user_id === user.data.user?.id);
       if (userVoteData) {
         userVote = userVoteData.vote_type;
       }
@@ -204,7 +203,7 @@ export const getPitchIdea = async (id: string) => {
     const enhancedFeedback = await Promise.all(
       feedbackResponse.data.map(async (feedback) => {
         // Check if the feedback author is a mentor
-        const { data: roleData } = await supabase
+        const { data: roleData } = await typedSupabase
           .from('user_roles')
           .select('role')
           .eq('user_id', feedback.user_id)
@@ -217,7 +216,7 @@ export const getPitchIdea = async (id: string) => {
             ...feedback.author,
             is_mentor: !!roleData
           }
-        };
+        } as PitchFeedback;
       })
     );
 
@@ -228,7 +227,7 @@ export const getPitchIdea = async (id: string) => {
       feedback: enhancedFeedback,
       feedback_count: enhancedFeedback.length,
       mentor_feedback_count: enhancedFeedback.filter(f => f.is_mentor_feedback).length
-    };
+    } as PitchIdea;
   } catch (error) {
     console.error('Error fetching pitch idea:', error);
     toast({
@@ -249,14 +248,14 @@ export const uploadPitchMedia = async (file: File, userId: string) => {
     const fileName = `${uuidv4()}.${fileExt}`;
     const filePath = `${userId}/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await typedSupabase.storage
       .from('pitch-media')
       .upload(filePath, file);
 
     if (uploadError) throw uploadError;
 
     // Get public URL for the uploaded file
-    const { data } = supabase.storage
+    const { data } = typedSupabase.storage
       .from('pitch-media')
       .getPublicUrl(filePath);
 
@@ -275,10 +274,10 @@ export const uploadPitchMedia = async (file: File, userId: string) => {
 // Create a new pitch idea
 export const createPitchIdea = async (pitch: Omit<PitchIdea, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'views_count' | 'is_premium'>) => {
   try {
-    const user = await supabase.auth.getUser();
+    const user = await typedSupabase.auth.getUser();
     if (!user.data.user) throw new Error('User not authenticated');
 
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('pitch_ideas')
       .insert({
         user_id: user.data.user.id,
@@ -315,10 +314,10 @@ export const createPitchIdea = async (pitch: Omit<PitchIdea, 'id' | 'user_id' | 
 // Save pitch as draft
 export const savePitchDraft = async (draft: Partial<PitchDraft>) => {
   try {
-    const user = await supabase.auth.getUser();
+    const user = await typedSupabase.auth.getUser();
     if (!user.data.user) throw new Error('User not authenticated');
 
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('pitch_drafts')
       .insert({
         user_id: user.data.user.id,
@@ -355,10 +354,10 @@ export const savePitchDraft = async (draft: Partial<PitchDraft>) => {
 // Get user's pitch drafts
 export const getUserDrafts = async () => {
   try {
-    const user = await supabase.auth.getUser();
+    const user = await typedSupabase.auth.getUser();
     if (!user.data.user) throw new Error('User not authenticated');
 
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('pitch_drafts')
       .select('*')
       .eq('user_id', user.data.user.id)
@@ -381,11 +380,11 @@ export const getUserDrafts = async () => {
 // Vote on a pitch idea
 export const votePitch = async (pitchId: string, voteType: 'upvote' | 'downvote') => {
   try {
-    const user = await supabase.auth.getUser();
+    const user = await typedSupabase.auth.getUser();
     if (!user.data.user) throw new Error('User not authenticated');
 
     // Check if user has already voted
-    const { data: existingVote, error: checkError } = await supabase
+    const { data: existingVote, error: checkError } = await typedSupabase
       .from('pitch_votes')
       .select('*')
       .eq('pitch_id', pitchId)
@@ -398,7 +397,7 @@ export const votePitch = async (pitchId: string, voteType: 'upvote' | 'downvote'
       // Update existing vote
       if (existingVote.vote_type === voteType) {
         // Remove vote if clicking the same button
-        const { error: deleteError } = await supabase
+        const { error: deleteError } = await typedSupabase
           .from('pitch_votes')
           .delete()
           .eq('id', existingVote.id);
@@ -407,7 +406,7 @@ export const votePitch = async (pitchId: string, voteType: 'upvote' | 'downvote'
         return null;
       } else {
         // Change vote type
-        const { data, error: updateError } = await supabase
+        const { data, error: updateError } = await typedSupabase
           .from('pitch_votes')
           .update({ vote_type: voteType })
           .eq('id', existingVote.id)
@@ -419,7 +418,7 @@ export const votePitch = async (pitchId: string, voteType: 'upvote' | 'downvote'
       }
     } else {
       // Create new vote
-      const { data, error: insertError } = await supabase
+      const { data, error: insertError } = await typedSupabase
         .from('pitch_votes')
         .insert({
           pitch_id: pitchId,
@@ -446,11 +445,11 @@ export const votePitch = async (pitchId: string, voteType: 'upvote' | 'downvote'
 // Add feedback/comment to a pitch idea
 export const addFeedback = async (pitchId: string, content: string) => {
   try {
-    const user = await supabase.auth.getUser();
+    const user = await typedSupabase.auth.getUser();
     if (!user.data.user) throw new Error('User not authenticated');
 
     // Check if user is a mentor
-    const { data: mentorData, error: mentorError } = await supabase
+    const { data: mentorData, error: mentorError } = await typedSupabase
       .from('user_roles')
       .select('*')
       .eq('user_id', user.data.user.id)
@@ -461,7 +460,7 @@ export const addFeedback = async (pitchId: string, content: string) => {
 
     const isMentor = !!mentorData;
 
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('pitch_feedback')
       .insert({
         pitch_id: pitchId,
@@ -488,7 +487,7 @@ export const addFeedback = async (pitchId: string, content: string) => {
         ...data.author,
         is_mentor: isMentor
       }
-    };
+    } as PitchFeedback;
   } catch (error) {
     console.error('Error adding feedback:', error);
     toast({
@@ -504,12 +503,11 @@ export const addFeedback = async (pitchId: string, content: string) => {
 export const getLeaderboardIdeas = async (timeRange: TimeRange = 'week', limit = 10) => {
   try {
     // First get all ideas within the time range
-    let query = supabase
+    let query = typedSupabase
       .from('pitch_ideas')
       .select(`
         *,
-        author:profiles!pitch_ideas_user_id_fkey(username, full_name, avatar_url),
-        votes:pitch_votes(*)
+        author:profiles!pitch_ideas_user_id_fkey(username, full_name, avatar_url)
       `);
 
     // Apply time range filter
@@ -546,13 +544,13 @@ export const getLeaderboardIdeas = async (timeRange: TimeRange = 'week', limit =
 // Make a payment to boost a pitch idea
 export const createPremiumPayment = async (pitchId: string, amount: number, paymentMethod: string) => {
   try {
-    const user = await supabase.auth.getUser();
+    const user = await typedSupabase.auth.getUser();
     if (!user.data.user) throw new Error('User not authenticated');
 
     // In a real app, you would integrate with PayPal/Razorpay here and get a payment ID
     const mockPaymentId = `payment_${uuidv4().substring(0, 8)}`;
 
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('pitch_payments')
       .insert({
         pitch_id: pitchId,
@@ -588,7 +586,7 @@ export const createPremiumPayment = async (pitchId: string, amount: number, paym
 const enrichPitchData = async (pitchIdeas: any[]) => {
   try {
     // Get current user
-    const user = await supabase.auth.getUser();
+    const user = await typedSupabase.auth.getUser();
     const userId = user.data.user?.id;
 
     // Get all votes for these pitches
@@ -596,7 +594,7 @@ const enrichPitchData = async (pitchIdeas: any[]) => {
     
     if (pitchIds.length === 0) return [];
     
-    const { data: votesData, error: votesError } = await supabase
+    const { data: votesData, error: votesError } = await typedSupabase
       .from('pitch_votes')
       .select('*')
       .in('pitch_id', pitchIds);
@@ -604,7 +602,7 @@ const enrichPitchData = async (pitchIdeas: any[]) => {
     if (votesError) throw votesError;
 
     // Get all feedback for these pitches
-    const { data: feedbackData, error: feedbackError } = await supabase
+    const { data: feedbackData, error: feedbackError } = await typedSupabase
       .from('pitch_feedback')
       .select('*')
       .in('pitch_id', pitchIds);
@@ -629,10 +627,10 @@ const enrichPitchData = async (pitchIdeas: any[]) => {
         user_vote: userVote,
         feedback_count: pitchFeedback.length,
         mentor_feedback_count: mentorFeedback.length
-      };
+      } as PitchIdea;
     });
   } catch (error) {
     console.error('Error enriching pitch data:', error);
-    return pitchIdeas;
+    return pitchIdeas as PitchIdea[];
   }
 };
