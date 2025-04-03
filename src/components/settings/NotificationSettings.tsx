@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -8,160 +7,32 @@ import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Bell, Mail, Smartphone, Clock } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
-
-type EmailDigestFrequency = 'daily' | 'weekly' | 'never';
-
-interface NotificationPrefs {
-  email_enabled: boolean;
-  push_enabled: boolean;
-  email_digest_frequency: EmailDigestFrequency;
-  muted_until: string | null;
-  launchpad_reaction: boolean;
-  launchpad_comment: boolean;
-  launchpad_repost: boolean;
-  leaderboard_shift: boolean;
-  badge_unlock: boolean;
-  level_up: boolean;
-  pitch_feedback: boolean;
-  pitch_comment: boolean;
-  pitch_vote: boolean;
-  mentorship_reminder: boolean;
-  mentorship_cancellation: boolean;
-  mentorship_booking: boolean;
-  new_message: boolean;
-  new_follower: boolean;
-}
+import { EmailDigestFrequency, isValidEmailDigestFrequency } from "@/types/notifications";
+import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
 
 export const NotificationSettings = () => {
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [preferences, setPreferences] = useState<NotificationPrefs>({
-    email_enabled: true,
-    push_enabled: true,
-    email_digest_frequency: 'daily',
-    muted_until: null,
-    launchpad_reaction: true,
-    launchpad_comment: true,
-    launchpad_repost: true,
-    leaderboard_shift: true,
-    badge_unlock: true,
-    level_up: true,
-    pitch_feedback: true,
-    pitch_comment: true,
-    pitch_vote: true,
-    mentorship_reminder: true,
-    mentorship_cancellation: true,
-    mentorship_booking: true,
-    new_message: true,
-    new_follower: true,
-  });
-
-  // Fetch current notification preferences
-  useEffect(() => {
-    const fetchNotificationPreferences = async () => {
-      if (!user?.id) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('notification_preferences')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (error && error.code !== 'PGRST116') throw error;
-        
-        if (data) {
-          setPreferences({
-            email_enabled: data.email_enabled,
-            push_enabled: data.push_enabled,
-            email_digest_frequency: (data.email_digest_frequency as EmailDigestFrequency) || 'daily',
-            muted_until: data.muted_until,
-            launchpad_reaction: data.launchpad_reaction,
-            launchpad_comment: data.launchpad_comment,
-            launchpad_repost: data.launchpad_repost,
-            leaderboard_shift: data.leaderboard_shift,
-            badge_unlock: data.badge_unlock,
-            level_up: data.level_up,
-            pitch_feedback: data.pitch_feedback,
-            pitch_comment: data.pitch_comment,
-            pitch_vote: data.pitch_vote,
-            mentorship_reminder: data.mentorship_reminder,
-            mentorship_cancellation: data.mentorship_cancellation,
-            mentorship_booking: data.mentorship_booking,
-            new_message: data.new_message,
-            new_follower: data.new_follower,
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching notification preferences:', error);
-        toast({
-          variant: "destructive",
-          title: "Error fetching notification settings",
-          description: "There was a problem loading your notification preferences."
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchNotificationPreferences();
-  }, [user]);
-
-  // Save notification preferences
-  const saveNotificationPreferences = async () => {
-    if (!user?.id) return;
-    
-    setIsSaving(true);
-    
-    try {
-      const { error } = await supabase
-        .from('notification_preferences')
-        .upsert({
-          user_id: user.id,
-          ...preferences,
-          updated_at: new Date().toISOString(),
-        });
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Notification preferences saved",
-        description: "Your notification settings have been updated successfully."
-      });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error saving notification preferences",
-        description: error.message || "There was a problem saving your notification preferences."
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  const {
+    preferences,
+    isLoading,
+    isSaving,
+    savePreferences,
+    updatePreference,
+    muteForHours,
+    isMuted,
+    getMuteRemainingHours,
+    defaultPreferences
+  } = useNotificationPreferences();
 
   // Toggle temporary muting
   const setTemporaryMute = (hours: number | null) => {
-    if (hours === null) {
-      setPreferences(prev => ({ ...prev, muted_until: null }));
-      return;
-    }
-    
-    const muteUntil = new Date();
-    muteUntil.setHours(muteUntil.getHours() + hours);
-    
-    setPreferences(prev => ({ 
-      ...prev, 
-      muted_until: muteUntil.toISOString() 
-    }));
+    muteForHours(hours);
   };
 
   // Toggle all notifications by category
   const toggleCategoryNotifications = (category: string, value: boolean) => {
-    const categoryMap: Record<string, string[]> = {
+    if (!preferences) return;
+    
+    const categoryMap: Record<string, (keyof typeof defaultPreferences)[]> = {
       'social': ['new_follower', 'new_message'],
       'launchpad': ['launchpad_reaction', 'launchpad_comment', 'launchpad_repost'],
       'pitchhub': ['pitch_feedback', 'pitch_comment', 'pitch_vote'],
@@ -173,16 +44,17 @@ export const NotificationSettings = () => {
     const updatedPrefs = { ...preferences };
     
     keysToUpdate.forEach(key => {
-      // @ts-ignore - dynamically updating keys
       updatedPrefs[key] = value;
     });
     
-    setPreferences(updatedPrefs);
+    savePreferences(updatedPrefs);
   };
 
   // Check if any notification in a category is enabled
   const isCategoryEnabled = (category: string): boolean => {
-    const categoryMap: Record<string, string[]> = {
+    if (!preferences) return false;
+    
+    const categoryMap: Record<string, (keyof typeof defaultPreferences)[]> = {
       'social': ['new_follower', 'new_message'],
       'launchpad': ['launchpad_reaction', 'launchpad_comment', 'launchpad_repost'],
       'pitchhub': ['pitch_feedback', 'pitch_comment', 'pitch_vote'],
@@ -191,14 +63,11 @@ export const NotificationSettings = () => {
     };
     
     const keysToCheck = categoryMap[category] || [];
-    return keysToCheck.some(key => {
-      // @ts-ignore - dynamically checking keys
-      return preferences[key] === true;
-    });
+    return keysToCheck.some(key => preferences[key] === true);
   };
 
   // Loading skeleton
-  if (isLoading) {
+  if (isLoading || !preferences) {
     return (
       <div className="space-y-6">
         <div>
@@ -257,7 +126,7 @@ export const NotificationSettings = () => {
             <Switch
               id="email-notifications"
               checked={preferences.email_enabled}
-              onCheckedChange={(checked) => setPreferences(prev => ({ ...prev, email_enabled: checked }))}
+              onCheckedChange={(checked) => updatePreference('email_enabled', checked)}
             />
           </div>
           
@@ -274,7 +143,7 @@ export const NotificationSettings = () => {
             <Switch
               id="push-notifications"
               checked={preferences.push_enabled}
-              onCheckedChange={(checked) => setPreferences(prev => ({ ...prev, push_enabled: checked }))}
+              onCheckedChange={(checked) => updatePreference('push_enabled', checked)}
             />
           </div>
           
@@ -284,9 +153,11 @@ export const NotificationSettings = () => {
             <Label>Email Digest Frequency</Label>
             <RadioGroup
               value={preferences.email_digest_frequency}
-              onValueChange={(value: 'daily' | 'weekly' | 'never') => 
-                setPreferences(prev => ({ ...prev, email_digest_frequency: value }))
-              }
+              onValueChange={(value) => {
+                if (isValidEmailDigestFrequency(value)) {
+                  updatePreference('email_digest_frequency', value);
+                }
+              }}
               className="space-y-2"
             >
               <div className="flex items-center space-x-2">
@@ -350,9 +221,9 @@ export const NotificationSettings = () => {
             </Button>
           </div>
           
-          {preferences.muted_until && (
+          {isMuted() && (
             <p className="text-sm text-amber-500 mt-2">
-              Notifications muted until {new Date(preferences.muted_until).toLocaleString()}
+              Notifications muted for {getMuteRemainingHours()} more hour{getMuteRemainingHours() === 1 ? '' : 's'}
             </p>
           )}
         </div>
@@ -571,7 +442,7 @@ export const NotificationSettings = () => {
         
         <div className="flex justify-end mt-8">
           <Button 
-            onClick={saveNotificationPreferences}
+            onClick={() => savePreferences()}
             disabled={isSaving}
             className="gradient-bg"
           >

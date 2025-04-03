@@ -32,6 +32,8 @@ export interface Notification {
   action_url?: string;
 }
 
+export type EmailDigestFrequency = 'daily' | 'weekly' | 'never';
+
 export interface NotificationPreferences {
   id: string;
   user_id: string;
@@ -51,7 +53,7 @@ export interface NotificationPreferences {
   launchpad_repost: boolean;
   push_enabled: boolean;
   email_enabled: boolean;
-  email_digest_frequency: string;
+  email_digest_frequency: EmailDigestFrequency;
   muted_until: string | null;
   updated_at: string;
 }
@@ -60,4 +62,9 @@ export type NotificationGroup = {
   date: string;
   title: string;
   notifications: Notification[];
+};
+
+// Type guard for email digest frequency
+export const isValidEmailDigestFrequency = (value: string): value is EmailDigestFrequency => {
+  return ['daily', 'weekly', 'never'].includes(value);
 };

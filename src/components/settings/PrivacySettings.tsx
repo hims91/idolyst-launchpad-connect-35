@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -7,8 +6,13 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Shield, Eye, MessageSquare, Activity } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { PrivacySettings } from '@/types/profile';
+import { 
+  PrivacySettings,
+  isValidProfileVisibility,
+  isValidMessagingPermissions, 
+  isValidActivityVisibility 
+} from '@/types/profile';
+import { fetchPrivacySettings, updatePrivacySettings } from '@/api/profile';
 
 export const PrivacySettingsComponent = () => {
   const { user } = useAuth();
@@ -20,29 +24,22 @@ export const PrivacySettingsComponent = () => {
   });
 
   // Fetch current privacy settings
-  const fetchPrivacySettings = async () => {
-    if (!user?.id) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('privacy_settings')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+  useEffect(() => {
+    const loadPrivacySettings = async () => {
+      if (!user?.id) return;
       
-      if (error) throw error;
-      
-      if (data) {
-        setSettings({
-          profile_visibility: data.profile_visibility as PrivacySettings['profile_visibility'],
-          messaging_permissions: data.messaging_permissions as PrivacySettings['messaging_permissions'],
-          activity_visibility: data.activity_visibility as PrivacySettings['activity_visibility'],
-        });
+      try {
+        const data = await fetchPrivacySettings(user.id);
+        if (data) {
+          setSettings(data);
+        }
+      } catch (error) {
+        console.error('Error fetching privacy settings:', error);
       }
-    } catch (error) {
-      console.error('Error fetching privacy settings:', error);
-    }
-  };
+    };
+    
+    loadPrivacySettings();
+  }, [user]);
 
   // Save privacy settings
   const savePrivacySettings = async () => {
@@ -51,28 +48,7 @@ export const PrivacySettingsComponent = () => {
     setIsLoading(true);
     
     try {
-      const { error } = await supabase
-        .from('privacy_settings')
-        .upsert({
-          user_id: user.id,
-          profile_visibility: settings.profile_visibility,
-          messaging_permissions: settings.messaging_permissions,
-          activity_visibility: settings.activity_visibility,
-          updated_at: new Date().toISOString(),
-        });
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Privacy settings updated",
-        description: "Your privacy preferences have been saved successfully.",
-      });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error updating privacy settings",
-        description: error.message || "Something went wrong. Please try again.",
-      });
+      await updatePrivacySettings(user.id, settings);
     } finally {
       setIsLoading(false);
     }
@@ -97,9 +73,11 @@ export const PrivacySettingsComponent = () => {
           </p>
           <RadioGroup
             value={settings.profile_visibility}
-            onValueChange={(value: "public" | "followers" | "private") => 
-              setSettings(prev => ({ ...prev, profile_visibility: value }))
-            }
+            onValueChange={(value) => {
+              if (isValidProfileVisibility(value)) {
+                setSettings(prev => ({ ...prev, profile_visibility: value }));
+              }
+            }}
             className="mt-2 space-y-3"
           >
             <div className="flex items-center space-x-2">
@@ -128,9 +106,11 @@ export const PrivacySettingsComponent = () => {
           </p>
           <RadioGroup
             value={settings.messaging_permissions}
-            onValueChange={(value: "everyone" | "followers" | "none") => 
-              setSettings(prev => ({ ...prev, messaging_permissions: value }))
-            }
+            onValueChange={(value) => {
+              if (isValidMessagingPermissions(value)) {
+                setSettings(prev => ({ ...prev, messaging_permissions: value }));
+              }
+            }}
             className="mt-2 space-y-3"
           >
             <div className="flex items-center space-x-2">
@@ -159,9 +139,11 @@ export const PrivacySettingsComponent = () => {
           </p>
           <RadioGroup
             value={settings.activity_visibility}
-            onValueChange={(value: "public" | "followers" | "private") => 
-              setSettings(prev => ({ ...prev, activity_visibility: value }))
-            }
+            onValueChange={(value) => {
+              if (isValidActivityVisibility(value)) {
+                setSettings(prev => ({ ...prev, activity_visibility: value }));
+              }
+            }}
             className="mt-2 space-y-3"
           >
             <div className="flex items-center space-x-2">

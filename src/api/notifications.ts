@@ -125,7 +125,16 @@ export const fetchNotificationPreferences = async (): Promise<NotificationPrefer
       return createDefaultPreferences(user.user.id);
     }
     
-    return data as NotificationPreferences;
+    // Validate email_digest_frequency
+    const emailDigestFrequency: EmailDigestFrequency = isValidEmailDigestFrequency(data.email_digest_frequency)
+      ? data.email_digest_frequency
+      : 'daily';
+    
+    // Return with validated value
+    return {
+      ...data,
+      email_digest_frequency: emailDigestFrequency
+    } as NotificationPreferences;
   } catch (error: any) {
     console.error("Error fetching notification preferences:", error.message);
     return null;
@@ -135,12 +144,30 @@ export const fetchNotificationPreferences = async (): Promise<NotificationPrefer
 // Create default notification preferences if not exist
 const createDefaultPreferences = async (userId: string): Promise<NotificationPreferences | null> => {
   try {
+    const defaultPrefs = {
+      user_id: userId,
+      email_enabled: true,
+      push_enabled: true,
+      email_digest_frequency: 'daily' as EmailDigestFrequency,
+      new_follower: true,
+      new_message: true,
+      mentorship_booking: true,
+      mentorship_cancellation: true,
+      mentorship_reminder: true,
+      pitch_vote: true,
+      pitch_comment: true,
+      pitch_feedback: true,
+      level_up: true, 
+      badge_unlock: true,
+      leaderboard_shift: true,
+      launchpad_comment: true,
+      launchpad_reaction: true,
+      launchpad_repost: true,
+    };
+    
     const { data, error } = await supabase
       .from("notification_preferences")
-      .insert({
-        user_id: userId,
-        // Default values will be used from schema defaults
-      })
+      .insert(defaultPrefs)
       .select()
       .single();
     
@@ -160,6 +187,11 @@ export const updateNotificationPreferences = async (
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) {
       throw new Error("User not authenticated");
+    }
+    
+    // Validate email_digest_frequency if present
+    if (preferences.email_digest_frequency && !isValidEmailDigestFrequency(preferences.email_digest_frequency)) {
+      throw new Error("Invalid email digest frequency value");
     }
     
     // Check if preferences exist

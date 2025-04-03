@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Notification, NotificationGroup, NotificationPreferences } from '@/types/notifications';
@@ -21,7 +20,6 @@ export const useNotifications = () => {
   const [preferencesLoading, setPreferencesLoading] = useState(true);
   const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
   
-  // Fetch notifications
   const fetchUserNotifications = async () => {
     if (!user) return;
     
@@ -38,7 +36,6 @@ export const useNotifications = () => {
     }
   };
   
-  // Fetch notification preferences
   const fetchUserPreferences = async () => {
     if (!user) return;
     
@@ -53,7 +50,6 @@ export const useNotifications = () => {
     }
   };
   
-  // Mark notification as read
   const markAsRead = async (notificationId: string): Promise<boolean> => {
     try {
       const success = await markNotificationAsRead(notificationId);
@@ -76,7 +72,6 @@ export const useNotifications = () => {
     }
   };
   
-  // Mark all as read
   const markAllAsRead = async (): Promise<boolean> => {
     if (!user) return false;
     
@@ -95,14 +90,12 @@ export const useNotifications = () => {
     }
   };
   
-  // Delete a notification
   const removeNotification = async (notificationId: string): Promise<boolean> => {
     try {
       const success = await deleteNotification(notificationId);
       
       if (success) {
         setNotifications(notifications.filter(n => n.id !== notificationId));
-        // Update unread count if the deleted notification was unread
         const wasUnread = notifications.find(n => n.id === notificationId)?.is_read === false;
         if (wasUnread) {
           setUnreadCount(prev => Math.max(0, prev - 1));
@@ -116,14 +109,12 @@ export const useNotifications = () => {
     }
   };
   
-  // Group notifications by date
   const groupNotificationsByDate = (): NotificationGroup[] => {
     const groups: NotificationGroup[] = [];
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     
-    // Today's notifications
     const todayNotifications = notifications.filter(n => {
       const date = new Date(n.created_at);
       return date.toDateString() === today.toDateString();
@@ -137,7 +128,6 @@ export const useNotifications = () => {
       });
     }
     
-    // Yesterday's notifications
     const yesterdayNotifications = notifications.filter(n => {
       const date = new Date(n.created_at);
       return date.toDateString() === yesterday.toDateString();
@@ -151,7 +141,6 @@ export const useNotifications = () => {
       });
     }
     
-    // Earlier notifications
     const earlierNotifications = notifications.filter(n => {
       const date = new Date(n.created_at);
       return date.toDateString() !== today.toDateString() && 
@@ -169,11 +158,14 @@ export const useNotifications = () => {
     return groups;
   };
   
-  // Update notification preferences
   const updatePreferences = async (newPrefs: Partial<NotificationPreferences>): Promise<NotificationPreferences | null> => {
     if (!user || !preferences) return null;
     
     try {
+      if (newPrefs.email_digest_frequency && !isValidEmailDigestFrequency(newPrefs.email_digest_frequency)) {
+        throw new Error("Invalid email digest frequency");
+      }
+      
       const updatedPrefs = await updateNotificationPreferences(newPrefs);
       
       if (updatedPrefs) {
@@ -187,7 +179,6 @@ export const useNotifications = () => {
     }
   };
   
-  // Mute notifications for a period
   const muteForPeriod = async (hours: number): Promise<boolean> => {
     if (!user) return false;
     
@@ -195,7 +186,6 @@ export const useNotifications = () => {
       const success = await muteNotifications(hours);
       
       if (success && preferences) {
-        // Update local preference state with new muted_until value
         const muteUntil = new Date();
         muteUntil.setHours(muteUntil.getHours() + hours);
         
@@ -219,7 +209,6 @@ export const useNotifications = () => {
     }
   }, [user]);
   
-  // Calculate grouped notifications for components to use
   const groupedNotifications = groupNotificationsByDate();
   
   return {

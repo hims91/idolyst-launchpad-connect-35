@@ -301,6 +301,17 @@ export const fetchFollowing = async (userId: string, page = 1, limit = 20) => {
 // Update privacy settings
 export const updatePrivacySettings = async (userId: string, settings: PrivacySettings): Promise<boolean> => {
   try {
+    // Validate settings before saving
+    if (!isValidProfileVisibility(settings.profile_visibility)) {
+      throw new Error("Invalid profile visibility value");
+    }
+    if (!isValidMessagingPermissions(settings.messaging_permissions)) {
+      throw new Error("Invalid messaging permissions value");
+    }
+    if (!isValidActivityVisibility(settings.activity_visibility)) {
+      throw new Error("Invalid activity visibility value");
+    }
+
     const { error } = await supabase
       .from("privacy_settings")
       .upsert({
@@ -324,5 +335,48 @@ export const updatePrivacySettings = async (userId: string, settings: PrivacySet
       description: error.message,
     });
     return false;
+  }
+};
+
+// Fetch privacy settings
+export const fetchPrivacySettings = async (userId: string): Promise<PrivacySettings | null> => {
+  try {
+    const { data, error } = await supabase
+      .from("privacy_settings")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 is 'no rows returned'
+    
+    if (!data) {
+      // Create default settings if none exist
+      const defaultSettings: PrivacySettings = {
+        profile_visibility: 'public',
+        messaging_permissions: 'everyone',
+        activity_visibility: 'public'
+      };
+      
+      await updatePrivacySettings(userId, defaultSettings);
+      return defaultSettings;
+    }
+    
+    // Validate and sanitize the data
+    const settings: PrivacySettings = {
+      profile_visibility: isValidProfileVisibility(data.profile_visibility) 
+        ? data.profile_visibility 
+        : 'public',
+      messaging_permissions: isValidMessagingPermissions(data.messaging_permissions) 
+        ? data.messaging_permissions 
+        : 'everyone',
+      activity_visibility: isValidActivityVisibility(data.activity_visibility) 
+        ? data.activity_visibility 
+        : 'public'
+    };
+    
+    return settings;
+  } catch (error) {
+    console.error('Error fetching privacy settings:', error);
+    return null;
   }
 };

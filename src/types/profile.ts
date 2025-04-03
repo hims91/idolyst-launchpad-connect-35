@@ -73,3 +73,16 @@ export interface PrivacySettings {
   messaging_permissions: 'everyone' | 'followers' | 'none';
   activity_visibility: 'public' | 'followers' | 'private';
 }
+
+// Type guard functions to validate settings values
+export const isValidProfileVisibility = (value: string): value is PrivacySettings['profile_visibility'] => {
+  return ['public', 'followers', 'private'].includes(value);
+};
+
+export const isValidMessagingPermissions = (value: string): value is PrivacySettings['messaging_permissions'] => {
+  return ['everyone', 'followers', 'none'].includes(value);
+};
+
+export const isValidActivityVisibility = (value: string): value is PrivacySettings['activity_visibility'] => {
+  return ['public', 'followers', 'private'].includes(value);
+};
