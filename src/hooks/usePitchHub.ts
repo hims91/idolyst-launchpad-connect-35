@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -11,6 +10,7 @@ import {
   TimeRange,
   PitchIdea 
 } from '@/api/pitch';
+import { useAuth } from '@/providers/AuthProvider'; // Updated import path
 
 export const usePitchIdeas = (
   filter: FilterType = 'new',

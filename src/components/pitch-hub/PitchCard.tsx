@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import UserAvatar from '../shared/UserAvatar';
 import { PitchIdea, votePitch } from '@/api/pitch';
 import { toast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/providers/AuthProvider'; // Updated import path
 
 interface PitchCardProps {
   pitch: PitchIdea;
