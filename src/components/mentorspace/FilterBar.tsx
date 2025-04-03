@@ -1,345 +1,217 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ExpertiseCategory, MentorFilter } from "@/types/mentor";
+import { Filter, Search, X, ChevronDown } from "lucide-react";
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
-import { Check, ChevronDown, Filter, Search, Star, X } from "lucide-react";
-import { MentorFilter, ExpertiseCategory } from "@/types/mentor";
-import { motion } from "framer-motion";
-import { fadeInUp } from "@/lib/animations";
 
 interface FilterBarProps {
-  filter: MentorFilter;
-  onFilterChange: (newFilter: MentorFilter) => void;
   expertiseCategories: ExpertiseCategory[];
+  onFilterChange: (filter: MentorFilter) => void;
 }
 
-const FilterBar = ({ filter, onFilterChange, expertiseCategories }: FilterBarProps) => {
-  const [searchInput, setSearchInput] = useState(filter.searchQuery || "");
-  const [priceRange, setPriceRange] = useState<[number, number]>([
-    filter.minPrice || 0,
-    filter.maxPrice || 200,
-  ]);
-  const [rating, setRating] = useState<number>(filter.minRating || 0);
-  const [selectedExpertise, setSelectedExpertise] = useState<ExpertiseCategory[]>(
-    filter.expertise || []
-  );
-
-  const handleSearch = () => {
-    onFilterChange({
-      ...filter,
-      searchQuery: searchInput,
-    });
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      handleSearch();
+const FilterBar = ({ expertiseCategories, onFilterChange }: FilterBarProps) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedExpertise, setSelectedExpertise] = useState<ExpertiseCategory[]>([]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 200]);
+  const [minRating, setMinRating] = useState<number | undefined>(undefined);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isFilterActive, setIsFilterActive] = useState(false);
+  
+  useEffect(() => {
+    // Apply filters when they change
+    const filter: MentorFilter = {};
+    
+    if (searchQuery) {
+      filter.searchQuery = searchQuery;
     }
+    
+    if (selectedExpertise.length > 0) {
+      filter.expertise = selectedExpertise;
+    }
+    
+    if (priceRange[0] > 0 || priceRange[1] < 200) {
+      filter.minPrice = priceRange[0];
+      filter.maxPrice = priceRange[1];
+    }
+    
+    if (minRating !== undefined) {
+      filter.minRating = minRating;
+    }
+    
+    // Check if any filter is active
+    setIsFilterActive(
+      !!searchQuery || 
+      selectedExpertise.length > 0 || 
+      priceRange[0] > 0 || 
+      priceRange[1] < 200 || 
+      minRating !== undefined
+    );
+    
+    onFilterChange(filter);
+  }, [searchQuery, selectedExpertise, priceRange, minRating, onFilterChange]);
+  
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
   };
-
-  const handlePriceChange = (values: number[]) => {
-    setPriceRange([values[0], values[1]]);
+  
+  const handleClearSearch = () => {
+    setSearchQuery('');
   };
-
-  const applyPriceFilter = () => {
-    onFilterChange({
-      ...filter,
-      minPrice: priceRange[0],
-      maxPrice: priceRange[1],
-    });
-  };
-
-  const handleRatingChange = (values: number[]) => {
-    setRating(values[0]);
-    onFilterChange({
-      ...filter,
-      minRating: values[0],
-    });
-  };
-
-  const toggleExpertise = (expertise: ExpertiseCategory) => {
-    let newExpertise;
+  
+  const handleExpertiseToggle = (expertise: ExpertiseCategory) => {
     if (selectedExpertise.includes(expertise)) {
-      newExpertise = selectedExpertise.filter((e) => e !== expertise);
+      setSelectedExpertise(selectedExpertise.filter(e => e !== expertise));
     } else {
-      newExpertise = [...selectedExpertise, expertise];
+      setSelectedExpertise([...selectedExpertise, expertise]);
     }
-    setSelectedExpertise(newExpertise);
-    onFilterChange({
-      ...filter,
-      expertise: newExpertise.length > 0 ? newExpertise : undefined,
-    });
   };
-
-  const handleSortChange = (value: string) => {
-    onFilterChange({
-      ...filter,
-      sortBy: value as 'rating' | 'price_low' | 'price_high' | 'sessions',
-    });
-  };
-
-  const clearAllFilters = () => {
-    setSearchInput("");
-    setPriceRange([0, 200]);
-    setRating(0);
+  
+  const handleClearFilters = () => {
+    setSearchQuery('');
     setSelectedExpertise([]);
-    onFilterChange({});
+    setPriceRange([0, 200]);
+    setMinRating(undefined);
   };
-
-  const hasFilters = 
-    !!filter.searchQuery || 
-    !!filter.minPrice || 
-    !!filter.maxPrice || 
-    !!filter.minRating || 
-    (filter.expertise && filter.expertise.length > 0);
-
+  
   return (
-    <motion.div
-      variants={fadeInUp}
-      initial="hidden"
-      animate="visible"
-      className="mb-6 space-y-4"
-    >
-      <div className="flex flex-col md:flex-row gap-3">
-        <div className="relative flex-1">
-          <Input
-            placeholder="Search mentors, skills, or keywords..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="pr-10"
-          />
-          <Button
-            size="icon"
-            variant="ghost"
-            className="absolute right-0 top-0 h-full"
-            onClick={handleSearch}
+    <div className="space-y-4">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Input
+          className="pl-10 pr-10"
+          placeholder="Search mentors..."
+          value={searchQuery}
+          onChange={handleSearchChange}
+        />
+        {searchQuery && (
+          <button 
+            className="absolute right-3 top-1/2 -translate-y-1/2"
+            onClick={handleClearSearch}
           >
-            <Search className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <div className="flex gap-2">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                <span className="hidden sm:inline">Filters</span>
-                {hasFilters && (
-                  <Badge className="ml-1 h-5 w-5 p-0 flex items-center justify-center bg-purple-600">
-                    {Object.values(filter).filter(v => 
-                      (Array.isArray(v) ? v.length > 0 : !!v)
-                    ).length}
-                  </Badge>
-                )}
-              </Button>
-            </SheetTrigger>
-            <SheetContent className="sm:max-w-md">
-              <SheetHeader>
-                <SheetTitle>Filter Mentors</SheetTitle>
-                <SheetDescription>
-                  Refine your mentor search with these filters
-                </SheetDescription>
-              </SheetHeader>
-
-              <div className="py-6 space-y-6">
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Price Range</h3>
+            <X className="h-4 w-4 text-gray-400" />
+          </button>
+        )}
+      </div>
+      
+      <div className="flex items-center space-x-2">
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1">
+              <Filter className="h-4 w-4" />
+              Filters
+              {isFilterActive && <span className="ml-1 w-2 h-2 rounded-full bg-purple-500"></span>}
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="h-[80vh] rounded-t-xl">
+            <SheetHeader>
+              <SheetTitle>Filter Mentors</SheetTitle>
+            </SheetHeader>
+            <div className="py-4 space-y-6">
+              <div>
+                <h3 className="font-medium mb-3">Expertise</h3>
+                <div className="flex flex-wrap gap-2">
+                  {expertiseCategories.map((exp) => (
+                    <Badge
+                      key={exp}
+                      variant={selectedExpertise.includes(exp) ? "default" : "outline"}
+                      className={`cursor-pointer ${
+                        selectedExpertise.includes(exp)
+                          ? "bg-purple-600"
+                          : "bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800"
+                      }`}
+                      onClick={() => handleExpertiseToggle(exp)}
+                    >
+                      {exp}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="font-medium mb-3">Price Range</h3>
+                <div className="px-1">
                   <Slider
-                    defaultValue={[priceRange[0], priceRange[1]]}
+                    defaultValue={[0, 200]}
                     max={200}
                     step={5}
-                    onValueChange={handlePriceChange}
-                    onValueCommit={applyPriceFilter}
+                    value={priceRange}
+                    onValueChange={(value) => setPriceRange(value as [number, number])}
+                    className="mb-2"
                   />
                   <div className="flex justify-between text-sm text-gray-500">
                     <span>${priceRange[0]}</span>
                     <span>${priceRange[1]}+</span>
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Minimum Rating</h3>
-                  <div className="flex items-center gap-4">
-                    <Slider
-                      defaultValue={[rating]}
-                      max={5}
-                      step={0.5}
-                      onValueChange={handleRatingChange}
-                      className="flex-1"
-                    />
-                    <div className="flex items-center gap-1 min-w-[45px]">
-                      <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
-                      <span className="text-sm font-medium">{rating}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Expertise</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {expertiseCategories.map((expertise) => (
-                      <Badge
-                        key={expertise}
-                        variant={selectedExpertise.includes(expertise) ? "default" : "outline"}
-                        className={`cursor-pointer ${
-                          selectedExpertise.includes(expertise)
-                            ? "bg-purple-600"
-                            : "bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800"
-                        }`}
-                        onClick={() => toggleExpertise(expertise)}
-                      >
-                        {selectedExpertise.includes(expertise) && (
-                          <Check className="mr-1 h-3 w-3" />
-                        )}
-                        {expertise}
-                      </Badge>
-                    ))}
-                  </div>
+              </div>
+              
+              <div>
+                <h3 className="font-medium mb-3">Minimum Rating</h3>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <Badge
+                      key={rating}
+                      variant={minRating === rating ? "default" : "outline"}
+                      className={`cursor-pointer ${
+                        minRating === rating
+                          ? "bg-amber-500"
+                          : "bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800"
+                      }`}
+                      onClick={() => setMinRating(minRating === rating ? undefined : rating)}
+                    >
+                      {rating}+ ★
+                    </Badge>
+                  ))}
                 </div>
               </div>
-
-              <div className="mt-4 flex justify-between">
-                <Button variant="outline" onClick={clearAllFilters}>
-                  Clear All
-                </Button>
-                <Button onClick={() => {}}>
-                  Apply Filters
+              
+              <div className="pt-4 flex justify-end">
+                <Button variant="outline" onClick={handleClearFilters}>
+                  Clear All Filters
                 </Button>
               </div>
-            </SheetContent>
-          </Sheet>
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                Sort
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-2">
-              <div className="space-y-1">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => handleSortChange('rating')}
-                >
-                  <Star className="mr-2 h-4 w-4" />
-                  Top Rated
-                  {filter.sortBy === 'rating' && <Check className="ml-auto h-4 w-4" />}
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => handleSortChange('price_low')}
-                >
-                  Price: Low to High
-                  {filter.sortBy === 'price_low' && <Check className="ml-auto h-4 w-4" />}
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => handleSortChange('price_high')}
-                >
-                  Price: High to Low
-                  {filter.sortBy === 'price_high' && <Check className="ml-auto h-4 w-4" />}
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => handleSortChange('sessions')}
-                >
-                  Most Sessions
-                  {filter.sortBy === 'sessions' && <Check className="ml-auto h-4 w-4" />}
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
-      </div>
-
-      {hasFilters && (
-        <div className="flex flex-wrap gap-2">
-          {filter.searchQuery && (
-            <Badge variant="secondary" className="flex items-center gap-1">
-              "{filter.searchQuery}"
-              <X
-                className="h-3 w-3 cursor-pointer"
-                onClick={() => onFilterChange({ ...filter, searchQuery: undefined })}
-              />
-            </Badge>
-          )}
-
-          {(filter.minPrice || filter.maxPrice) && (
-            <Badge variant="secondary" className="flex items-center gap-1">
-              ${filter.minPrice || 0} - ${filter.maxPrice || '200+'}
-              <X
-                className="h-3 w-3 cursor-pointer"
-                onClick={() => onFilterChange({ ...filter, minPrice: undefined, maxPrice: undefined })}
-              />
-            </Badge>
-          )}
-
-          {filter.minRating && (
-            <Badge variant="secondary" className="flex items-center gap-1">
-              {filter.minRating}+ <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
-              <X
-                className="h-3 w-3 cursor-pointer"
-                onClick={() => onFilterChange({ ...filter, minRating: undefined })}
-              />
-            </Badge>
-          )}
-
-          {filter.expertise &&
-            filter.expertise.map((expertise) => (
-              <Badge key={expertise} variant="secondary" className="flex items-center gap-1">
-                {expertise}
-                <X
-                  className="h-3 w-3 cursor-pointer"
-                  onClick={() => {
-                    const newExpertise = filter.expertise?.filter((e) => e !== expertise) || [];
-                    onFilterChange({
-                      ...filter,
-                      expertise: newExpertise.length > 0 ? newExpertise : undefined,
-                    });
-                  }}
-                />
-              </Badge>
-            ))}
-
-          <Button
-            variant="ghost"
+            </div>
+          </SheetContent>
+        </Sheet>
+        
+        {selectedExpertise.length > 0 && (
+          <div className="flex-1 overflow-x-auto whitespace-nowrap py-1 px-1 scrollbar-hide">
+            <div className="flex gap-1">
+              {selectedExpertise.map((exp) => (
+                <Badge key={exp} variant="secondary" className="gap-1 flex-shrink-0">
+                  {exp}
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => handleExpertiseToggle(exp)}
+                  />
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {isFilterActive && (
+          <Button 
+            variant="ghost" 
             size="sm"
-            className="text-sm text-gray-500 h-7 px-2"
-            onClick={clearAllFilters}
+            onClick={handleClearFilters}
+            className="text-purple-600 dark:text-purple-400 shrink-0"
           >
-            Clear all
+            Clear
           </Button>
-        </div>
-      )}
-    </motion.div>
+        )}
+      </div>
+    </div>
   );
 };
 

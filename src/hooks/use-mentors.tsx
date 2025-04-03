@@ -1,353 +1,269 @@
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 import {
-  applyAsMentor,
-  bookMentorshipSession,
-  checkMentorStatus,
-  fetchAvailableTimeSlots,
-  fetchMentor,
-  fetchMentorAvailability,
-  fetchMentorDateExceptions,
   fetchMentors,
-  fetchUserSessions,
-  submitSessionReview,
-  updateMentorAvailability,
+  fetchMentor,
+  checkMentorStatus,
+  applyAsMentor,
   updateMentorProfile,
-  updateSessionStatus,
   addMentorCertification,
-  addDateException
+  updateMentorAvailability,
+  addDateException,
+  fetchUserSessions,
+  bookMentorshipSession,
+  updateSessionStatus,
+  submitSessionReview,
+  fetchAvailableTimeSlots
 } from "@/api/mentor";
-import { ExpertiseCategory, MentorFilter, SessionStatus } from "@/types/mentor";
-import { useToast } from "./use-toast";
+import { MentorFilter, ExpertiseCategory } from "@/types/mentor";
 
-// Hook for fetching mentors with filtering
+// Hook to fetch mentors with optional filtering
 export const useMentors = (filter?: MentorFilter) => {
   return useQuery({
-    queryKey: ['mentors', filter],
+    queryKey: ["mentors", filter],
     queryFn: () => fetchMentors(filter),
+    refetchOnWindowFocus: false,
   });
 };
 
-// Hook for fetching a single mentor
+// Hook to fetch a single mentor by ID
 export const useMentor = (mentorId: string) => {
   return useQuery({
-    queryKey: ['mentor', mentorId],
+    queryKey: ["mentor", mentorId],
     queryFn: () => fetchMentor(mentorId),
-    enabled: !!mentorId
+    refetchOnWindowFocus: false,
+    enabled: !!mentorId,
   });
 };
 
-// Hook for checking current user's mentor status
+// Hook to check the current user's mentor status
 export const useMentorStatus = () => {
   return useQuery({
-    queryKey: ['mentorStatus'],
+    queryKey: ["mentorStatus"],
     queryFn: checkMentorStatus,
-  });
-};
-
-// Hook for fetching mentor availability
-export const useMentorAvailability = (mentorId: string) => {
-  return useQuery({
-    queryKey: ['mentorAvailability', mentorId],
-    queryFn: () => fetchMentorAvailability(mentorId),
-    enabled: !!mentorId
-  });
-};
-
-// Hook for fetching mentor date exceptions
-export const useMentorDateExceptions = (mentorId: string) => {
-  return useQuery({
-    queryKey: ['mentorDateExceptions', mentorId],
-    queryFn: () => fetchMentorDateExceptions(mentorId),
-    enabled: !!mentorId
-  });
-};
-
-// Hook for fetching available time slots
-export const useAvailableTimeSlots = (mentorId: string, date: Date) => {
-  return useQuery({
-    queryKey: ['availableTimeSlots', mentorId, date.toISOString().split('T')[0]],
-    queryFn: () => fetchAvailableTimeSlots(mentorId, date),
-    enabled: !!mentorId && !!date
-  });
-};
-
-// Hook for fetching user sessions
-export const useUserSessions = () => {
-  return useQuery({
-    queryKey: ['userSessions'],
-    queryFn: fetchUserSessions,
-  });
-};
-
-// Mutation hook for booking a session
-export const useBookSession = () => {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({
-      mentorId,
-      title,
-      description,
-      date,
-      startTime,
-      endTime,
-      price
-    }: {
-      mentorId: string;
-      title: string;
-      description: string;
-      date: string;
-      startTime: string;
-      endTime: string;
-      price: number;
-    }) => bookMentorshipSession(mentorId, title, description, date, startTime, endTime, price),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['userSessions'] });
-      toast({
-        title: "Session Booked",
-        description: "Your mentorship session has been booked successfully!",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Booking Failed",
-        description: error instanceof Error ? error.message : "There was an error booking your session",
-        variant: "destructive",
-      });
+    refetchOnWindowFocus: false,
+    retry: 1,
+    // Don't throw when the user isn't a mentor
+    meta: {
+      onError: () => {}
     }
   });
 };
 
-// Mutation hook for updating session status
-export const useUpdateSessionStatus = () => {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({
-      sessionId,
-      status,
-      meetingLink
-    }: {
-      sessionId: string;
-      status: SessionStatus;
-      meetingLink?: string;
-    }) => updateSessionStatus(sessionId, status, meetingLink),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['userSessions'] });
-      toast({
-        title: "Session Updated",
-        description: "The session status has been updated successfully!",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Update Failed",
-        description: error instanceof Error ? error.message : "There was an error updating the session",
-        variant: "destructive",
-      });
-    }
-  });
-};
-
-// Mutation hook for submitting a review
-export const useSubmitReview = () => {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({
-      sessionId,
-      rating,
-      comment,
-      isPublic
-    }: {
-      sessionId: string;
-      rating: number;
-      comment?: string;
-      isPublic?: boolean;
-    }) => submitSessionReview(sessionId, rating, comment, isPublic),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['userSessions'] });
-      queryClient.invalidateQueries({ queryKey: ['mentor'] });
-      toast({
-        title: "Review Submitted",
-        description: "Your review has been submitted successfully!",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Submission Failed",
-        description: error instanceof Error ? error.message : "There was an error submitting your review",
-        variant: "destructive",
-      });
-    }
-  });
-};
-
-// Mutation hook for applying as a mentor
+// Hook to apply as a mentor
 export const useApplyAsMentor = () => {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
-
+  
   return useMutation({
-    mutationFn: ({
-      bio,
-      expertise,
-      hourlyRate,
-      yearsExperience
-    }: {
-      bio: string;
-      expertise: ExpertiseCategory[];
-      hourlyRate: number;
-      yearsExperience: number;
-    }) => applyAsMentor(bio, expertise, hourlyRate, yearsExperience),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mentorStatus'] });
-      toast({
-        title: "Application Submitted",
-        description: "Your mentor application has been submitted for review!",
-      });
+    mutationFn: (data: { 
+      bio: string, 
+      expertise: ExpertiseCategory[], 
+      hourlyRate: number, 
+      yearsExperience: number 
+    }) => {
+      return applyAsMentor(
+        data.bio,
+        data.expertise,
+        data.hourlyRate,
+        data.yearsExperience
+      );
     },
-    onError: (error) => {
-      toast({
-        title: "Application Failed",
-        description: error instanceof Error ? error.message : "There was an error submitting your application",
-        variant: "destructive",
-      });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["mentorStatus"] });
     }
   });
 };
 
-// Mutation hook for updating mentor profile
+// Hook to update mentor profile
 export const useUpdateMentorProfile = () => {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
-
+  
   return useMutation({
-    mutationFn: ({
-      bio,
-      expertise,
-      hourlyRate,
-      yearsExperience
-    }: {
-      bio: string;
-      expertise: ExpertiseCategory[];
-      hourlyRate: number;
-      yearsExperience: number;
-    }) => updateMentorProfile(bio, expertise, hourlyRate, yearsExperience),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mentorStatus'] });
-      toast({
-        title: "Profile Updated",
-        description: "Your mentor profile has been updated successfully!",
-      });
+    mutationFn: (data: { 
+      bio: string, 
+      expertise: ExpertiseCategory[], 
+      hourlyRate: number, 
+      yearsExperience: number 
+    }) => {
+      return updateMentorProfile(
+        data.bio,
+        data.expertise,
+        data.hourlyRate,
+        data.yearsExperience
+      );
     },
-    onError: (error) => {
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["mentorStatus"] });
       toast({
-        title: "Update Failed",
-        description: error instanceof Error ? error.message : "There was an error updating your profile",
-        variant: "destructive",
+        title: "Profile updated",
+        description: "Your mentor profile has been updated successfully."
       });
     }
   });
 };
 
-// Mutation hook for adding a mentor certification
+// Hook to add a mentor certification
 export const useAddMentorCertification = () => {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
-
+  
   return useMutation({
-    mutationFn: ({
-      title,
-      issuer,
-      issueDate,
-      expiryDate,
-      credentialUrl,
-      imageUrl
-    }: {
-      title: string;
-      issuer: string;
-      issueDate: string;
-      expiryDate?: string;
-      credentialUrl?: string;
-      imageUrl?: string;
-    }) => addMentorCertification(title, issuer, issueDate, expiryDate, credentialUrl, imageUrl),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mentor'] });
-      toast({
-        title: "Certification Added",
-        description: "Your certification has been added successfully!",
-      });
+    mutationFn: (data: { 
+      title: string, 
+      issuer: string, 
+      issueDate: string, 
+      expiryDate?: string, 
+      credentialUrl?: string, 
+      imageUrl?: string 
+    }) => {
+      return addMentorCertification(
+        data.title,
+        data.issuer,
+        data.issueDate,
+        data.expiryDate,
+        data.credentialUrl,
+        data.imageUrl
+      );
     },
-    onError: (error) => {
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["mentor"] });
       toast({
-        title: "Addition Failed",
-        description: error instanceof Error ? error.message : "There was an error adding your certification",
-        variant: "destructive",
+        title: "Certification added",
+        description: "Your certification has been added successfully."
       });
     }
   });
 };
 
-// Mutation hook for updating mentor availability
+// Hook to update mentor availability
 export const useUpdateMentorAvailability = () => {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
-
+  
   return useMutation({
     mutationFn: (availabilitySlots: Array<{
       day_of_week: number;
       start_time: string;
       end_time: string;
       is_recurring: boolean;
-    }>) => updateMentorAvailability(availabilitySlots),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mentorAvailability'] });
-      toast({
-        title: "Availability Updated",
-        description: "Your availability has been updated successfully!",
-      });
+    }>) => {
+      return updateMentorAvailability(availabilitySlots);
     },
-    onError: (error) => {
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["mentor"] });
       toast({
-        title: "Update Failed",
-        description: error instanceof Error ? error.message : "There was an error updating your availability",
-        variant: "destructive",
+        title: "Availability updated",
+        description: "Your availability settings have been updated."
       });
     }
   });
 };
 
-// Mutation hook for adding a date exception
+// Hook to add a date exception
 export const useAddDateException = () => {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
-
+  
   return useMutation({
-    mutationFn: ({
-      exceptionDate,
-      isAvailable
-    }: {
-      exceptionDate: string;
-      isAvailable: boolean;
-    }) => addDateException(exceptionDate, isAvailable),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mentorDateExceptions'] });
-      toast({
-        title: "Exception Added",
-        description: "Your date exception has been added successfully!",
-      });
+    mutationFn: (data: { exceptionDate: string, isAvailable: boolean }) => {
+      return addDateException(data.exceptionDate, data.isAvailable);
     },
-    onError: (error) => {
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["mentor"] });
       toast({
-        title: "Addition Failed",
-        description: error instanceof Error ? error.message : "There was an error adding your date exception",
-        variant: "destructive",
+        title: "Date exception added",
+        description: "Your calendar has been updated."
       });
     }
+  });
+};
+
+// Hook to fetch user's mentorship sessions
+export const useUserSessions = () => {
+  return useQuery({
+    queryKey: ["mentorshipSessions"],
+    queryFn: fetchUserSessions,
+    refetchOnWindowFocus: false,
+  });
+};
+
+// Hook to book a mentorship session
+export const useBookSession = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: { 
+      mentorId: string, 
+      title: string, 
+      description: string, 
+      date: string, 
+      startTime: string, 
+      endTime: string, 
+      price: number 
+    }) => {
+      return bookMentorshipSession(
+        data.mentorId,
+        data.title,
+        data.description,
+        data.date,
+        data.startTime,
+        data.endTime,
+        data.price
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["mentorshipSessions"] });
+    }
+  });
+};
+
+// Hook to update session status
+export const useUpdateSessionStatus = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: { sessionId: string, status: string, meetingLink?: string }) => {
+      return updateSessionStatus(data.sessionId, data.status as any, data.meetingLink);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["mentorshipSessions"] });
+    }
+  });
+};
+
+// Hook to submit a session review
+export const useSubmitReview = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: { 
+      sessionId: string, 
+      rating: number, 
+      comment?: string, 
+      isPublic: boolean 
+    }) => {
+      return submitSessionReview(
+        data.sessionId,
+        data.rating,
+        data.comment,
+        data.isPublic
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["mentorshipSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["mentor"] });
+      toast({
+        title: "Review submitted",
+        description: "Thank you for providing your feedback."
+      });
+    }
+  });
+};
+
+// Hook to fetch available time slots for a mentor on a given date
+export const useAvailableTimeSlots = (mentorId: string, date: Date) => {
+  return useQuery({
+    queryKey: ["timeSlots", mentorId, date.toISOString().split('T')[0]],
+    queryFn: () => fetchAvailableTimeSlots(mentorId, date),
+    refetchOnWindowFocus: false,
+    enabled: !!mentorId && !!date,
   });
 };

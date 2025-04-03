@@ -2,6 +2,7 @@
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { StarIcon, Calendar, Clock } from "lucide-react";
 import { MentorWithProfile } from "@/types/mentor";
 import { Link } from "react-router-dom";
@@ -52,31 +53,35 @@ const MentorCard = ({ mentor }: MentorCardProps) => {
           )}
         </div>
         
-        <div className="text-sm text-gray-500 dark:text-gray-400 mb-1 line-clamp-2">
+        <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 line-clamp-2">
           {mentor.bio}
+        </div>
+        
+        <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-3 gap-y-1 text-sm">
+          <div className="flex items-center">
+            <StarIcon className="h-4 w-4 text-amber-500 mr-1" />
+            <span className="font-medium">{avg_rating.toFixed(1)}</span>
+            <span className="text-gray-500 ml-1">({total_reviews})</span>
+          </div>
+          <div className="flex items-center">
+            <Calendar className="h-4 w-4 text-blue-500 mr-1" />
+            <span>{total_sessions} sessions</span>
+          </div>
+          <div className="flex items-center">
+            <Clock className="h-4 w-4 text-green-500 mr-1" />
+            <span>{mentor.years_experience} years exp.</span>
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-col items-center md:items-end gap-2 md:min-w-[120px] mt-2 md:mt-0">
+      <div className="flex flex-col items-center md:items-end gap-3 mt-4 md:mt-0">
         <div className="font-semibold text-lg text-purple-700 dark:text-purple-400">
           ${hourly_rate}/hour
         </div>
         
-        <div className="flex items-center text-sm">
-          <StarIcon className="h-4 w-4 text-yellow-500 mr-1" />
-          <span className="font-medium text-gray-800 dark:text-gray-200">{avg_rating.toFixed(1)}</span>
-          <span className="text-gray-500 dark:text-gray-400 ml-1">({total_reviews})</span>
-        </div>
-        
-        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-          <Calendar className="h-3 w-3 mr-1" />
-          <span>{total_sessions} sessions</span>
-        </div>
-        
-        <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-1">
-          <Clock className="h-3 w-3 mr-1" />
-          <span>Next: Tomorrow</span>
-        </div>
+        <Button asChild>
+          <Link to={`/mentor-space/${mentor.id}`}>View Profile</Link>
+        </Button>
       </div>
     </motion.div>
   );

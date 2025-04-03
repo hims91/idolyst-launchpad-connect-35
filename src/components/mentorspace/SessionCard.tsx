@@ -1,400 +1,266 @@
 
 import { useState } from "react";
+import { motion } from "framer-motion";
+import { format, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { MentorshipSession, SessionStatus } from "@/types/mentor";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { getInitials } from "@/lib/utils";
+import { Link } from "react-router-dom";
 import { 
   Calendar, 
   Clock, 
-  ExternalLink, 
-  Star, 
   Video, 
-  XCircle, 
-  CheckCircle, 
-  CalendarClock,
-  RefreshCw 
+  Star, 
+  MoreVertical,
+  Link as LinkIcon,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  MessageSquare
 } from "lucide-react";
-import { format, isPast, parseISO } from "date-fns";
-import { useUpdateSessionStatus, useSubmitReview } from "@/hooks/use-mentors";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { useAuth } from "@/providers/AuthProvider";
-import { Badge } from "@/components/ui/badge";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { fadeInUp } from "@/lib/animations";
-import { ExtendedProfile } from "@/types/profile";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { staggerItem } from "@/lib/animations";
 
-export interface SessionCardProps {
+interface SessionCardProps {
   session: MentorshipSession;
   isMentor?: boolean;
+  onStatusChange?: (sessionId: string, status: SessionStatus, meetingLink?: string) => void;
   onReview?: (sessionId: string) => void;
-  onStatusChange?: (sessionId: string, status: SessionStatus) => void;
 }
 
-const SessionCard = ({ session, isMentor = false, onReview, onStatusChange }: SessionCardProps) => {
-  const { user } = useAuth();
-  const updateSession = useUpdateSessionStatus();
-  const submitReview = useSubmitReview();
-  
-  const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
-  const [isReviewOpen, setIsReviewOpen] = useState(false);
-  const [isCancelOpen, setIsCancelOpen] = useState(false);
-  const [isCompleteOpen, setIsCompleteOpen] = useState(false);
-  const [meetingLink, setMeetingLink] = useState(session.meeting_link || "");
-  const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState("");
-  const [isPublic, setIsPublic] = useState(true);
+const SessionStatusBadge = ({ status }: { status: SessionStatus }) => {
+  switch (status) {
+    case 'scheduled':
+      return <Badge className="bg-blue-500 hover:bg-blue-600">Scheduled</Badge>;
+    case 'completed':
+      return <Badge className="bg-green-500 hover:bg-green-600">Completed</Badge>;
+    case 'cancelled':
+      return <Badge className="bg-red-500 hover:bg-red-600">Cancelled</Badge>;
+    case 'rescheduled':
+      return <Badge className="bg-amber-500 hover:bg-amber-600">Rescheduled</Badge>;
+    default:
+      return <Badge>{status}</Badge>;
+  }
+};
 
-  const isSessionPast = isPast(parseISO(`${session.session_date}T${session.end_time}`));
+const SessionCard = ({ session, isMentor, onStatusChange, onReview }: SessionCardProps) => {
+  const [meetingLinkInput, setMeetingLinkInput] = useState(session.meeting_link || '');
+  const [showMeetingLinkDialog, setShowMeetingLinkDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+  
   const sessionDate = parseISO(session.session_date);
+  const formattedDate = format(sessionDate, "MMMM d, yyyy");
   
-  const statusColors: Record<SessionStatus, string> = {
-    scheduled: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-    completed: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-    cancelled: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-    rescheduled: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
-  };
-
-  const statusIcons: Record<SessionStatus, any> = {
-    scheduled: CalendarClock,
-    completed: CheckCircle,
-    cancelled: XCircle,
-    rescheduled: RefreshCw
+  const handleSetMeetingLink = () => {
+    if (onStatusChange) {
+      onStatusChange(session.id, 'scheduled', meetingLinkInput);
+      setShowMeetingLinkDialog(false);
+    }
   };
   
-  const StatusIcon = statusIcons[session.status];
-
-  const handleCancel = () => {
+  const handleCancelSession = () => {
     if (onStatusChange) {
       onStatusChange(session.id, 'cancelled');
-      setIsCancelOpen(false);
-      return;
+      setShowCancelDialog(false);
     }
-    
-    updateSession.mutate({
-      sessionId: session.id,
-      status: 'cancelled'
-    }, {
-      onSuccess: () => {
-        setIsCancelOpen(false);
-      }
-    });
   };
-
-  const handleComplete = () => {
+  
+  const handleCompleteSession = () => {
     if (onStatusChange) {
       onStatusChange(session.id, 'completed');
-      setIsCompleteOpen(false);
-      return;
+      setShowCompleteDialog(false);
     }
-    
-    updateSession.mutate({
-      sessionId: session.id,
-      status: 'completed',
-      meetingLink
-    }, {
-      onSuccess: () => {
-        setIsCompleteOpen(false);
-      }
-    });
   };
-
-  const handleSubmitReview = () => {
-    submitReview.mutate({
-      sessionId: session.id,
-      rating,
-      comment: comment.trim() === "" ? undefined : comment,
-      isPublic
-    }, {
-      onSuccess: () => {
-        setIsReviewOpen(false);
-        if (onReview) {
-          onReview(session.id);
-        }
-      }
-    });
-  };
-
-  // Extract the partner's info (either mentee or mentor)
-  const partner = isMentor 
-    ? session.mentee 
-    : session.mentor;
-
-  // Safely extract profile information
-  let name, avatar, username;
   
-  if (partner) {
-    if ('profile' in partner) {
-      // It's MentorWithProfile
-      name = partner.profile.full_name || partner.profile.username;
-      avatar = partner.profile.avatar_url;
-      username = partner.profile.username;
-    } else {
-      // It's ExtendedProfile
-      name = partner.full_name || partner.username;
-      avatar = partner.avatar_url;
-      username = partner.username;
+  const handleLeaveReview = () => {
+    if (onReview) {
+      onReview(session.id);
     }
-  }
-
+  };
+  
+  const profileToShow = isMentor ? session.mentee : session.mentor?.profile;
+  
   return (
-    <motion.div
-      variants={fadeInUp}
-      initial="hidden"
-      animate="visible"
-      layoutId={`session-${session.id}`}
+    <motion.div 
+      variants={staggerItem}
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 border border-gray-100 dark:border-gray-700"
     >
-      <Card className="overflow-hidden border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
-        <CardContent className="p-0">
-          <div className="flex flex-col md:flex-row">
-            {/* Session Status Badge */}
-            <div className={cn("p-4 text-center md:w-1/4", statusColors[session.status])}>
-              <StatusIcon className="h-10 w-10 mx-auto mb-2" />
-              <h3 className="font-semibold capitalize">{session.status}</h3>
-              <p className="text-sm opacity-75">
-                {session.status === 'scheduled' ? 'Ready to go!' : 
-                 session.status === 'completed' ? 'Session ended' : 
-                 session.status === 'cancelled' ? 'Session cancelled' : 
-                 'Time updated'}
-              </p>
+      <div className="flex flex-col md:flex-row md:items-center">
+        <div className="flex items-center mb-4 md:mb-0 md:flex-1">
+          <Link to={`/profile/${profileToShow?.id}`} className="flex-shrink-0 mr-4">
+            <Avatar className="h-12 w-12 md:h-14 md:w-14 ring-2 ring-offset-2 ring-offset-background ring-purple-200 dark:ring-purple-800">
+              <AvatarImage src={profileToShow?.avatar_url || ''} alt={profileToShow?.full_name || profileToShow?.username || ''} />
+              <AvatarFallback className="bg-gradient-to-br from-purple-500 to-indigo-500 text-white">
+                {getInitials(profileToShow?.full_name || profileToShow?.username || '')}
+              </AvatarFallback>
+            </Avatar>
+          </Link>
+          
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-1">
+              <Link to={`/profile/${profileToShow?.id}`} className="font-semibold text-lg hover:underline">
+                {profileToShow?.full_name || profileToShow?.username}
+              </Link>
+              <SessionStatusBadge status={session.status} />
             </div>
             
-            {/* Session Details */}
-            <div className="p-4 flex-1">
-              <div className="flex flex-col md:flex-row justify-between mb-4">
-                <h3 className="text-xl font-bold">{session.title}</h3>
-                <div className="mt-2 md:mt-0 text-right">
-                  <Badge variant="outline" className="font-mono">
-                    ${session.price.toFixed(2)}
-                  </Badge>
-                </div>
-              </div>
-              
-              {partner && (
-                <div className="flex items-center mb-4">
-                  <Avatar className="h-10 w-10 mr-3">
-                    <AvatarImage src={avatar} alt={name} />
-                    <AvatarFallback className="bg-purple-100 text-purple-800">
-                      {name?.slice(0, 2).toUpperCase() || "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium">{name || "User"}</p>
-                    <p className="text-xs text-gray-500">
-                      {isMentor ? 'Mentee' : 'Mentor'} • @{username || "user"}
-                    </p>
-                  </div>
-                </div>
-              )}
-              
-              <div className="space-y-2">
-                <div className="flex items-center text-gray-600 dark:text-gray-400">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  <span>{format(sessionDate, 'EEEE, MMMM d, yyyy')}</span>
-                </div>
-                <div className="flex items-center text-gray-600 dark:text-gray-400">
-                  <Clock className="h-4 w-4 mr-2" />
-                  <span>
-                    {format(parseISO(`1970-01-01T${session.start_time}`), 'h:mm a')} - 
-                    {format(parseISO(`1970-01-01T${session.end_time}`), 'h:mm a')}
-                  </span>
-                </div>
-                {session.meeting_link && (
-                  <div className="flex items-center text-indigo-600 dark:text-indigo-400">
-                    <Video className="h-4 w-4 mr-2" />
-                    <a 
-                      href={session.meeting_link} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="hover:underline flex items-center"
-                    >
-                      Join Meeting <ExternalLink className="h-3 w-3 ml-1" />
-                    </a>
-                  </div>
-                )}
-              </div>
-              
-              {session.description && (
-                <div className="mt-4 text-gray-700 dark:text-gray-300">
-                  <p className="text-sm">{session.description}</p>
-                </div>
-              )}
+            <h3 className="font-medium line-clamp-1">{session.title}</h3>
+            
+            <div className="flex items-center mt-1 text-sm text-gray-600 dark:text-gray-400">
+              <Calendar className="h-4 w-4 mr-1" />
+              <span className="mr-3">{formattedDate}</span>
+              <Clock className="h-4 w-4 mr-1" />
+              <span>{session.start_time} - {session.end_time}</span>
             </div>
           </div>
-        </CardContent>
+        </div>
         
-        {/* Action Buttons */}
-        <CardFooter className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex flex-wrap gap-2">
-          {/* Mentor Actions */}
-          {isMentor && session.status === 'scheduled' && !isSessionPast && (
-            <>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setIsCompleteOpen(true)}
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Mark Complete
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setIsCancelOpen(true)}
-                className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20"
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
-            </>
-          )}
+        <div className="flex-shrink-0 flex flex-row md:flex-col items-center justify-between mt-4 md:mt-0 gap-2 md:gap-3">
+          <div className="text-lg font-semibold text-purple-700 dark:text-purple-400">
+            ${session.price}
+          </div>
           
-          {/* Mentee Actions */}
-          {!isMentor && session.status === 'scheduled' && !isSessionPast && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setIsCancelOpen(true)}
-              className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20"
-            >
-              <XCircle className="h-4 w-4 mr-2" />
-              Cancel
+          {session.status === 'scheduled' && session.meeting_link && (
+            <Button variant="outline" size="sm" className="flex gap-2" asChild>
+              <a href={session.meeting_link} target="_blank" rel="noopener noreferrer">
+                <Video className="h-4 w-4" />
+                <span className="hidden md:inline">Join Meeting</span>
+              </a>
             </Button>
           )}
           
-          {/* Review Action (for mentees) */}
-          {!isMentor && session.status === 'completed' && (
-            <Button 
-              variant="default" 
-              size="sm" 
-              onClick={() => setIsReviewOpen(true)}
-              className="bg-amber-500 hover:bg-amber-600"
-            >
-              <Star className="h-4 w-4 mr-2" />
-              Leave Review
-            </Button>
-          )}
-        </CardFooter>
-      </Card>
-
-      {/* Cancel Session Dialog */}
-      <Dialog open={isCancelOpen} onOpenChange={setIsCancelOpen}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Options</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              
+              {isMentor && session.status === 'scheduled' && (
+                <DropdownMenuItem onClick={() => setShowMeetingLinkDialog(true)}>
+                  <LinkIcon className="h-4 w-4 mr-2" />
+                  Set Meeting Link
+                </DropdownMenuItem>
+              )}
+              
+              {(isMentor || !isMentor) && session.status === 'scheduled' && (
+                <DropdownMenuItem onClick={() => setShowCancelDialog(true)}>
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Cancel Session
+                </DropdownMenuItem>
+              )}
+              
+              {isMentor && session.status === 'scheduled' && (
+                <DropdownMenuItem onClick={() => setShowCompleteDialog(true)}>
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Mark as Completed
+                </DropdownMenuItem>
+              )}
+              
+              {!isMentor && session.status === 'completed' && (
+                <DropdownMenuItem onClick={handleLeaveReview}>
+                  <Star className="h-4 w-4 mr-2" />
+                  Leave a Review
+                </DropdownMenuItem>
+              )}
+              
+              <DropdownMenuItem>
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Send Message
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+      
+      {/* Meeting Link Dialog */}
+      <Dialog open={showMeetingLinkDialog} onOpenChange={setShowMeetingLinkDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set Meeting Link</DialogTitle>
+            <DialogDescription>
+              Provide the video call link for this mentorship session.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="meetingLink">Meeting Link</Label>
+            <Input
+              id="meetingLink"
+              value={meetingLinkInput}
+              onChange={(e) => setMeetingLinkInput(e.target.value)}
+              placeholder="https://meet.google.com/..."
+              className="mt-1"
+            />
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleSetMeetingLink}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Cancel Dialog */}
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Cancel Session</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel this mentorship session? This action cannot be undone.
+            </DialogDescription>
           </DialogHeader>
-          <p>Are you sure you want to cancel this session? This action cannot be undone.</p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCancelOpen(false)}>
-              No, Keep Session
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleCancel}
-              disabled={updateSession.isPending}
-            >
-              {updateSession.isPending ? "Cancelling..." : "Yes, Cancel Session"}
+            <DialogClose asChild>
+              <Button variant="outline">No, Keep It</Button>
+            </DialogClose>
+            <Button variant="destructive" onClick={handleCancelSession}>
+              Yes, Cancel Session
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Complete Session Dialog */}
-      <Dialog open={isCompleteOpen} onOpenChange={setIsCompleteOpen}>
+      
+      {/* Complete Dialog */}
+      <Dialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Complete Session</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to mark this session as completed? This will allow the mentee to leave a review.
+            </DialogDescription>
           </DialogHeader>
-          <p>Mark this session as completed? This will allow the mentee to leave a review.</p>
-          <div className="space-y-4 mt-4">
-            <div>
-              <Label htmlFor="meetingLink">Meeting Link (Optional)</Label>
-              <Input
-                id="meetingLink"
-                placeholder="https://zoom.us/meeting-link"
-                value={meetingLink}
-                onChange={(e) => setMeetingLink(e.target.value)}
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Add a recording link if available.
-              </p>
-            </div>
-          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCompleteOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              variant="default" 
-              onClick={handleComplete}
-              disabled={updateSession.isPending}
-            >
-              {updateSession.isPending ? "Updating..." : "Mark as Completed"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Review Dialog */}
-      <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Review Session</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-4">
-            <div>
-              <Label htmlFor="rating">Rating</Label>
-              <div className="flex items-center space-x-1 mt-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star
-                    key={star}
-                    className={cn(
-                      "h-8 w-8 cursor-pointer transition-colors",
-                      star <= rating
-                        ? "fill-yellow-400 text-yellow-400"
-                        : "text-gray-300 dark:text-gray-600"
-                    )}
-                    onClick={() => setRating(star)}
-                  />
-                ))}
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="comment">Comments (Optional)</Label>
-              <Textarea
-                id="comment"
-                placeholder="Share your experience with this mentor..."
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                rows={4}
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="isPublic"
-                checked={isPublic}
-                onChange={(e) => setIsPublic(e.target.checked)}
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-              />
-              <Label htmlFor="isPublic" className="cursor-pointer">
-                Make this review public
-              </Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsReviewOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              variant="default" 
-              onClick={handleSubmitReview}
-              disabled={submitReview.isPending}
-            >
-              {submitReview.isPending ? "Submitting..." : "Submit Review"}
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleCompleteSession}>
+              Mark as Completed
             </Button>
           </DialogFooter>
         </DialogContent>

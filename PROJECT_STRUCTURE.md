@@ -1,4 +1,3 @@
-
 # Idolyst Project Structure
 
 ## Core Files and Components
@@ -195,6 +194,7 @@
    - Mobile-optimized grid/list view with mentor cards
    - Real-time data with Supabase integration
    - Sorting options (rating, price, session count)
+   - Advanced SEO optimization with structured data
 
 2. **Mentor Profiles**:
    - Detailed profile pages with bio, expertise, pricing
@@ -202,104 +202,126 @@
    - Client reviews and ratings
    - Session availability calendar
    - Booking interface with time slot selection
+   - Social media links and professional information
 
 3. **Session Management**:
    - Book, reschedule, and cancel sessions
    - View upcoming and past sessions
    - Meeting link management
    - Session status tracking (scheduled, completed, cancelled)
-   - XP rewards for completed sessions
+   - User-friendly mobile interface with separate tabs for different session statuses
+   - Real-time updates when sessions are modified
 
 4. **Review System**:
    - Leave reviews and ratings for completed sessions
    - Public/private review options
    - Average rating calculation
    - Impact on mentor visibility and ranking
-   - Badge rewards for highly-rated mentors
+   - Rich review display with user information
 
 5. **Mentor Application**:
    - Apply to become a mentor
    - Set expertise, hourly rate, and availability
    - Admin approval flow with status tracking
    - Certification and credential management
+   - User-friendly mobile-first application process
 
-### Database Schema
+### Database Schema Integration
 
-- **mentors**: Stores mentor profiles, rates, expertise, and statistics
-- **mentor_certifications**: Tracks professional certifications and credentials
-- **mentor_availability**: Manages recurring weekly availability slots
-- **mentor_date_exceptions**: Handles specific date exceptions (days off or extra availability)
-- **mentorship_sessions**: Records booked sessions with status tracking
-- **session_reviews**: Stores session feedback and ratings
+The mentor-profile integration leverages Supabase with the following key elements:
 
-### Row-Level Security (RLS)
+1. **Tables and Relationships**:
+   - `mentors`: Stores mentor profiles with expertise, rates, and statistics
+   - `mentor_certifications`: Tracks professional certifications and credentials
+   - `mentor_availability`: Manages recurring weekly availability slots
+   - `mentor_date_exceptions`: Handles specific date exceptions
+   - `mentorship_sessions`: Records booked sessions with status tracking
+   - `session_reviews`: Stores session feedback and ratings
+   - `profiles`: Extended by mentor data to provide a unified user experience
 
-- Public read access for approved mentor profiles
-- Private write access for users' own mentor profiles
-- Session access limited to the mentor and mentee involved
-- Review creation restricted to session participants
-- Availability management limited to the mentor
+2. **Row-Level Security Policies**:
+   - Ensures mentors can only view and manage their own information
+   - Provides public read access to approved mentor profiles
+   - Restricts session access to the relevant mentor and mentee
+   - Controls review visibility based on public/private settings
+   - Secures the booking process with proper access controls
 
-### Real-time Features
+3. **Real-time Updates**:
+   - Implements Supabase real-time subscriptions for session status changes
+   - Provides immediate notification of booking confirmations
+   - Updates mentor ratings instantly when reviews are submitted
+   - Synchronizes availability when sessions are booked
 
-- Instant updates to availability when sessions are booked
-- Real-time session status changes with notifications
-- Live mentor directory filtering and sorting
-- Immediate review impact on mentor ratings
+### Integration with User Profiles
 
-### Notifications Integration
+The mentor-profile integration connects with the user profile system:
 
-- Session booking notifications for mentors
-- Session reminders for mentees
-- Status change alerts (cancellations, rescheduling)
-- Review notifications
-- Badge award notifications for "Top Mentor" achievement
+1. **Unified User Experience**:
+   - Seamless transition between user profile and mentor profile
+   - Extended profile data for mentors with professional information
+   - Consistent UI/UX across both modules
 
-### XP & Gamification
+2. **Role-Based Features**:
+   - Mentor-specific dashboard for those with mentor role
+   - Special indicators and badges for mentors in the general user interface
+   - Role-appropriate actions in session management
 
-- XP rewards: +25 XP for mentors, +15 XP for mentees per completed session
-- "Top Mentor" badge for mentors with 4.5+ rating across at least 5 sessions
-- Featured placement for top-rated mentors
+### Mobile-First UI/UX Design
 
-### Mobile-First UI Components
+The implementation follows mobile-first design principles:
 
-- Responsive mentor cards with touch-friendly elements
-- Swipeable session management interface
-- Touch-optimized availability selection
-- Interactive star rating system with visual feedback
-- Animated transitions between views and modal overlays
-- Focus on accessibility with proper contrast and touch targets
-- Real-time validation and feedback on user inputs
-- Clear visual indicators for session status and booking availability
+1. **Responsive Interfaces**:
+   - Adaptive layouts that work on any screen size
+   - Touch-friendly components with appropriate sizing
+   - Collapsible sections and progressive disclosure for complex information
 
-### Advanced SEO Optimization
+2. **Performance Optimization**:
+   - Efficient loading states with skeleton components
+   - Lazy loading of reviews and certifications
+   - Optimized images and assets
 
-- Semantic HTML structure with proper heading hierarchy
-- Rich structured data (JSON-LD) for mentor profiles and reviews
-- Optimized meta tags with targeted keywords for mentorship
-- Mobile performance optimization for better search rankings
-- Social media sharing metadata for mentor profiles
-- Canonical URLs to prevent duplicate content issues
-- SEO-friendly URL structure for all mentorship pages
-- Keyword-rich page titles and meta descriptions
+3. **Animation and Transitions**:
+   - Smooth page transitions using Framer Motion
+   - Subtle feedback animations for user interactions
+   - Staggered animations for list items
 
-### Payment Integration
+### Advanced SEO Implementation
 
-- Secure handling of session payments
-- Multiple payment method support
-- Transaction records and receipts
-- Refund process for cancelled sessions
+The integration includes comprehensive SEO optimization:
 
-### MentorSpace UI/UX Improvements
+1. **Structured Data**:
+   - JSON-LD for mentor profiles with rich person schema
+   - Review markup for social proof
+   - Service and offer schemas for mentorship sessions
 
-- Enhanced star rating system with hover effects and clear labels
-- Cleaner session management interface with intuitive status controls
-- Improved mentor application flow with progress indicators
-- Mobile-first approach for all components and pages
-- Consistent design language across the entire module
-- Smooth animations for state transitions and feedback
-- Comprehensive empty states with helpful guidance
-- Real-time data updates with optimistic UI changes
+2. **Metadata Optimization**:
+   - Dynamic, descriptive page titles
+   - Custom meta descriptions for each page
+   - Open Graph tags for social sharing
+
+3. **Semantic HTML**:
+   - Proper heading hierarchy
+   - Accessible landmarks and regions
+   - Meaningful alt text for images
+
+### Real-Time Capabilities
+
+The implementation leverages Supabase's real-time features:
+
+1. **Session Updates**:
+   - Instant notification when a session is booked
+   - Real-time status updates for both mentor and mentee
+   - Live availability updates in the booking interface
+
+2. **Rating and Review Changes**:
+   - Immediate profile updates when reviews are submitted
+   - Real-time calculation of average ratings
+   - Instant feedback for users submitting reviews
+
+3. **Security and Privacy**:
+   - RLS policies ensure data is only accessible to authorized users
+   - Real-time channel authorization follows the same security rules
+   - Private information is properly protected
 
 ## Notification System Implementation Details
 

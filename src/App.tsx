@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -33,7 +32,7 @@ import AuthCallback from "./pages/auth/Callback";
 
 // MentorSpace pages
 import MentorDirectory from "./pages/mentorspace/MentorDirectory";
-import MentorProfile from "./pages/mentorspace/MentorProfile";
+import MentorDetail from "./pages/mentorspace/MentorDetail";
 import SessionManagement from "./pages/mentorspace/SessionManagement";
 import MentorApplication from "./pages/mentorspace/MentorApplication";
 import MentorProfilePage from "./pages/mentorspace/MentorProfilePage";
@@ -87,7 +86,7 @@ const App = () => (
                 
                 {/* MentorSpace routes */}
                 <Route path="/mentor-space/directory" element={<MentorDirectory />} />
-                <Route path="/mentor-space/:mentorId" element={<MentorProfile />} />
+                <Route path="/mentor-space/:mentorId" element={<MentorDetail />} />
                 <Route 
                   path="/mentor-space/sessions" 
                   element={
