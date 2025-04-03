@@ -3,9 +3,9 @@ import { Database } from "@/integrations/supabase/types";
 import { UserRole } from "./auth";
 import { ExtendedProfile } from "./profile";
 
-export type ExpertiseCategory = Database["public"]["Enums"]["expertise_category"];
-export type MentorStatus = Database["public"]["Enums"]["mentor_status"];
-export type SessionStatus = Database["public"]["Enums"]["session_status"];
+export type ExpertiseCategory = 'Business' | 'Marketing' | 'Technology' | 'Design' | 'Finance' | 'Product' | 'Leadership' | 'Sales' | 'Operations' | 'Data';
+export type MentorStatus = 'pending' | 'approved' | 'rejected';
+export type SessionStatus = 'scheduled' | 'completed' | 'cancelled' | 'rescheduled';
 
 export interface Mentor {
   id: string;

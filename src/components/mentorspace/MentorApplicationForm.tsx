@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import { fadeInUp } from "@/lib/animations";
 import { useApplyAsMentor } from "@/hooks/use-mentors";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 interface MentorApplicationFormProps {
   expertiseCategories: ExpertiseCategory[];
@@ -26,6 +27,7 @@ const MentorApplicationForm = ({
   
   const navigate = useNavigate();
   const applyAsMentor = useApplyAsMentor();
+  const { toast } = useToast();
 
   const toggleExpertise = (expertise: ExpertiseCategory) => {
     if (selectedExpertise.includes(expertise)) {
@@ -39,7 +41,11 @@ const MentorApplicationForm = ({
     e.preventDefault();
     
     if (selectedExpertise.length === 0) {
-      alert("Please select at least one expertise");
+      toast({
+        title: "Validation Error",
+        description: "Please select at least one expertise area",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -53,10 +59,20 @@ const MentorApplicationForm = ({
     }, {
       onSuccess: () => {
         setIsSubmitting(false);
+        toast({
+          title: "Application Submitted",
+          description: "Your mentor application has been submitted for review.",
+          variant: "default"
+        });
         navigate('/mentor-space/profile');
       },
-      onError: () => {
+      onError: (error) => {
         setIsSubmitting(false);
+        toast({
+          title: "Application Failed",
+          description: error.message || "There was an error submitting your application. Please try again.",
+          variant: "destructive"
+        });
       }
     });
   };

@@ -277,6 +277,21 @@
 - Appropriate touch target sizing
 - Color-coded status indicators with text labels
 
+### SEO Optimization
+
+- Semantic HTML structure with proper heading hierarchy
+- Structured data for mentor profiles using JSON-LD
+- Optimized meta tags with targeted keywords
+- Mobile-first design for better mobile search rankings
+- Performance optimization for faster loading times
+
+### Payment Integration
+
+- Secure handling of session payments
+- Multiple payment method support
+- Transaction records and receipts
+- Refund process for cancelled sessions
+
 ## Notification System Implementation Details
 
 ### Core Features

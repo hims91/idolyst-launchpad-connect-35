@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   Mentor, MentorAvailability, MentorCertification, 
   MentorFilter, MentorWithProfile, MentorshipSession, 
-  SessionReview, TimeSlot 
+  SessionReview, TimeSlot, DateException, SessionStatus
 } from "@/types/mentor";
 import { ExtendedProfile } from "@/types/profile";
 import { format, addDays, parseISO, isAfter, isSameDay } from "date-fns";
@@ -40,9 +40,7 @@ export const fetchMentors = async (filter?: MentorFilter): Promise<MentorWithPro
     }
     
     if (filter.searchQuery) {
-      query = query.or(
-        `profiles.username.ilike.%${filter.searchQuery}%,profiles.full_name.ilike.%${filter.searchQuery}%,profiles.bio.ilike.%${filter.searchQuery}%`
-      );
+      query = query.or(`profiles.username.ilike.%${filter.searchQuery}%,profiles.full_name.ilike.%${filter.searchQuery}%,profiles.bio.ilike.%${filter.searchQuery}%`);
     }
     
     // Apply sorting
@@ -80,13 +78,14 @@ export const fetchMentors = async (filter?: MentorFilter): Promise<MentorWithPro
   // Process the data to match our MentorWithProfile type
   return data.map(item => {
     const profile = item.profiles as any;
-    return {
+    const mentorData = {
       ...item,
       profile: {
         ...profile,
         roles: (profile.user_roles || []).map((ur: any) => ur.role)
       }
-    } as MentorWithProfile;
+    };
+    return mentorData as unknown as MentorWithProfile;
   });
 };
 
@@ -144,17 +143,17 @@ export const fetchMentor = async (mentorId: string): Promise<MentorWithProfile> 
   const profile = data.profiles as any;
   
   const mentor: MentorWithProfile = {
-    ...data,
+    ...data as unknown as Mentor,
     profile: {
       ...profile,
       roles: (profile.user_roles || []).map((ur: any) => ur.role),
       social_links: profile.social_links || []
-    },
-    certifications: certifications as MentorCertification[],
+    } as ExtendedProfile,
+    certifications: certifications as unknown as MentorCertification[],
     reviews: reviews.map((review: any) => ({
       ...review,
       reviewer: review.profiles
-    })) as SessionReview[]
+    })) as unknown as SessionReview[]
   };
 
   return mentor;
@@ -172,7 +171,7 @@ export const fetchMentorAvailability = async (mentorId: string): Promise<MentorA
     throw error;
   }
 
-  return data as MentorAvailability[];
+  return data as unknown as MentorAvailability[];
 };
 
 // Fetch mentor date exceptions
@@ -187,7 +186,7 @@ export const fetchMentorDateExceptions = async (mentorId: string): Promise<DateE
     throw error;
   }
 
-  return data as DateException[];
+  return data as unknown as DateException[];
 };
 
 // Get available time slots for a mentor
@@ -220,7 +219,7 @@ export const fetchAvailableTimeSlots = async (mentorId: string, date: Date): Pro
   }
 
   // If the date is marked as unavailable, return empty array
-  if (exceptions.length > 0 && !exceptions[0].is_available) {
+  if (exceptions && exceptions.length > 0 && !exceptions[0].is_available) {
     return [];
   }
 
@@ -237,8 +236,12 @@ export const fetchAvailableTimeSlots = async (mentorId: string, date: Date): Pro
     throw sessionError;
   }
 
+  if (!availability) {
+    return [];
+  }
+
   // Convert regular availability to time slots
-  const timeSlots: TimeSlot[] = availability.map(slot => ({
+  const timeSlots: TimeSlot[] = (availability as unknown as MentorAvailability[]).map(slot => ({
     date: dateString,
     start_time: slot.start_time,
     end_time: slot.end_time,
@@ -246,21 +249,23 @@ export const fetchAvailableTimeSlots = async (mentorId: string, date: Date): Pro
   }));
 
   // Mark booked slots as unavailable
-  sessions.forEach(session => {
-    const sessionStart = session.start_time;
-    const sessionEnd = session.end_time;
-    
-    timeSlots.forEach(slot => {
-      // If the slot overlaps with a booked session, mark it as unavailable
-      if (
-        (sessionStart >= slot.start_time && sessionStart < slot.end_time) ||
-        (sessionEnd > slot.start_time && sessionEnd <= slot.end_time) ||
-        (sessionStart <= slot.start_time && sessionEnd >= slot.end_time)
-      ) {
-        slot.is_available = false;
-      }
+  if (sessions) {
+    (sessions as unknown as MentorshipSession[]).forEach(session => {
+      const sessionStart = session.start_time;
+      const sessionEnd = session.end_time;
+      
+      timeSlots.forEach(slot => {
+        // If the slot overlaps with a booked session, mark it as unavailable
+        if (
+          (sessionStart >= slot.start_time && sessionStart < slot.end_time) ||
+          (sessionEnd > slot.start_time && sessionEnd <= slot.end_time) ||
+          (sessionStart <= slot.start_time && sessionEnd >= slot.end_time)
+        ) {
+          slot.is_available = false;
+        }
+      });
     });
-  });
+  }
 
   // Filter out unavailable slots
   return timeSlots.filter(slot => slot.is_available);
@@ -304,7 +309,7 @@ export const bookMentorshipSession = async (
     throw error;
   }
 
-  return data as MentorshipSession;
+  return data as unknown as MentorshipSession;
 };
 
 // Fetch user's sessions (as mentor or mentee)
@@ -336,7 +341,7 @@ export const fetchUserSessions = async (): Promise<MentorshipSession[]> => {
   }
 
   // Process the data
-  return data.map(session => {
+  return (data || []).map(session => {
     const mentor = session.mentors as any;
     const mentee = session.profiles as any;
     
@@ -346,8 +351,8 @@ export const fetchUserSessions = async (): Promise<MentorshipSession[]> => {
         ...mentor,
         profile: mentor.profiles
       } : undefined,
-      mentee: mentee ? mentee : undefined
-    } as MentorshipSession;
+      mentee: mentee
+    } as unknown as MentorshipSession;
   });
 };
 
@@ -357,12 +362,14 @@ export const updateSessionStatus = async (
   status: SessionStatus,
   meetingLink?: string
 ): Promise<MentorshipSession> => {
+  const updateData: any = { status };
+  if (meetingLink) {
+    updateData.meeting_link = meetingLink;
+  }
+
   const { data, error } = await supabase
     .from('mentorship_sessions')
-    .update({ 
-      status,
-      ...(meetingLink ? { meeting_link: meetingLink } : {})
-    })
+    .update(updateData)
     .eq('id', sessionId)
     .select()
     .single();
@@ -372,7 +379,7 @@ export const updateSessionStatus = async (
     throw error;
   }
 
-  return data as MentorshipSession;
+  return data as unknown as MentorshipSession;
 };
 
 // Submit a review for a completed session
@@ -406,7 +413,7 @@ export const submitSessionReview = async (
     throw error;
   }
 
-  return data as SessionReview;
+  return data as unknown as SessionReview;
 };
 
 // Check if a user has applied to be a mentor
@@ -429,7 +436,7 @@ export const checkMentorStatus = async (): Promise<Mentor | null> => {
     throw error;
   }
 
-  return data as Mentor | null;
+  return data as unknown as Mentor | null;
 };
 
 // Apply to become a mentor
@@ -478,7 +485,7 @@ export const applyAsMentor = async (
     // Don't throw, as the mentor record was created successfully
   }
 
-  return data as Mentor;
+  return data as unknown as Mentor;
 };
 
 // Update mentor profile
@@ -513,7 +520,7 @@ export const updateMentorProfile = async (
     throw error;
   }
 
-  return data as Mentor;
+  return data as unknown as Mentor;
 };
 
 // Add mentor certification
@@ -551,7 +558,7 @@ export const addMentorCertification = async (
     throw error;
   }
 
-  return data as MentorCertification;
+  return data as unknown as MentorCertification;
 };
 
 // Update mentor availability
@@ -576,6 +583,10 @@ export const updateMentorAvailability = async (
     throw deleteError;
   }
 
+  if (availabilitySlots.length === 0) {
+    return [];
+  }
+
   // Then, insert new availability slots
   const slotsWithMentorId = availabilitySlots.map(slot => ({
     ...slot,
@@ -592,7 +603,7 @@ export const updateMentorAvailability = async (
     throw error;
   }
 
-  return data as MentorAvailability[];
+  return data as unknown as MentorAvailability[];
 };
 
 // Add date exception (day off or extra availability)
@@ -657,5 +668,5 @@ export const addDateException = async (
     result = data;
   }
 
-  return result as DateException;
+  return result as unknown as DateException;
 };
