@@ -688,6 +688,33 @@ export type Database = {
           },
         ]
       }
+      oauth_accounts: {
+        Row: {
+          created_at: string | null
+          id: string
+          provider: string
+          provider_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          provider: string
+          provider_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          provider?: string
+          provider_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       pitch_drafts: {
         Row: {
           created_at: string
@@ -1154,50 +1181,231 @@ export type Database = {
           },
         ]
       }
+      profile_analytics: {
+        Row: {
+          created_at: string | null
+          engagement_rate: number | null
+          id: string
+          last_month_views: number | null
+          last_week_views: number | null
+          top_referral_sources: string[] | null
+          total_profile_views: number | null
+          unique_viewers: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          engagement_rate?: number | null
+          id?: string
+          last_month_views?: number | null
+          last_week_views?: number | null
+          top_referral_sources?: string[] | null
+          total_profile_views?: number | null
+          unique_viewers?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          engagement_rate?: number | null
+          id?: string
+          last_month_views?: number | null
+          last_week_views?: number | null
+          top_referral_sources?: string[] | null
+          total_profile_views?: number | null
+          unique_viewers?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_analytics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_settings: {
+        Row: {
+          id: string
+          last_updated: string | null
+          messaging_privacy: string | null
+          notification_preferences: Json | null
+          show_activity: boolean | null
+          show_badges: boolean | null
+          show_followers: boolean | null
+          show_following: boolean | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          last_updated?: string | null
+          messaging_privacy?: string | null
+          notification_preferences?: Json | null
+          show_activity?: boolean | null
+          show_badges?: boolean | null
+          show_followers?: boolean | null
+          show_following?: boolean | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          last_updated?: string | null
+          messaging_privacy?: string | null
+          notification_preferences?: Json | null
+          show_activity?: boolean | null
+          show_badges?: boolean | null
+          show_followers?: boolean | null
+          show_following?: boolean | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_views: {
+        Row: {
+          id: string
+          profile_id: string
+          source: string | null
+          viewed_at: string | null
+          viewer_id: string | null
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          source?: string | null
+          viewed_at?: string | null
+          viewer_id?: string | null
+        }
+        Update: {
+          id?: string
+          profile_id?: string
+          source?: string | null
+          viewed_at?: string | null
+          viewer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_views_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_views_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
+          available_for_mentoring: boolean | null
           avatar_url: string | null
           bio: string | null
+          byline: string | null
+          company: string | null
           created_at: string
+          dark_mode_enabled: boolean | null
+          education: string | null
           email: string
           full_name: string | null
+          github_url: string | null
           id: string
+          job_title: string | null
           last_active_tab: string
           level: number
+          linkedin_url: string | null
+          location: string | null
           portfolio_url: string | null
           professional_details: string | null
+          resume_url: string | null
+          show_xp: boolean | null
+          skills: string[] | null
+          tagline: string | null
+          twitter_url: string | null
           updated_at: string
           username: string | null
+          visibility: string | null
+          website: string | null
+          website_url: string | null
           xp: number
         }
         Insert: {
+          available_for_mentoring?: boolean | null
           avatar_url?: string | null
           bio?: string | null
+          byline?: string | null
+          company?: string | null
           created_at?: string
+          dark_mode_enabled?: boolean | null
+          education?: string | null
           email: string
           full_name?: string | null
+          github_url?: string | null
           id: string
+          job_title?: string | null
           last_active_tab?: string
           level?: number
+          linkedin_url?: string | null
+          location?: string | null
           portfolio_url?: string | null
           professional_details?: string | null
+          resume_url?: string | null
+          show_xp?: boolean | null
+          skills?: string[] | null
+          tagline?: string | null
+          twitter_url?: string | null
           updated_at?: string
           username?: string | null
+          visibility?: string | null
+          website?: string | null
+          website_url?: string | null
           xp?: number
         }
         Update: {
+          available_for_mentoring?: boolean | null
           avatar_url?: string | null
           bio?: string | null
+          byline?: string | null
+          company?: string | null
           created_at?: string
+          dark_mode_enabled?: boolean | null
+          education?: string | null
           email?: string
           full_name?: string | null
+          github_url?: string | null
           id?: string
+          job_title?: string | null
           last_active_tab?: string
           level?: number
+          linkedin_url?: string | null
+          location?: string | null
           portfolio_url?: string | null
           professional_details?: string | null
+          resume_url?: string | null
+          show_xp?: boolean | null
+          skills?: string[] | null
+          tagline?: string | null
+          twitter_url?: string | null
           updated_at?: string
           username?: string | null
+          visibility?: string | null
+          website?: string | null
+          website_url?: string | null
           xp?: number
         }
         Relationships: []
@@ -1313,6 +1521,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      two_factor_auth: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_enabled: boolean | null
+          recovery_codes: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          recovery_codes?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          recovery_codes?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_activity: {
         Row: {
@@ -1514,6 +1749,18 @@ export type Database = {
           recipient_id: string
         }
         Returns: boolean
+      }
+      get_followers_count: {
+        Args: {
+          user_id: string
+        }
+        Returns: number
+      }
+      get_following_count: {
+        Args: {
+          user_id: string
+        }
+        Returns: number
       }
       is_mentor: {
         Args: {
