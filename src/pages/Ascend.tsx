@@ -9,9 +9,9 @@ const Ascend = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Redirect to the Ascend Dashboard
-    navigate('/ascend');
-  }, [navigate]);
+    // Remove the redirect as it's causing an infinite loop
+    // We'll handle navigation with the button click instead
+  }, []);
   
   return (
     <Layout>
@@ -28,7 +28,7 @@ const Ascend = () => {
           
           <Button 
             className="gradient-bg hover-scale text-lg py-6 px-8"
-            onClick={() => navigate('/ascend')}
+            onClick={() => navigate('/ascend/dashboard')}
           >
             <Trophy className="mr-2 h-5 w-5" />
             View Dashboard

@@ -1,6 +1,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
+import { getTypedSupabaseClient } from "@/lib/supabase-types";
+
+// Create a typed supabase client
+const typedSupabase = getTypedSupabaseClient(supabase);
 
 // Types for Ascend module
 export interface XpTransaction {
@@ -97,7 +101,7 @@ export interface UserStats {
 export const getUserStats = async (userId: string): Promise<UserStats | null> => {
   try {
     // Get user profile info
-    const { data: profileData, error: profileError } = await supabase
+    const { data: profileData, error: profileError } = await typedSupabase
       .from('profiles')
       .select('xp, level')
       .eq('id', userId)
@@ -107,7 +111,7 @@ export const getUserStats = async (userId: string): Promise<UserStats | null> =>
     if (!profileData) return null;
 
     // Get user leaderboard rank
-    const { data: leaderboardData, error: leaderboardError } = await supabase
+    const { data: leaderboardData, error: leaderboardError } = await typedSupabase
       .from('leaderboard_history')
       .select('weekly_rank, weekly_change')
       .eq('user_id', userId)
@@ -116,14 +120,14 @@ export const getUserStats = async (userId: string): Promise<UserStats | null> =>
       .single();
 
     // Get user streak info
-    const { data: streakData, error: streakError } = await supabase
+    const { data: streakData, error: streakError } = await typedSupabase
       .from('login_streaks')
       .select('current_streak')
       .eq('user_id', userId)
       .single();
 
     // Get count of user badges
-    const { count: badgesCount, error: badgesError } = await supabase
+    const { count: badgesCount, error: badgesError } = await typedSupabase
       .from('user_badges')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId);
@@ -143,7 +147,7 @@ export const getUserStats = async (userId: string): Promise<UserStats | null> =>
       level: profileData.level,
       rank: leaderboardError ? null : leaderboardData.weekly_rank,
       rankChange: leaderboardError ? 0 : leaderboardData.weekly_change,
-      streakDays: streakError ? 0 : streakData.current_streak,
+      streakDays: streakError ? 0 : streakData?.current_streak || 0,
       badgesCount: badgesError ? 0 : badgesCount || 0,
       nextLevelXp: nextLevelXp,
       progressToNextLevel: Math.max(0, Math.min(100, progressToNextLevel))
@@ -162,7 +166,7 @@ export const getUserStats = async (userId: string): Promise<UserStats | null> =>
 // Function to get recent XP transactions
 export const getRecentXpTransactions = async (userId: string, limit = 5): Promise<XpTransaction[]> => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('xp_transactions')
       .select('*')
       .eq('user_id', userId)
@@ -181,7 +185,7 @@ export const getRecentXpTransactions = async (userId: string, limit = 5): Promis
 export const getUserBadgesWithProgress = async (userId: string): Promise<any[]> => {
   try {
     // Get user's earned badges
-    const { data: userBadges, error: badgesError } = await supabase
+    const { data: userBadges, error: badgesError } = await typedSupabase
       .from('user_badges')
       .select(`
         id,
@@ -199,7 +203,7 @@ export const getUserBadgesWithProgress = async (userId: string): Promise<any[]> 
     if (badgesError) throw badgesError;
 
     // Get badge progress for badges not yet earned
-    const { data: badgeProgress, error: progressError } = await supabase
+    const { data: badgeProgress, error: progressError } = await typedSupabase
       .from('badge_progress')
       .select(`
         id,
@@ -244,7 +248,7 @@ export const getUserBadgesWithProgress = async (userId: string): Promise<any[]> 
 // Function to get available rewards
 export const getAvailableRewards = async (): Promise<Reward[]> => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('rewards')
       .select('*')
       .eq('is_active', true)
@@ -261,7 +265,7 @@ export const getAvailableRewards = async (): Promise<Reward[]> => {
 // Function to get user's claimed rewards
 export const getUserRewards = async (userId: string): Promise<UserReward[]> => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('user_rewards')
       .select(`
         *,
@@ -271,7 +275,7 @@ export const getUserRewards = async (userId: string): Promise<UserReward[]> => {
       .order('claimed_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return data as unknown as UserReward[] || [];
   } catch (error) {
     console.error('Error fetching user rewards:', error);
     return [];
@@ -282,9 +286,9 @@ export const getUserRewards = async (userId: string): Promise<UserReward[]> => {
 export const claimReward = async (userId: string, rewardId: string): Promise<boolean> => {
   try {
     // Get the reward to check XP cost
-    const { data: rewardData, error: rewardError } = await supabase
+    const { data: rewardData, error: rewardError } = await typedSupabase
       .from('rewards')
-      .select('xp_cost')
+      .select('xp_cost, name')
       .eq('id', rewardId)
       .single();
 
@@ -292,7 +296,7 @@ export const claimReward = async (userId: string, rewardId: string): Promise<boo
     if (!rewardData) throw new Error('Reward not found');
 
     // Get user's current XP
-    const { data: userData, error: userError } = await supabase
+    const { data: userData, error: userError } = await typedSupabase
       .from('profiles')
       .select('xp')
       .eq('id', userId)
@@ -313,7 +317,7 @@ export const claimReward = async (userId: string, rewardId: string): Promise<boo
 
     // Begin transaction
     // 1. Deduct XP from user
-    const { error: updateError } = await supabase
+    const { error: updateError } = await typedSupabase
       .from('profiles')
       .update({ xp: userData.xp - rewardData.xp_cost })
       .eq('id', userId);
@@ -321,7 +325,7 @@ export const claimReward = async (userId: string, rewardId: string): Promise<boo
     if (updateError) throw updateError;
 
     // 2. Record XP transaction
-    const { error: transactionError } = await supabase
+    const { error: transactionError } = await typedSupabase
       .from('xp_transactions')
       .insert({
         user_id: userId,
@@ -335,7 +339,7 @@ export const claimReward = async (userId: string, rewardId: string): Promise<boo
     if (transactionError) throw transactionError;
 
     // 3. Create user reward record
-    const { error: rewardClaimError } = await supabase
+    const { error: rewardClaimError } = await typedSupabase
       .from('user_rewards')
       .insert({
         user_id: userId,
@@ -368,7 +372,7 @@ export const claimReward = async (userId: string, rewardId: string): Promise<boo
 export const getLeaderboard = async (timeRange: 'week' | 'month' | 'all' = 'week'): Promise<LeaderboardEntry[]> => {
   try {
     // Get the latest snapshot date from leaderboard history
-    const { data: latestSnapshot, error: snapshotError } = await supabase
+    const { data: latestSnapshot, error: snapshotError } = await typedSupabase
       .from('leaderboard_history')
       .select('snapshot_date')
       .order('snapshot_date', { ascending: false })
@@ -378,7 +382,7 @@ export const getLeaderboard = async (timeRange: 'week' | 'month' | 'all' = 'week
     if (snapshotError) {
       console.error('Error fetching latest snapshot date:', snapshotError);
       // Fallback to getting top users directly from profiles
-      const { data: profilesData, error: profilesError } = await supabase
+      const { data: profilesData, error: profilesError } = await typedSupabase
         .from('profiles')
         .select('id, username, full_name, avatar_url, xp, level')
         .order('xp', { ascending: false })
@@ -408,7 +412,7 @@ export const getLeaderboard = async (timeRange: 'week' | 'month' | 'all' = 'week
     }
 
     // Get leaderboard entries with user profiles
-    const { data: leaderboardData, error: leaderboardError } = await supabase
+    const { data: leaderboardData, error: leaderboardError } = await typedSupabase
       .from('leaderboard_history')
       .select(`
         id,
@@ -427,7 +431,7 @@ export const getLeaderboard = async (timeRange: 'week' | 'month' | 'all' = 'week
       .limit(50);
 
     if (leaderboardError) throw leaderboardError;
-    return leaderboardData || [];
+    return leaderboardData as unknown as LeaderboardEntry[] || [];
   } catch (error) {
     console.error('Error fetching leaderboard data:', error);
     return [];
@@ -437,8 +441,8 @@ export const getLeaderboard = async (timeRange: 'week' | 'month' | 'all' = 'week
 // Function to update login streak
 export const updateLoginStreak = async (userId: string): Promise<void> => {
   try {
-    // This is typically handled by a database trigger, but we can manually invoke it for testing
-    await supabase.rpc('update_login_streak', { user_id_param: userId });
+    // Call the RPC function to update the login streak
+    await typedSupabase.rpc('update_login_streak', { user_id_param: userId });
   } catch (error) {
     console.error('Error updating login streak:', error);
   }

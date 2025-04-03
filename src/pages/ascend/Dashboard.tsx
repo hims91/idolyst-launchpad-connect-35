@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from "@/components/layout/Layout";
@@ -10,8 +9,7 @@ import {
   Gift, 
   Calendar,
   ChevronRight,
-  Sparkles,
-  LucideIcon
+  Sparkles
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,7 +32,7 @@ import {
 } from "@/hooks/useAscend";
 import { fadeIn, fadeInUp } from "@/lib/animations";
 import Confetti from 'react-confetti';
-import { useWindowSize } from "@/hooks/use-mobile";
+import { useWindowSize } from "@/hooks/use-window-size";
 
 const AscendDashboard = () => {
   const navigate = useNavigate();
@@ -70,7 +68,6 @@ const AscendDashboard = () => {
   
   const { mutate: updateLoginStreak } = useUpdateLoginStreak();
   
-  // Update login streak when the dashboard is loaded
   useEffect(() => {
     if (user?.id) {
       updateLoginStreak();
@@ -87,7 +84,6 @@ const AscendDashboard = () => {
     });
   };
   
-  // Mock data for seasonal events
   const seasonalEvents = [
     {
       id: 'summer-xp',
@@ -99,7 +95,6 @@ const AscendDashboard = () => {
     }
   ];
   
-  // Mock data for XP sources
   const xpSources = [
     { action: 'Post Content', xp: 10 },
     { action: 'Get 10+ Upvotes', xp: 5 },
@@ -129,7 +124,6 @@ const AscendDashboard = () => {
       </AnimatePresence>
       
       <div className="max-w-6xl mx-auto pb-20 md:pb-0">
-        {/* Header Section */}
         <motion.div 
           className="mb-6"
           variants={fadeInUp}
@@ -159,7 +153,6 @@ const AscendDashboard = () => {
           </div>
         </motion.div>
         
-        {/* Tabs navigation */}
         <Tabs 
           value={activeTab} 
           onValueChange={setActiveTab} 
@@ -172,7 +165,6 @@ const AscendDashboard = () => {
             <TabsTrigger value="history">XP History</TabsTrigger>
           </TabsList>
           
-          {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             {isLoadingStats ? (
               <div className="space-y-6">
@@ -185,7 +177,6 @@ const AscendDashboard = () => {
               </div>
             ) : (
               <>
-                {/* User Stats Card */}
                 <motion.div
                   variants={fadeInUp}
                   initial="hidden"
@@ -195,7 +186,6 @@ const AscendDashboard = () => {
                   <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/40 dark:to-purple-950/40 overflow-hidden border-indigo-100 dark:border-indigo-800/30">
                     <CardContent className="pt-6">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* XP Progress */}
                         <div className="col-span-2">
                           <XpProgress
                             currentXp={userStats?.xp || 0}
@@ -225,7 +215,6 @@ const AscendDashboard = () => {
                           </div>
                         </div>
                         
-                        {/* Recent XP Sources */}
                         <div className="bg-white/80 dark:bg-gray-800/50 rounded-lg p-4">
                           <h3 className="text-sm font-medium mb-3">XP Sources</h3>
                           <div className="space-y-2 max-h-40 overflow-y-auto">
@@ -242,9 +231,7 @@ const AscendDashboard = () => {
                   </Card>
                 </motion.div>
                 
-                {/* Quick Access Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Badges Preview */}
                   <motion.div
                     variants={fadeInUp}
                     initial="hidden"
@@ -297,7 +284,6 @@ const AscendDashboard = () => {
                     </Card>
                   </motion.div>
                   
-                  {/* Rewards Preview */}
                   <motion.div
                     variants={fadeInUp}
                     initial="hidden"
@@ -353,7 +339,6 @@ const AscendDashboard = () => {
                     </Card>
                   </motion.div>
                   
-                  {/* Leaderboard Preview */}
                   <motion.div
                     variants={fadeInUp}
                     initial="hidden"
@@ -424,7 +409,6 @@ const AscendDashboard = () => {
                   </motion.div>
                 </div>
                 
-                {/* Seasonal Event Card */}
                 {seasonalEvents.length > 0 && (
                   <motion.div
                     variants={fadeInUp}
@@ -462,7 +446,6 @@ const AscendDashboard = () => {
             )}
           </TabsContent>
           
-          {/* Badges Tab */}
           <TabsContent value="badges" className="space-y-6">
             <h2 className="text-2xl font-bold mb-6">Your Badges</h2>
             
@@ -474,7 +457,6 @@ const AscendDashboard = () => {
               </div>
             ) : (
               <>
-                {/* Earned Badges */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium flex items-center">
                     <Award className="mr-2 h-5 w-5 text-amber-500" />
@@ -514,7 +496,6 @@ const AscendDashboard = () => {
                 
                 <Separator className="my-8" />
                 
-                {/* Badges in Progress */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium flex items-center">
                     <Zap className="mr-2 h-5 w-5 text-indigo-500" />
@@ -555,11 +536,9 @@ const AscendDashboard = () => {
             )}
           </TabsContent>
           
-          {/* Rewards Tab */}
           <TabsContent value="rewards" className="space-y-6">
             <h2 className="text-2xl font-bold mb-6">Rewards</h2>
             
-            {/* Current XP Banner */}
             <motion.div
               variants={fadeInUp}
               initial="hidden"
@@ -583,7 +562,6 @@ const AscendDashboard = () => {
               </div>
             </motion.div>
             
-            {/* Available Rewards */}
             <div className="space-y-6">
               <h3 className="text-lg font-medium flex items-center">
                 <Gift className="mr-2 h-5 w-5 text-purple-500" />
@@ -630,7 +608,6 @@ const AscendDashboard = () => {
             </div>
           </TabsContent>
           
-          {/* XP History Tab */}
           <TabsContent value="history" className="space-y-6">
             <h2 className="text-2xl font-bold mb-6">XP History</h2>
             

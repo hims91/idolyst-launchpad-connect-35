@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
-import { LevelUp } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 
 interface XpProgressProps {
   currentXp: number;
@@ -60,7 +60,7 @@ const XpProgress: React.FC<XpProgressProps> = ({
             transform: 'translateX(50%)'
           }}
         >
-          <LevelUp className="w-4 h-4 text-indigo-500" />
+          <ArrowUp className="w-4 h-4 text-indigo-500" />
         </motion.div>
       </div>
     </div>

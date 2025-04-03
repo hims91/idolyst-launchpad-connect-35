@@ -65,6 +65,7 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/pitch-hub" element={<PitchHub />} />
                 <Route path="/mentor-space" element={<MentorSpace />} />
+                <Route path="/ascend" element={<Ascend />} />
                 
                 {/* PitchHub routes */}
                 <Route path="/pitch-hub/index" element={<PitchHubIndex />} />
@@ -138,7 +139,7 @@ const App = () => (
                 
                 {/* Ascend routes */}
                 <Route 
-                  path="/ascend" 
+                  path="/ascend/dashboard" 
                   element={
                     <ProtectedRoute>
                       <AscendDashboard />
