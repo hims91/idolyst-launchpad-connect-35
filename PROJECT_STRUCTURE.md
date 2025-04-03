@@ -43,6 +43,21 @@
 - `src/hooks/use-notifications.tsx` - Custom hook for managing notifications state and realtime updates
 - `src/types/notifications.ts` - TypeScript types for notifications and preferences
 
+### Messaging System
+- `src/pages/Messages.tsx` - Main messaging page with conversation list and message view
+- `src/components/messages/ConversationList.tsx` - List of all conversations
+- `src/components/messages/ConversationItem.tsx` - Individual conversation item in the list
+- `src/components/messages/ConversationView.tsx` - Display of a selected conversation with messages
+- `src/components/messages/MessageItem.tsx` - Individual message component
+- `src/components/messages/MessageInput.tsx` - Input component for sending messages
+- `src/components/messages/MobileHeader.tsx` - Mobile-specific header for messaging UI
+- `src/components/messages/EmptyState.tsx` - Empty state when no conversation is selected
+- `src/components/messages/NewMessageModal.tsx` - Modal for starting a new conversation
+- `src/api/messages.ts` - API functions for messages (fetch, send, read, etc.)
+- `src/hooks/use-messages.tsx` - Custom hook for managing messages state and realtime updates
+- `src/hooks/use-unread-messages.tsx` - Hook for tracking unread message count for notifications
+- `src/types/messages.ts` - TypeScript types for messages and conversations
+
 ### Routes
 - `src/App.tsx` - Main route definitions and auth-protected routes
 
@@ -59,6 +74,7 @@
 - `src/api/auth.ts` - Authentication API calls
 - `src/api/profile.ts` - Profile-related API calls
 - `src/api/notifications.ts` - Notification-related API calls
+- `src/api/messages.ts` - Messaging-related API calls
 - `src/integrations/supabase/client.ts` - Supabase client
 
 ### Types
@@ -66,6 +82,7 @@
 - `src/types/profile.ts` - Profile module related types
 - `src/types/user.ts` - User profile related types
 - `src/types/notifications.ts` - Notification system related types
+- `src/types/messages.ts` - Messaging system related types
 
 ## Profile Module Implementation Details
 
@@ -159,28 +176,68 @@
    - Empty state for no notifications
    - Mobile-first responsive design
 
+## Messaging System Implementation Details
+
+### Core Features
+1. **Conversations Management**:
+   - One-on-one messaging between connected users (followers or mentor-mentee pairs)
+   - Real-time conversation updates with Supabase Realtime
+   - Conversation list with most recent messages first
+   - Visual indicators for unread messages
+   - Search functionality for existing conversations
+
+2. **Messaging Interface**:
+   - Real-time message delivery
+   - Read receipts
+   - Media sharing with preview (images, documents)
+   - Text formatting and emoji support
+   - Mobile-optimized experience with responsive design
+
+3. **User Experience**:
+   - Seamless transitions between conversation list and conversation view
+   - Smooth animations for message delivery
+   - Intuitive navigation with mobile-first approach
+   - Infinite scroll for message history
+   - Visual feedback on message status (sending, sent, delivered, read)
+
+4. **Security & Privacy**:
+   - Restricted messaging between connected users only
+   - Row-Level Security (RLS) ensures users can only access their conversations
+   - Protected file storage for message attachments
+
 ### Database Schema
-- **notifications**: Stores notification data including type, content, read status, and links to related content
-- **notification_preferences**: Stores user preferences for each notification type and delivery method
+- **conversations**: Tracks individual conversations between users
+- **conversation_participants**: Maps users to conversations (many-to-many relationship)
+- **messages**: Stores actual message content and metadata
+- **follows**: Used to determine messaging eligibility (users can only message if they follow each other)
 
 ### Row-Level Security (RLS)
-- Users can only see and update their own notifications
-- RLS policies ensure secure access to notification data
-- RLS policies protect notification preference settings
+- Users can only view and modify conversations they are participants in
+- Message creation restricted to conversation participants
+- Conversation creation checked against follow relationship
 
 ### Real-time Features
-- New notifications appear immediately using Supabase Realtime subscriptions
-- Unread count badges update in real-time across the interface
-- Notification status changes (read/unread) sync across devices
+- Instant message delivery using Supabase Realtime
+- Live typing indicators
+- Real-time read receipts
+- Unread message count updates across devices
+
+### UI Components and Animation
+- Mobile-first responsive design
+- Smooth transitions between conversation states
+- Animation for new messages with slide-in effects
+- Loading states for all data fetching operations
+- Infinite scroll with optimistic updates
 
 ### Integration Points
-- WebSidebar and MobileHeader display unread notification counts
-- Settings page includes a dedicated Notifications tab for preferences
-- Notification items link directly to relevant content (posts, messages, etc.)
+- Profile pages include direct messaging button for eligible users
+- Unread message count displayed in navigation
+- New message notifications link directly to the conversation
+- Mentor bookings automatically create messaging channel
 
-### Animations and Transitions
-- Fade and slide animations for notification items
-- Staggered loading of notification groups
-- Subtle pulse animation for unread notification badges
-- Scale effects on buttons and interactive elements
-- Smooth transitions between notification states
+### Media Handling
+- Support for image uploads with preview
+- Document attachment capabilities
+- Secure file storage using Supabase Storage
+- Progress indicators for media uploads
+
