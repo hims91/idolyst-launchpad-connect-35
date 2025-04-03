@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ProfileUpdatePayload, PrivacySettings, isValidProfileVisibility, isValidMessagingPermissions, isValidActivityVisibility, ExtendedProfile, ProfileActivity } from "@/types/profile";
 
@@ -243,14 +242,12 @@ export const fetchExtendedProfile = async (
         id: "1",
         type: "post",
         title: "Created a new post",
-        user_id: userId,
         created_at: new Date(Date.now() - 86400000).toISOString(),
       },
       {
         id: "2",
         type: "pitch",
         title: "Launched a new pitch",
-        user_id: userId,
         created_at: new Date(Date.now() - 172800000).toISOString(),
       }
     ];

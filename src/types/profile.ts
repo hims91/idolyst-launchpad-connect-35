@@ -1,4 +1,3 @@
-
 import { UserRole } from "./auth";
 
 // Profile types
@@ -25,6 +24,7 @@ export interface ProfileActivity {
   created_at: string;
   likes?: number;
   comments?: number;
+  user_id?: string; // Added user_id as optional to accommodate existing code
 }
 
 export interface ExtendedProfile {
