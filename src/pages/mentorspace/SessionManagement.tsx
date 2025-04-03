@@ -16,13 +16,6 @@ import { motion } from "framer-motion";
 import { pageTransition, listContainer } from "@/lib/animations";
 import { isAfter, parseISO } from "date-fns";
 
-// Define the expected prop types based on the SessionCard component
-interface SessionCardProps {
-  session: MentorshipSession;
-  onStatusChange?: (sessionId: string, status: SessionStatus) => void;
-  onReview?: (sessionId: string) => void;
-}
-
 const SessionManagement = () => {
   const [reviewSession, setReviewSession] = useState<MentorshipSession | null>(null);
   const { data: sessions, isLoading } = useUserSessions();
@@ -120,7 +113,7 @@ const SessionManagement = () => {
                     <SessionCard 
                       key={session.id} 
                       session={session} 
-                      onStatusChange={handleStatusChange}
+                      isMentor={true}
                     />
                   ))}
                 </motion.div>
@@ -151,9 +144,7 @@ const SessionManagement = () => {
                 {upcomingMenteeSessions.map((session) => (
                   <SessionCard 
                     key={session.id} 
-                    session={session} 
-                    onStatusChange={handleStatusChange}
-                    onReview={handleReview}
+                    session={session}
                   />
                 ))}
               </motion.div>
@@ -188,7 +179,7 @@ const SessionManagement = () => {
                         <SessionCard 
                           key={session.id} 
                           session={session} 
-                          onStatusChange={handleStatusChange}
+                          isMentor={true}
                         />
                       ))}
                     </motion.div>
@@ -207,9 +198,7 @@ const SessionManagement = () => {
                       {allMenteeSessions.map((session) => (
                         <SessionCard 
                           key={session.id} 
-                          session={session} 
-                          onStatusChange={handleStatusChange}
-                          onReview={handleReview}
+                          session={session}
                         />
                       ))}
                     </motion.div>

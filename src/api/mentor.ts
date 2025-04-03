@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Mentor, 
@@ -92,7 +91,7 @@ export const fetchMentors = async (filter?: MentorFilter) => {
     const { profile: profileData, ...mentorData } = item;
     return {
       ...mentorData,
-      profile: profileData as ExtendedProfile
+      profile: (profileData || {}) as ExtendedProfile
     };
   });
   
@@ -149,12 +148,13 @@ export const fetchMentor = async (mentorId: string) => {
       )
     `)
     .eq('is_public', true)
-    .in('session_id', (subQuery) => {
-      return subQuery
+    .in('session_id', 
+      supabase
         .from('mentorship_sessions')
         .select('id')
-        .eq('mentor_id', mentorId);
-    })
+        .eq('mentor_id', mentorId)
+        .then(({ data }) => data ? data.map(item => item.id) : [])
+    )
     .order('created_at', { ascending: false })
     .limit(5);
   
@@ -187,9 +187,16 @@ export const fetchMentor = async (mentorId: string) => {
     date_exceptions: DateException[];
   } = {
     ...mentorDataOnly,
-    profile: profileData as ExtendedProfile,
+    profile: (profileData || {}) as ExtendedProfile,
     certifications: certificationData || [],
-    reviews: reviewsData || [],
+    reviews: (reviewsData || []).map(review => {
+      const { reviewer, session, ...reviewData } = review;
+      return {
+        ...reviewData,
+        reviewer: reviewer as ExtendedProfile,
+        session: session
+      };
+    }) as unknown as SessionReview[],
     availability: availabilityData || [],
     date_exceptions: exceptionData || [],
   };
@@ -356,16 +363,26 @@ export const fetchUserSessions = async () => {
   
   if (error) throw error;
   
-  // Transform the data to match our types
+  // Transform the data to match our types, handling potential null values
   const sessions: MentorshipSession[] = data.map(item => {
     const { mentor, mentee, ...sessionData } = item;
     return {
       ...sessionData,
       mentor: mentor ? {
         ...mentor,
-        profile: mentor.profile
+        profile: mentor.profile as ExtendedProfile,
+        bio: '',
+        expertise: [] as ExpertiseCategory[],
+        years_experience: 0,
+        is_featured: false,
+        avg_rating: 0,
+        total_sessions: 0,
+        total_reviews: 0,
+        status: 'approved',
+        created_at: '',
+        updated_at: ''
       } : undefined,
-      mentee: mentee || undefined
+      mentee: mentee as ExtendedProfile
     };
   });
   

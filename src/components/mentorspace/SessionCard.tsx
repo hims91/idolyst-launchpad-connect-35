@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -28,7 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { fadeInUp } from "@/lib/animations";
 import { ExtendedProfile } from "@/types/profile";
 
-interface SessionCardProps {
+export interface SessionCardProps {
   session: MentorshipSession;
   isMentor?: boolean;
 }
