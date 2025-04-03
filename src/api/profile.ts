@@ -2,7 +2,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { ExtendedProfile, ProfileUpdatePayload, SocialLink, PrivacySettings } from "@/types/profile";
 import { toast } from "@/hooks/use-toast";
-import { Database } from "@/integrations/supabase/types";
 
 // Fetch profile with extended details
 export const fetchExtendedProfile = async (userId: string, currentUserId?: string): Promise<ExtendedProfile | null> => {
@@ -32,7 +31,7 @@ export const fetchExtendedProfile = async (userId: string, currentUserId?: strin
       .eq("user_id", userId);
 
     if (!socialLinksError && socialLinksData) {
-      socialLinks = socialLinksData;
+      socialLinks = socialLinksData as SocialLink[];
     }
 
     // Fetch follower count
@@ -155,7 +154,7 @@ export const followUser = async (followerId: string, followedId: string): Promis
       .insert({
         follower_id: followerId,
         followed_id: followedId,
-      });
+      } as any);
 
     if (error) throw error;
     
@@ -208,7 +207,7 @@ export const addSocialLink = async (userId: string, socialLink: Omit<SocialLink,
         platform: socialLink.platform,
         url: socialLink.url,
         icon: socialLink.icon,
-      })
+      } as any)
       .select()
       .single();
 
@@ -311,7 +310,7 @@ export const updatePrivacySettings = async (userId: string, settings: PrivacySet
         messaging_permissions: settings.messaging_permissions,
         activity_visibility: settings.activity_visibility,
         updated_at: new Date().toISOString(),
-      });
+      } as any);
 
     if (error) throw error;
     

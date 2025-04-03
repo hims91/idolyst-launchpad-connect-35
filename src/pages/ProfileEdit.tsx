@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -60,7 +59,6 @@ const ProfileEdit = () => {
     },
   });
 
-  // Fetch social links on component mount
   useEffect(() => {
     const fetchSocialLinks = async () => {
       if (!user?.id) return;
@@ -71,7 +69,9 @@ const ProfileEdit = () => {
           .eq('user_id', user.id);
         
         if (error) throw error;
-        setSocialLinks(data || []);
+        if (data) {
+          setSocialLinks(data as SocialLink[]);
+        }
       } catch (error) {
         console.error('Error fetching social links:', error);
         toast({
@@ -88,7 +88,6 @@ const ProfileEdit = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // File validation
     const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
     if (!validTypes.includes(file.type)) {
       toast({
@@ -185,7 +184,6 @@ const ProfileEdit = () => {
     
     setIsLoading(true);
     try {
-      // Upload avatar if changed
       let avatarUrl = data.avatar_url;
       if (avatarFile) {
         const uploadedUrl = await uploadAvatar(user.id);
@@ -194,7 +192,6 @@ const ProfileEdit = () => {
         }
       }
       
-      // Update profile
       const profileData: ProfileUpdatePayload = {
         ...data,
         avatar_url: avatarUrl || undefined,
@@ -243,7 +240,6 @@ const ProfileEdit = () => {
           <CardContent className="pt-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Avatar Upload */}
                 <div className="flex flex-col items-center mb-8">
                   <div className="relative group">
                     <Avatar className="w-24 h-24 border-2 group-hover:border-idolyst-purple transition-all">
@@ -269,7 +265,6 @@ const ProfileEdit = () => {
                   <p className="text-sm text-gray-500 mt-2">Click to upload new avatar</p>
                 </div>
 
-                {/* Username */}
                 <FormField
                   control={form.control}
                   name="username"
@@ -284,7 +279,6 @@ const ProfileEdit = () => {
                   )}
                 />
 
-                {/* Full Name */}
                 <FormField
                   control={form.control}
                   name="full_name"
@@ -299,7 +293,6 @@ const ProfileEdit = () => {
                   )}
                 />
 
-                {/* Bio */}
                 <FormField
                   control={form.control}
                   name="bio"
@@ -325,7 +318,6 @@ const ProfileEdit = () => {
                   )}
                 />
 
-                {/* Professional Details */}
                 <FormField
                   control={form.control}
                   name="professional_details"
@@ -340,7 +332,6 @@ const ProfileEdit = () => {
                   )}
                 />
 
-                {/* Portfolio URL */}
                 <FormField
                   control={form.control}
                   name="portfolio_url"
@@ -355,7 +346,6 @@ const ProfileEdit = () => {
                   )}
                 />
 
-                {/* Social Links */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Social Links</h3>
                   
