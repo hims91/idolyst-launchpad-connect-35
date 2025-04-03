@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,6 +5,7 @@ import { updateLoginStreak } from '@/api/ascend';
 import { getTypedSupabaseClient } from '@/lib/supabase-types';
 import { ExtendedProfile } from '@/types/profile';
 import { UserRole } from '@/types/auth';
+import { toast } from '@/hooks/use-toast';
 
 // Create a typed supabase client
 const typedSupabase = getTypedSupabaseClient(supabase);
@@ -25,6 +25,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, userData: any) => Promise<{ error: any, data: any }>;
   signOut: () => Promise<{ error: any }>;
   resetPassword: (email: string) => Promise<{ error: any }>;
+  updatePassword: (password: string) => Promise<{ error: any }>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -44,7 +45,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      // Fetch user profile
       const { data: profileData, error: profileError } = await typedSupabase
         .from('profiles')
         .select(`
@@ -65,7 +65,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (profileError) throw profileError;
       
-      // Fetch user roles
       const { data: userRoles, error: rolesError } = await typedSupabase
         .from('user_roles')
         .select('id, role, is_verified')
@@ -93,14 +92,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Refresh user profile data
   const refreshProfile = async () => {
     if (!user) return;
     await fetchUserProfile(user.id);
   };
 
   useEffect(() => {
-    // First set up the auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         setSession(currentSession);
@@ -109,11 +106,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(currentSession.user as UserWithProfile);
           setIsAuthenticated(true);
           
-          // Update login streak using setTimeout to avoid potential Supabase deadlocks
           setTimeout(async () => {
             await updateLoginStreak(currentSession.user.id);
             
-            // Fetch user profile
             const enhancedProfile = await fetchUserProfile(currentSession.user.id);
             if (enhancedProfile) {
               const updatedUser = {
@@ -135,7 +130,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     );
 
-    // Then check for an existing session
     const initializeAuth = async () => {
       try {
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
@@ -150,10 +144,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(currentSession.user as UserWithProfile);
           setIsAuthenticated(true);
           
-          // Update login streak
           await updateLoginStreak(currentSession.user.id);
           
-          // Fetch user profile
           const enhancedProfile = await fetchUserProfile(currentSession.user.id);
           if (enhancedProfile) {
             const updatedUser = {
@@ -187,7 +179,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []);
 
-  // Sign in function
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
@@ -207,7 +198,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Sign up function
   const signUp = async (email: string, password: string, userData: any) => {
     setIsLoading(true);
     try {
@@ -230,7 +220,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Sign out function
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -250,7 +239,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Reset password function
   const resetPassword = async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -259,6 +247,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { error };
     } catch (error) {
       console.error('Reset password error:', error);
+      return { error };
+    }
+  };
+
+  const updatePassword = async (password: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password,
+      });
+      
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Error updating password",
+          description: error.message || "An error occurred while updating your password."
+        });
+      } else {
+        toast({
+          title: "Password updated",
+          description: "Your password has been updated successfully."
+        });
+      }
+      
+      return { error };
+    } catch (error) {
+      console.error('Update password error:', error);
       return { error };
     }
   };
@@ -274,6 +288,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signUp,
     signOut,
     resetPassword,
+    updatePassword,
     refreshProfile,
   };
 

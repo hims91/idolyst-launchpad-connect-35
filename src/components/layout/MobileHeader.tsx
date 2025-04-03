@@ -31,7 +31,7 @@ const MobileHeader = () => {
       <div className="flex items-center justify-between px-4 h-full">
         {/* Logo */}
         <Link to="/" className="flex items-center">
-          <IdolystLogo height={28} />
+          <IdolystLogo size="small" />
         </Link>
         
         {/* Right side actions */}

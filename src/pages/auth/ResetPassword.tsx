@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { resetPasswordSchema } from "@/lib/validation";
-import { useAuth } from "@/providers/AuthProvider";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { fadeInUp, scaleAnimation } from "@/lib/animations";
@@ -72,19 +72,21 @@ const ResetPassword = () => {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
-      await updatePassword(data.password);
+      const { error } = await updatePassword(data.password);
       
-      toast({
-        title: "Password updated successfully",
-        description: "You can now log in with your new password.",
-      });
-      
-      // Redirect to login page after a short delay
-      setTimeout(() => {
-        navigate("/auth/login");
-      }, 1500);
+      if (!error) {
+        toast({
+          title: "Password updated successfully",
+          description: "You can now log in with your new password.",
+        });
+        
+        // Redirect to login page after a short delay
+        setTimeout(() => {
+          navigate("/auth/login");
+        }, 1500);
+      }
     } catch (error) {
-      // Error is handled in the AuthProvider
+      // Error is handled in the updatePassword function
     } finally {
       setIsSubmitting(false);
     }
