@@ -3,27 +3,31 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Notification, NotificationGroup, NotificationPreferences } from '@/types/notifications';
 import { useAuth } from '@/providers/AuthProvider';
+import { 
+  fetchNotifications, 
+  markNotificationAsRead, 
+  markAllNotificationsAsRead, 
+  deleteNotification,
+  updateNotificationPreferences,
+  muteNotifications,
+  fetchNotificationPreferences
+} from '@/api/notifications';
 
 export const useNotifications = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [preferencesLoading, setPreferencesLoading] = useState(true);
   const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
   
   // Fetch notifications
-  const fetchNotifications = async () => {
+  const fetchUserNotifications = async () => {
     if (!user) return;
     
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
+      const data = await fetchNotifications();
       
       setNotifications(data || []);
       setUnreadCount(data?.filter(n => !n.is_read).length || 0);
@@ -35,87 +39,80 @@ export const useNotifications = () => {
   };
   
   // Fetch notification preferences
-  const fetchPreferences = async () => {
+  const fetchUserPreferences = async () => {
     if (!user) return;
     
     try {
-      // First check if preferences exist
-      const { data: existingPrefs, error: checkError } = await supabase
-        .from('notification_preferences')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      if (checkError) {
-        console.error('Error checking notification preferences:', checkError);
-        return;
-      }
-      
-      // If no preferences exist, create default ones
-      if (!existingPrefs) {
-        const { data: newPrefs, error: insertError } = await supabase
-          .from('notification_preferences')
-          .insert({
-            user_id: user.id,
-            // Default values will be used from the schema
-          })
-          .select()
-          .single();
-        
-        if (insertError) {
-          console.error('Error creating notification preferences:', insertError);
-          return;
-        }
-        
-        setPreferences(newPrefs);
-      } else {
-        setPreferences(existingPrefs);
-      }
+      setPreferencesLoading(true);
+      const prefs = await fetchNotificationPreferences();
+      setPreferences(prefs);
     } catch (error) {
-      console.error('Error managing notification preferences:', error);
+      console.error('Error fetching notification preferences:', error);
+    } finally {
+      setPreferencesLoading(false);
     }
   };
   
   // Mark notification as read
-  const markAsRead = async (notificationId: string) => {
+  const markAsRead = async (notificationId: string): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('id', notificationId);
+      const success = await markNotificationAsRead(notificationId);
       
-      if (error) throw error;
+      if (success) {
+        setNotifications(notifications.map(n => {
+          if (n.id === notificationId) {
+            return { ...n, is_read: true };
+          }
+          return n;
+        }));
+        
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
       
-      setNotifications(notifications.map(n => {
-        if (n.id === notificationId) {
-          return { ...n, is_read: true };
-        }
-        return n;
-      }));
-      
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      return success;
     } catch (error) {
       console.error('Error marking notification as read:', error);
+      return false;
     }
   };
   
   // Mark all as read
-  const markAllAsRead = async () => {
-    if (!user) return;
+  const markAllAsRead = async (): Promise<boolean> => {
+    if (!user) return false;
     
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('user_id', user.id)
-        .eq('is_read', false);
+      const success = await markAllNotificationsAsRead();
       
-      if (error) throw error;
+      if (success) {
+        setNotifications(notifications.map(n => ({ ...n, is_read: true })));
+        setUnreadCount(0);
+      }
       
-      setNotifications(notifications.map(n => ({ ...n, is_read: true })));
-      setUnreadCount(0);
+      return success;
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
+      return false;
+    }
+  };
+  
+  // Delete a notification
+  const removeNotification = async (notificationId: string): Promise<boolean> => {
+    try {
+      const success = await deleteNotification(notificationId);
+      
+      if (success) {
+        setNotifications(notifications.filter(n => n.id !== notificationId));
+        // Update unread count if the deleted notification was unread
+        const wasUnread = notifications.find(n => n.id === notificationId)?.is_read === false;
+        if (wasUnread) {
+          setUnreadCount(prev => Math.max(0, prev - 1));
+        }
+      }
+      
+      return success;
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      return false;
     }
   };
   
@@ -173,43 +170,71 @@ export const useNotifications = () => {
   };
   
   // Update notification preferences
-  const updatePreferences = async (newPrefs: Partial<NotificationPreferences>) => {
-    if (!user || !preferences) return;
+  const updatePreferences = async (newPrefs: Partial<NotificationPreferences>): Promise<NotificationPreferences | null> => {
+    if (!user || !preferences) return null;
     
     try {
-      const { data, error } = await supabase
-        .from('notification_preferences')
-        .update(newPrefs)
-        .eq('user_id', user.id)
-        .select()
-        .single();
+      const updatedPrefs = await updateNotificationPreferences(newPrefs);
       
-      if (error) throw error;
+      if (updatedPrefs) {
+        setPreferences(updatedPrefs);
+      }
       
-      setPreferences(data);
-      return data;
+      return updatedPrefs;
     } catch (error) {
       console.error('Error updating notification preferences:', error);
       return null;
     }
   };
   
+  // Mute notifications for a period
+  const muteForPeriod = async (hours: number): Promise<boolean> => {
+    if (!user) return false;
+    
+    try {
+      const success = await muteNotifications(hours);
+      
+      if (success && preferences) {
+        // Update local preference state with new muted_until value
+        const muteUntil = new Date();
+        muteUntil.setHours(muteUntil.getHours() + hours);
+        
+        setPreferences({
+          ...preferences,
+          muted_until: muteUntil.toISOString()
+        });
+      }
+      
+      return success;
+    } catch (error) {
+      console.error('Error muting notifications:', error);
+      return false;
+    }
+  };
+  
   useEffect(() => {
     if (user) {
-      fetchNotifications();
-      fetchPreferences();
+      fetchUserNotifications();
+      fetchUserPreferences();
     }
   }, [user]);
   
+  // Calculate grouped notifications for components to use
+  const groupedNotifications = groupNotificationsByDate();
+  
   return {
     notifications,
+    groupedNotifications,
     unreadCount,
     loading,
+    preferencesLoading,
     preferences,
     markAsRead,
     markAllAsRead,
-    fetchNotifications,
+    removeNotification,
+    fetchNotifications: fetchUserNotifications,
     groupNotificationsByDate,
-    updatePreferences
+    updatePreferences,
+    muteForPeriod
   };
 };

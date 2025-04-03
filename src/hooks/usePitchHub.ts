@@ -131,9 +131,11 @@ export const useLeaderboard = (timeRange: TimeRange = 'week') => {
     queryKey: ['leaderboard', timeRange],
     queryFn: () => getLeaderboardIdeas(timeRange),
     staleTime: 1000 * 60 * 5, // 5 minutes
-    retry: 2, // Retry a couple times
-    onError: (error) => {
-      console.error('Error fetching leaderboard:', error);
+    retry: 2, // Retry a couple times,
+    meta: {
+      onError: (error: any) => {
+        console.error('Error fetching leaderboard:', error);
+      }
     }
   });
 
