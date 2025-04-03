@@ -5,7 +5,7 @@ import { Image, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { uploadPitchMedia } from '@/api/pitch';
 import { toast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/providers/AuthProvider';
 
 interface MediaUploaderProps {
   maxFiles?: number;
