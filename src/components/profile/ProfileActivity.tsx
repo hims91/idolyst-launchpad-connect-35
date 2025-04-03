@@ -1,12 +1,13 @@
 
-import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ExtendedProfile } from "@/types/profile";
 import { fadeInUp, staggerContainer, staggerItem } from "@/lib/animations";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, MessageSquare, ThumbsUp } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Calendar, MessageSquare, ThumbsUp, PlusCircle } from "lucide-react";
+import { useProfileActivity } from "@/hooks/use-profile-activity";
 
 interface ProfileActivityProps {
   profile: ExtendedProfile;
@@ -90,14 +91,38 @@ const ActivityItem = ({ activity }: { activity: any }) => {
   );
 };
 
+const ActivitySkeleton = () => (
+  <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+    <div className="flex items-start gap-3">
+      <Skeleton className="h-5 w-5 rounded-full" />
+      <div className="flex-1">
+        <div className="flex justify-between">
+          <Skeleton className="h-5 w-48 rounded" />
+          <Skeleton className="h-4 w-16 rounded" />
+        </div>
+        <Skeleton className="h-4 w-full mt-2 rounded" />
+        <Skeleton className="h-4 w-3/4 mt-1 rounded" />
+        <div className="flex gap-4 mt-2">
+          <Skeleton className="h-3 w-10 rounded" />
+          <Skeleton className="h-3 w-10 rounded" />
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 const ProfileActivity = ({ profile }: ProfileActivityProps) => {
-  const [currentTab, setCurrentTab] = useState("all");
-  const [activities, setActivities] = useState<any[]>(profile.recent_activity);
-  
-  // Filter activities based on tab
-  const filteredActivities = currentTab === 'all' ? 
-    activities : 
-    activities.filter(activity => activity.type === currentTab);
+  const { 
+    activities, 
+    isLoading, 
+    hasMore, 
+    loadMore, 
+    filterActivities,
+    currentFilter 
+  } = useProfileActivity({
+    userId: profile.id,
+    initialLimit: 5
+  });
 
   return (
     <motion.div 
@@ -116,7 +141,7 @@ const ProfileActivity = ({ profile }: ProfileActivityProps) => {
         </Button>
       </div>
 
-      <Tabs defaultValue="all" value={currentTab} onValueChange={setCurrentTab}>
+      <Tabs defaultValue="all" value={currentFilter} onValueChange={filterActivities}>
         <TabsList className="mb-4">
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="post">Posts</TabsTrigger>
@@ -125,21 +150,63 @@ const ProfileActivity = ({ profile }: ProfileActivityProps) => {
           <TabsTrigger value="comment">Comments</TabsTrigger>
         </TabsList>
         
-        <TabsContent value={currentTab} className="mt-0">
+        <TabsContent value={currentFilter} className="mt-0">
           <AnimatePresence mode="wait">
             <motion.div 
-              key={currentTab}
+              key={currentFilter}
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
               className="space-y-4"
             >
-              {filteredActivities.length > 0 ? (
-                filteredActivities.map((activity) => (
-                  <ActivityItem key={activity.id} activity={activity} />
-                ))
+              {isLoading ? (
+                // Loading skeletons
+                <>
+                  <ActivitySkeleton />
+                  <ActivitySkeleton />
+                  <ActivitySkeleton />
+                </>
+              ) : activities.length > 0 ? (
+                // Activity items
+                <>
+                  {activities.map((activity) => (
+                    <ActivityItem key={activity.id} activity={activity} />
+                  ))}
+                  
+                  {hasMore && (
+                    <div className="flex justify-center mt-6">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => loadMore()}
+                        disabled={isLoading}
+                        className="flex items-center gap-2"
+                      >
+                        {isLoading ? (
+                          <>
+                            <div className="animate-spin h-4 w-4 border-2 border-idolyst-purple rounded-full border-t-transparent" />
+                            Loading...
+                          </>
+                        ) : (
+                          <>
+                            <PlusCircle className="h-4 w-4" />
+                            Load More
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </>
               ) : (
-                <p className="text-center py-6 text-gray-500">No {currentTab === 'all' ? 'recent' : currentTab} activity to show</p>
+                // Empty state
+                <div className="text-center py-8">
+                  <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">
+                    No {currentFilter === 'all' ? 'recent' : currentFilter} activity to show
+                  </p>
+                  <p className="text-gray-400 dark:text-gray-500 mt-1">
+                    Activities will appear here as they happen
+                  </p>
+                </div>
               )}
             </motion.div>
           </AnimatePresence>

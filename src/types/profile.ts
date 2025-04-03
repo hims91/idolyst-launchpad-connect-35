@@ -1,3 +1,4 @@
+
 import { UserRole } from "./auth";
 
 // Profile types
@@ -34,10 +35,11 @@ export interface ExtendedProfile {
   full_name: string | null;
   bio: string | null;
   xp: number;
+  level?: number; // Added level field
   followers_count: number;
   following_count: number;
-  pitches_count?: number; // Added
-  comments_count?: number; // Added
+  pitches_count?: number;
+  comments_count?: number;
   social_links: SocialLink[];
   badges: Badge[];
   professional_details: string | null;
@@ -48,6 +50,9 @@ export interface ExtendedProfile {
   created_at: string;
   location?: string | null;
   byline?: string | null;
+  resume_url?: string | null; // Added for professional profiles
+  github_url?: string | null; // Added for developer profiles
+  availability_status?: 'available' | 'busy' | 'offline'; // Added for real-time status
 }
 
 export interface ProfileUpdatePayload {
@@ -59,6 +64,8 @@ export interface ProfileUpdatePayload {
   portfolio_url?: string;
   location?: string;
   byline?: string;
+  resume_url?: string; // Added
+  github_url?: string; // Added
 }
 
 export interface PrivacySettings {
