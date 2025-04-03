@@ -26,7 +26,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useToast } from "@/components/ui/use-toast";
-import { Sidebar, SidebarSection } from '@/components/ui/sidebar';
+import { 
+  Sidebar, 
+  SidebarContent, 
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent
+} from '@/components/ui/sidebar';
 
 const WebSidebar = () => {
   const { isAuthenticated, user, signOut, isLoading } = useAuth();
@@ -85,159 +91,169 @@ const WebSidebar = () => {
         </div>
 
         {/* Main Navigation */}
-        <SidebarSection>
-          <TooltipProvider delayDuration={300}>
-            <div className="space-y-1 px-4">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link to="/">
-                    <Button
-                      variant={isActive('/') ? "default" : "ghost"}
-                      size="lg"
-                      className={`w-full justify-start ${
-                        isActive('/') ? 'gradient-bg hover-scale' : ''
-                      }`}
-                    >
-                      <LayoutDashboard className="mr-2 h-5 w-5" />
-                      Launchpad
-                    </Button>
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  Connect with the startup ecosystem
-                </TooltipContent>
-              </Tooltip>
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <TooltipProvider delayDuration={300}>
+                <div className="space-y-1 px-4">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link to="/">
+                        <Button
+                          variant={isActive('/') ? "default" : "ghost"}
+                          size="lg"
+                          className={`w-full justify-start ${
+                            isActive('/') ? 'gradient-bg hover-scale' : ''
+                          }`}
+                        >
+                          <LayoutDashboard className="mr-2 h-5 w-5" />
+                          Launchpad
+                        </Button>
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      Connect with the startup ecosystem
+                    </TooltipContent>
+                  </Tooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link to="/pitch-hub">
-                    <Button
-                      variant={isActive('/pitch-hub') ? "default" : "ghost"}
-                      size="lg"
-                      className={`w-full justify-start ${
-                        isActive('/pitch-hub') ? 'gradient-bg hover-scale' : ''
-                      }`}
-                    >
-                      <Rocket className="mr-2 h-5 w-5" />
-                      PitchHub
-                    </Button>
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  Launch and discover startup ideas
-                </TooltipContent>
-              </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link to="/pitch-hub">
+                        <Button
+                          variant={isActive('/pitch-hub') ? "default" : "ghost"}
+                          size="lg"
+                          className={`w-full justify-start ${
+                            isActive('/pitch-hub') ? 'gradient-bg hover-scale' : ''
+                          }`}
+                        >
+                          <Rocket className="mr-2 h-5 w-5" />
+                          PitchHub
+                        </Button>
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      Launch and discover startup ideas
+                    </TooltipContent>
+                  </Tooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link to="/mentor-space">
-                    <Button
-                      variant={isActive('/mentor-space') ? "default" : "ghost"}
-                      size="lg"
-                      className={`w-full justify-start ${
-                        isActive('/mentor-space') ? 'gradient-bg hover-scale' : ''
-                      }`}
-                    >
-                      <Users className="mr-2 h-5 w-5" />
-                      MentorSpace
-                    </Button>
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  Find mentors or become one
-                </TooltipContent>
-              </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link to="/mentor-space">
+                        <Button
+                          variant={isActive('/mentor-space') ? "default" : "ghost"}
+                          size="lg"
+                          className={`w-full justify-start ${
+                            isActive('/mentor-space') ? 'gradient-bg hover-scale' : ''
+                          }`}
+                        >
+                          <Users className="mr-2 h-5 w-5" />
+                          MentorSpace
+                        </Button>
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      Find mentors or become one
+                    </TooltipContent>
+                  </Tooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link to="/ascend">
-                    <Button
-                      variant={isActive('/ascend') ? "default" : "ghost"}
-                      size="lg"
-                      className={`w-full justify-start ${
-                        isActive('/ascend') ? 'gradient-bg hover-scale' : ''
-                      }`}
-                    >
-                      <Sparkles className="mr-2 h-5 w-5" />
-                      Ascend
-                    </Button>
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  Grow and track your progress
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          </TooltipProvider>
-        </SidebarSection>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link to="/ascend">
+                        <Button
+                          variant={isActive('/ascend') ? "default" : "ghost"}
+                          size="lg"
+                          className={`w-full justify-start ${
+                            isActive('/ascend') ? 'gradient-bg hover-scale' : ''
+                          }`}
+                        >
+                          <Sparkles className="mr-2 h-5 w-5" />
+                          Ascend
+                        </Button>
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      Grow and track your progress
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
 
         {/* Quick Actions */}
         {isAuthenticated && !isLoading && (
-          <SidebarSection title="Quick Actions">
-            <TooltipProvider delayDuration={300}>
-              <div className="space-y-1 px-4">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link to="/messages">
-                      <Button
-                        variant={isActive('/messages') ? "default" : "ghost"}
-                        size="lg"
-                        className={`w-full justify-start ${
-                          isActive('/messages') ? 'gradient-bg hover-scale' : ''
-                        }`}
-                      >
-                        <MessageCircle className="mr-2 h-5 w-5" />
-                        Messages
-                      </Button>
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    Connect with other users
-                  </TooltipContent>
-                </Tooltip>
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <TooltipProvider delayDuration={300}>
+                  <div className="space-y-1 px-4">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link to="/messages">
+                          <Button
+                            variant={isActive('/messages') ? "default" : "ghost"}
+                            size="lg"
+                            className={`w-full justify-start ${
+                              isActive('/messages') ? 'gradient-bg hover-scale' : ''
+                            }`}
+                          >
+                            <MessageCircle className="mr-2 h-5 w-5" />
+                            Messages
+                          </Button>
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        Connect with other users
+                      </TooltipContent>
+                    </Tooltip>
 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link to="/notifications">
-                      <Button
-                        variant={isActive('/notifications') ? "default" : "ghost"}
-                        size="lg"
-                        className={`w-full justify-start ${
-                          isActive('/notifications') ? 'gradient-bg hover-scale' : ''
-                        }`}
-                      >
-                        <Bell className="mr-2 h-5 w-5" />
-                        Notifications
-                      </Button>
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    View your notifications
-                  </TooltipContent>
-                </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link to="/notifications">
+                          <Button
+                            variant={isActive('/notifications') ? "default" : "ghost"}
+                            size="lg"
+                            className={`w-full justify-start ${
+                              isActive('/notifications') ? 'gradient-bg hover-scale' : ''
+                            }`}
+                          >
+                            <Bell className="mr-2 h-5 w-5" />
+                            Notifications
+                          </Button>
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        View your notifications
+                      </TooltipContent>
+                    </Tooltip>
 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link to="/settings">
-                      <Button
-                        variant={isActive('/settings') ? "default" : "ghost"}
-                        size="lg"
-                        className={`w-full justify-start ${
-                          isActive('/settings') ? 'gradient-bg hover-scale' : ''
-                        }`}
-                      >
-                        <Settings className="mr-2 h-5 w-5" />
-                        Settings
-                      </Button>
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    Manage your account
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            </TooltipProvider>
-          </SidebarSection>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link to="/settings">
+                          <Button
+                            variant={isActive('/settings') ? "default" : "ghost"}
+                            size="lg"
+                            className={`w-full justify-start ${
+                              isActive('/settings') ? 'gradient-bg hover-scale' : ''
+                            }`}
+                          >
+                            <Settings className="mr-2 h-5 w-5" />
+                            Settings
+                          </Button>
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        Manage your account
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </TooltipProvider>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
         )}
 
         {/* User Profile / Login */}
