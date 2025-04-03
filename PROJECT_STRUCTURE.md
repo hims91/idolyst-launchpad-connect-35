@@ -43,6 +43,7 @@
 - `src/lib/utils.ts` - General utilities
 - `src/lib/validation.ts` - Form validation schemas
 - `src/lib/animations.ts` - Animation utilities
+- `src/lib/supabase-types.ts` - TypeScript types for Supabase client
 
 ### API
 - `src/api/auth.ts` - Authentication API calls
@@ -66,6 +67,8 @@
    - Avatar upload with preview and cropping
    - Username and personal information management
    - Bio and external links configuration
+   - Professional details and portfolio URL management
+   - Social links management with automatic platform icon detection
 
 3. **Activities Tracking**:
    - Recent user activities display (posts, pitches, mentorship, etc.)
@@ -73,9 +76,9 @@
    - Activity privacy controls
 
 4. **Social Features**:
-   - Follow/unfollow functionality
-   - Followers and following management
-   - Messaging integration
+   - Follow/unfollow functionality with real-time updates
+   - Followers and following management with user lists
+   - Direct messaging integration
 
 5. **Settings**:
    - Account settings (email, password)
@@ -83,14 +86,33 @@
    - Privacy controls
    - Security settings
 
-### Data Models
-- **UserProfile**: Core user information
-- **SocialLink**: External social media links
-- **Badge**: Achievements and recognition
-- **Activity**: User actions and engagement
-- **PrivacySettings**: User privacy preferences
+### Database Schema
+- **profiles**: Core user information including username, bio, avatar_url, professional_details, and portfolio_url
+- **social_links**: Links to external social media platforms with icon identification
+- **user_badges**: Achievements and recognitions earned by users
+- **user_activity**: Record of user actions and engagements on the platform
+- **follows**: Tracks follower/following relationships between users
+- **privacy_settings**: User-configurable privacy preferences 
+- **user_roles**: User role assignments (entrepreneur, mentor)
+
+### Row-Level Security (RLS)
+- Each table is protected with appropriate RLS policies
+- Users can only modify their own profile data, social links, and privacy settings
+- Anyone can view public profile information
+- Follow/unfollow actions are restricted to the follower's user
 
 ### Real-time Features
-- Profile updates reflect in real-time
-- Follow/unfollow counts update instantly
-- Activity feed updates with new content
+- Follow/unfollow updates reflected in real-time using Supabase Realtime
+- Profile updates propagate instantly across the application
+
+### UI Components and Animation
+- Smooth transitions using Framer Motion animations
+- Responsive design for all screen sizes
+- Interactive elements with hover effects and loading states
+- Toast notifications for user feedback
+- Modal dialogs for detailed information (followers/following lists)
+
+### Authentication Integration
+- Profile actions tied to authentication state
+- Role-based feature access
+- Protected routes for authenticated users only

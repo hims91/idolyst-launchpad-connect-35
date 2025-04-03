@@ -35,13 +35,13 @@ export const fetchExtendedProfile = async (userId: string, currentUserId?: strin
     }
 
     // Fetch follower count
-    const { count: followersCount, error: followersError } = await supabase
+    const { data: followerCountData, count: followersCount, error: followersError } = await supabase
       .from("follows")
       .select("*", { count: 'exact', head: true })
       .eq("followed_id", userId);
 
     // Fetch following count
-    const { count: followingCount, error: followingError } = await supabase
+    const { data: followingCountData, count: followingCount, error: followingError } = await supabase
       .from("follows")
       .select("*", { count: 'exact', head: true })
       .eq("follower_id", userId);
@@ -53,10 +53,9 @@ export const fetchExtendedProfile = async (userId: string, currentUserId?: strin
         .from("follows")
         .select("*")
         .eq("follower_id", currentUserId)
-        .eq("followed_id", userId)
-        .single();
+        .eq("followed_id", userId);
       
-      isFollowing = !!followData;
+      isFollowing = followData && followData.length > 0;
     }
 
     // Fetch recent activity
@@ -154,7 +153,7 @@ export const followUser = async (followerId: string, followedId: string): Promis
       .insert({
         follower_id: followerId,
         followed_id: followedId,
-      } as any);
+      });
 
     if (error) throw error;
     
@@ -207,7 +206,7 @@ export const addSocialLink = async (userId: string, socialLink: Omit<SocialLink,
         platform: socialLink.platform,
         url: socialLink.url,
         icon: socialLink.icon,
-      } as any)
+      })
       .select()
       .single();
 
@@ -310,7 +309,7 @@ export const updatePrivacySettings = async (userId: string, settings: PrivacySet
         messaging_permissions: settings.messaging_permissions,
         activity_visibility: settings.activity_visibility,
         updated_at: new Date().toISOString(),
-      } as any);
+      });
 
     if (error) throw error;
     

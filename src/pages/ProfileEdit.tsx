@@ -70,7 +70,7 @@ const ProfileEdit = () => {
         
         if (error) throw error;
         if (data) {
-          setSocialLinks(data as SocialLink[]);
+          setSocialLinks(data as unknown as SocialLink[]);
         }
       } catch (error) {
         console.error('Error fetching social links:', error);
@@ -155,6 +155,7 @@ const ProfileEdit = () => {
       const socialLink = {
         platform: newPlatform,
         url: newUrl,
+        icon: getPlatformIcon(newPlatform),
       };
       
       const result = await addSocialLink(user.id, socialLink);
@@ -166,6 +167,16 @@ const ProfileEdit = () => {
     } catch (error) {
       console.error('Error adding social link:', error);
     }
+  };
+
+  const getPlatformIcon = (platform: string): string => {
+    const platformLower = platform.toLowerCase();
+    if (platformLower.includes('linkedin')) return 'linkedin';
+    if (platformLower.includes('twitter') || platformLower.includes('x')) return 'twitter';
+    if (platformLower.includes('github')) return 'github';
+    if (platformLower.includes('instagram')) return 'instagram';
+    if (platformLower.includes('facebook')) return 'facebook';
+    return 'link';
   };
 
   const handleRemoveSocialLink = async (linkId: string) => {
@@ -258,7 +269,33 @@ const ProfileEdit = () => {
                       type="file" 
                       id="avatar-upload" 
                       accept="image/*" 
-                      onChange={handleAvatarChange}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        
+                        const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+                        if (!validTypes.includes(file.type)) {
+                          toast({
+                            variant: "destructive",
+                            title: "Invalid file type",
+                            description: "Please upload a JPG, PNG, or GIF image.",
+                          });
+                          return;
+                        }
+                        
+                        if (file.size > 5 * 1024 * 1024) { // 5MB
+                          toast({
+                            variant: "destructive",
+                            title: "File too large",
+                            description: "Avatar image must be less than 5MB.",
+                          });
+                          return;
+                        }
+                        
+                        setAvatarFile(file);
+                        const previewUrl = URL.createObjectURL(file);
+                        setAvatarPreview(previewUrl);
+                      }}
                       className="hidden" 
                     />
                   </div>
