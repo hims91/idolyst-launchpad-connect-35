@@ -106,6 +106,30 @@ export const scaleAnimation: Variants = {
   }
 };
 
+// Scale in animation (quick pop in)
+export const scaleIn: Variants = {
+  hidden: { 
+    scale: 0.8, 
+    opacity: 0 
+  },
+  visible: { 
+    scale: 1, 
+    opacity: 1,
+    transition: { 
+      type: "spring", 
+      stiffness: 500, 
+      damping: 25 
+    }
+  },
+  exit: { 
+    scale: 0.8, 
+    opacity: 0,
+    transition: { 
+      duration: 0.15 
+    }
+  }
+};
+
 // List item staggered animation
 export const listItem: Variants = {
   hidden: { 
@@ -128,6 +152,34 @@ export const listContainer: Variants = {
     opacity: 1,
     transition: {
       staggerChildren: 0.1
+    }
+  }
+};
+
+// Stagger container - for staggered entry of child elements
+export const staggerContainer: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2
+    }
+  }
+};
+
+// Stagger item - for individual items within a staggered container
+export const staggerItem: Variants = {
+  hidden: { 
+    opacity: 0, 
+    y: 20 
+  },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { 
+      duration: 0.4,
+      ease: "easeOut"
     }
   }
 };
