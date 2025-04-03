@@ -272,7 +272,15 @@ export const uploadPitchMedia = async (file: File, userId: string) => {
 };
 
 // Create a new pitch idea
-export const createPitchIdea = async (pitch: Omit<PitchIdea, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'views_count' | 'is_premium'>) => {
+export const createPitchIdea = async (pitch: {
+  title: string;
+  problem_statement: string;
+  target_group: string;
+  solution: string;
+  stage: IdeaStage;
+  tags: string[];
+  media_urls: string[] | null;
+}) => {
   try {
     const user = await typedSupabase.auth.getUser();
     if (!user.data.user) throw new Error('User not authenticated');

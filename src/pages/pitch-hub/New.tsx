@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -145,7 +144,7 @@ const NewPitchIdea = () => {
     }
   };
 
-  // Handle form submission
+  // Handle form submission - FIXED VERSION
   const onSubmit = async (values: PitchFormValues) => {
     if (!isAuthenticated) {
       toast({
@@ -159,8 +158,14 @@ const NewPitchIdea = () => {
     setIsSubmitting(true);
     
     try {
+      // Ensure we have all required fields for the pitch idea
       const pitchData = {
-        ...values,
+        title: values.title,
+        problem_statement: values.problem_statement,
+        target_group: values.target_group,
+        solution: values.solution,
+        stage: values.stage,
+        tags: values.tags,
         media_urls: mediaUrls
       };
       
