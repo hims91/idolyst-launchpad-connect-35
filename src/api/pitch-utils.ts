@@ -31,7 +31,27 @@ export const enrichPitchData = async (pitchIdeas: any[]): Promise<PitchIdea[]> =
 
     if (feedbackError) throw feedbackError;
 
-    // Process each pitch with its votes and feedback
+    // Fetch author information for all pitches
+    const userIds = [...new Set(pitchIdeas.map(pitch => pitch.user_id))];
+    let authorProfiles = {};
+    
+    if (userIds.length > 0) {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .in('id', userIds);
+        
+      if (profileError) {
+        console.error('Error fetching author profiles:', profileError);
+      } else if (profileData) {
+        authorProfiles = profileData.reduce((acc, profile) => {
+          acc[profile.id] = profile;
+          return acc;
+        }, {} as Record<string, any>);
+      }
+    }
+
+    // Process each pitch with its votes, feedback, and author info
     return pitchIdeas.map(pitch => {
       const pitchVotes = votesData?.filter(vote => vote.pitch_id === pitch.id) || [];
       const upvotes = pitchVotes.filter(vote => vote.vote_type === 'upvote').length;
@@ -45,6 +65,7 @@ export const enrichPitchData = async (pitchIdeas: any[]): Promise<PitchIdea[]> =
       
       return {
         ...pitch,
+        author: authorProfiles[pitch.user_id] || null,
         vote_count: upvotes - downvotes,
         user_vote: userVote,
         feedback_count: pitchFeedback.length,
