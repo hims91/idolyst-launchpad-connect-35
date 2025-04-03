@@ -60,6 +60,7 @@ export const usePitchIdea = (id: string) => {
     queryKey: ['pitchIdea', id],
     queryFn: () => getPitchIdea(id),
     staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 1, // Only retry once to avoid too many failed requests
   });
 
   // Vote mutation

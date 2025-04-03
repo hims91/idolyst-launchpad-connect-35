@@ -16,7 +16,8 @@ import {
   Calendar,
   LinkIcon,
   Eye,
-  PieChart
+  PieChart,
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -58,6 +59,8 @@ const PitchDetail = () => {
   const { 
     pitch, 
     isLoading, 
+    isError,
+    error,
     handleVote, 
     handleAddFeedback,
     isVoting,
@@ -152,6 +155,25 @@ const PitchDetail = () => {
               <div className="h-4 bg-slate-200 rounded w-4/6"></div>
             </div>
           </div>
+        </div>
+      </Layout>
+    );
+  }
+  
+  // If there was an error fetching the pitch
+  if (isError) {
+    return (
+      <Layout>
+        <div className="max-w-3xl mx-auto pb-20 md:pb-0 text-center py-12">
+          <AlertTriangle className="h-16 w-16 text-orange-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-4">Error Loading Pitch</h1>
+          <p className="text-idolyst-gray mb-6">
+            There was an error loading this pitch idea. This might be due to a database connection issue.
+          </p>
+          <Button onClick={() => navigate('/pitch-hub')}>
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Back to PitchHub
+          </Button>
         </div>
       </Layout>
     );
