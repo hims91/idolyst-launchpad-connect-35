@@ -1,5 +1,5 @@
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import MobileNavigation from "./MobileNavigation";
 import WebSidebar from "./WebSidebar";
@@ -10,6 +10,15 @@ interface LayoutProps {
 }
 
 const Layout = ({ children }: LayoutProps) => {
+  // Add a class to the body to adjust spacing for mobile header
+  useEffect(() => {
+    document.body.classList.add('has-mobile-header');
+    
+    return () => {
+      document.body.classList.remove('has-mobile-header');
+    };
+  }, []);
+  
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -20,8 +29,8 @@ const Layout = ({ children }: LayoutProps) => {
           {/* Mobile Header - visible only on mobile */}
           <MobileHeader />
           
-          {/* Main Content */}
-          <main className="flex-1 px-4 py-6 md:px-6 md:py-8">
+          {/* Main Content - adjusted padding for mobile header */}
+          <main className="flex-1 px-4 py-6 md:px-6 md:py-8 mt-12 md:mt-0">
             {children}
           </main>
           
