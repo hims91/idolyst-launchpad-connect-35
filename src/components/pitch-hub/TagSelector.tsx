@@ -1,166 +1,166 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Plus } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import React, { useState } from 'react';
+import { Command, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import {
+  Command as CommandPrimitive,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface TagSelectorProps {
+  value: string[];
+  onChange: (value: string[]) => void;
+  availableTags?: string[];
   maxTags?: number;
-  suggestedTags?: string[];
-  selectedTags: string[];
-  onChange: (tags: string[]) => void;
+  id?: string;
+  required?: boolean;
 }
 
 const TagSelector = ({ 
-  maxTags = 5, 
-  suggestedTags = [
-    'AI', 'Blockchain', 'SaaS', 'Fintech', 'Mobile', 'Healthcare', 
-    'Education', 'Gaming', 'Environment', 'B2B', 'B2C', 'Data', 
-    'Social', 'E-commerce', 'PropTech', 'Marketplace'
-  ], 
-  selectedTags = [], // Provide default empty array
-  onChange 
+  value = [], 
+  onChange, 
+  availableTags = [],
+  maxTags = 5,
+  id = 'tags',
+  required = false,
 }: TagSelectorProps) => {
-  const [inputValue, setInputValue] = useState('');
-  const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [open, setOpen] = useState(false);
   
-  // Ensure selectedTags is always an array
-  const normalizedSelectedTags = Array.isArray(selectedTags) ? selectedTags : [];
+  // Filter available tags that haven't been selected yet
+  const filteredTags = availableTags
+    .filter(tag => !value.includes(tag))
+    .filter(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+  
+  // Create a custom tag from the search input if it doesn't exist
+  const hasExactMatch = availableTags.some(
+    tag => tag.toLowerCase() === searchQuery.toLowerCase()
+  );
+  
+  const canCreateTag = searchQuery.trim().length > 0 && 
+                     !hasExactMatch && 
+                     !value.some(tag => tag.toLowerCase() === searchQuery.toLowerCase()) &&
+                     value.length < maxTags;
 
-  useEffect(() => {
-    if (inputValue) {
-      const filtered = suggestedTags.filter(tag => 
-        tag.toLowerCase().includes(inputValue.toLowerCase()) && 
-        !normalizedSelectedTags.includes(tag)
-      );
-      setFilteredSuggestions(filtered);
-      setShowSuggestions(filtered.length > 0);
-    } else {
-      setShowSuggestions(false);
-    }
-  }, [inputValue, suggestedTags, normalizedSelectedTags]);
-
-  const handleAddTag = (tag: string) => {
-    tag = tag.trim();
-    if (tag && !normalizedSelectedTags.includes(tag) && normalizedSelectedTags.length < maxTags) {
-      onChange([...normalizedSelectedTags, tag]);
-      setInputValue('');
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    onChange(normalizedSelectedTags.filter(tag => tag !== tagToRemove));
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && inputValue) {
-      e.preventDefault();
-      handleAddTag(inputValue);
-    } else if (e.key === 'Backspace' && !inputValue && normalizedSelectedTags.length > 0) {
-      handleRemoveTag(normalizedSelectedTags[normalizedSelectedTags.length - 1]);
+  const addTag = (tag: string) => {
+    const formattedTag = tag.trim();
+    if (formattedTag && !value.includes(formattedTag) && value.length < maxTags) {
+      onChange([...value, formattedTag]);
+      setSearchQuery('');
     }
   };
-
-  const handleClickOutside = (e: MouseEvent) => {
-    if (inputRef.current && !inputRef.current.contains(e.target as Node)) {
-      setShowSuggestions(false);
-    }
+  
+  const removeTag = (tag: string) => {
+    onChange(value.filter(t => t !== tag));
   };
-
-  useEffect(() => {
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
+  
   return (
-    <div className="w-full">
-      <div className="flex flex-wrap gap-2 mb-2">
-        {normalizedSelectedTags.map(tag => (
-          <Badge key={tag} variant="secondary" className="flex items-center">
-            {tag}
-            <button 
-              type="button"
-              onClick={() => handleRemoveTag(tag)} 
-              className="ml-1 rounded-full hover:bg-gray-200 p-0.5"
-            >
-              <X className="h-3 w-3" />
-              <span className="sr-only">Remove {tag}</span>
-            </button>
-          </Badge>
-        ))}
-      </div>
+    <div className="space-y-2">
+      <Label htmlFor={id} className={required ? 'after:content-["*"] after:ml-0.5 after:text-red-500' : ''}>
+        Tags
+      </Label>
       
-      <div className="relative" ref={inputRef}>
-        <div className="flex">
-          <Input
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onFocus={() => setShowSuggestions(filteredSuggestions.length > 0)}
-            placeholder={normalizedSelectedTags.length < maxTags ? "Add tags..." : "Max tags reached"}
-            disabled={normalizedSelectedTags.length >= maxTags}
-          />
-          <Button 
-            type="button"
-            variant="outline" 
-            size="icon" 
-            onClick={() => handleAddTag(inputValue)}
-            disabled={!inputValue || normalizedSelectedTags.length >= maxTags}
-            className="ml-2"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
+      <div className="relative">
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="w-full justify-between text-idolyst-gray-dark hover:text-idolyst-gray-dark"
+              disabled={value.length >= maxTags}
+            >
+              {value.length === 0 ? (
+                <span>Select or create tags...</span>
+              ) : (
+                <span>{value.length} tag{value.length !== 1 ? 's' : ''} selected</span>
+              )}
+              <Command className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0" align="start">
+            <CommandPrimitive>
+              <CommandInput 
+                placeholder="Search or create a tag..."
+                onValueChange={setSearchQuery}
+                value={searchQuery}
+              />
+              <CommandList>
+                <CommandEmpty>
+                  {canCreateTag ? (
+                    <div className="py-3 px-4 text-sm">
+                      Create tag:
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="ml-2"
+                        onClick={() => {
+                          addTag(searchQuery);
+                          setOpen(false);
+                        }}
+                      >
+                        "{searchQuery}"
+                      </Button>
+                    </div>
+                  ) : (
+                    'No matching tags found.'
+                  )}
+                </CommandEmpty>
+                {filteredTags.length > 0 && (
+                  <CommandGroup heading="Available Tags">
+                    {filteredTags.map(tag => (
+                      <CommandItem
+                        key={tag}
+                        onSelect={() => {
+                          addTag(tag);
+                          setOpen(false);
+                        }}
+                      >
+                        {tag}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
+              </CommandList>
+            </CommandPrimitive>
+          </PopoverContent>
+        </Popover>
         
-        {showSuggestions && (
-          <div className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-            {filteredSuggestions.map((suggestion) => (
-              <div
-                key={suggestion}
-                className="px-4 py-2 text-sm cursor-pointer hover:bg-gray-100"
-                onClick={() => {
-                  handleAddTag(suggestion);
-                  setShowSuggestions(false);
-                }}
-              >
-                {suggestion}
-              </div>
+        {/* Selected tags */}
+        {value.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {value.map(tag => (
+              <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                {tag}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-4 w-4 p-0 hover:bg-transparent"
+                  onClick={() => removeTag(tag)}
+                >
+                  <X className="h-3 w-3" />
+                  <span className="sr-only">Remove {tag}</span>
+                </Button>
+              </Badge>
             ))}
           </div>
         )}
+        
+        <p className="text-xs text-idolyst-gray mt-2">
+          {value.length}/{maxTags} tags max. Add relevant categories for your idea.
+        </p>
       </div>
-      
-      {normalizedSelectedTags.length < maxTags ? (
-        <p className="text-xs text-gray-500 mt-1">{normalizedSelectedTags.length}/{maxTags} tags (press Enter to add)</p>
-      ) : (
-        <p className="text-xs text-amber-600 mt-1">Maximum tags reached</p>
-      )}
-      
-      {(!inputValue && suggestedTags.length > 0) && (
-        <div className="mt-2">
-          <p className="text-xs text-gray-600 mb-1">Popular tags:</p>
-          <div className="flex flex-wrap gap-1">
-            {suggestedTags
-              .filter(tag => !normalizedSelectedTags.includes(tag))
-              .slice(0, 8)
-              .map(tag => (
-                <Badge
-                  key={tag}
-                  variant="outline"
-                  className="cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleAddTag(tag)}
-                >
-                  {tag}
-                </Badge>
-              ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -1,4 +1,5 @@
 
+
 import { supabase } from "@/integrations/supabase/client";
 import { Notification, NotificationPreferences, NotificationType } from "@/types/notifications";
 import { toast } from "@/hooks/use-toast";

@@ -1,85 +1,93 @@
 
 import React from 'react';
-import { Check } from 'lucide-react';
-import {
-  RadioGroup,
-  RadioGroupItem
-} from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { IdeaStage } from '@/api/pitch';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface StageSelectorProps {
-  selectedStage: IdeaStage | null;
-  onChange: (stage: IdeaStage) => void;
+  value: IdeaStage | null;
+  onChange: (value: IdeaStage) => void;
+  id?: string;
+  required?: boolean;
 }
 
-const stages: { id: IdeaStage; title: string; description: string }[] = [
+const stages: { value: IdeaStage; label: string; description: string }[] = [
   {
-    id: 'ideation',
-    title: 'Ideation',
-    description: 'Just an idea, exploring concepts'
+    value: 'ideation',
+    label: 'Ideation',
+    description: 'Initial concept stage, exploring the idea and its potential'
   },
   {
-    id: 'mvp',
-    title: 'MVP',
-    description: 'Building a minimum viable product'
+    value: 'mvp',
+    label: 'Minimum Viable Product (MVP)',
+    description: 'Building a basic version of your product to validate core functionality'
   },
   {
-    id: 'pmf',
-    title: 'PMF',
-    description: 'Achieved product-market fit'
+    value: 'investment',
+    label: 'Investment',
+    description: 'Seeking funding to scale your validated concept'
   },
   {
-    id: 'investment',
-    title: 'Investment',
-    description: 'Raising or secured investment'
+    value: 'pmf',
+    label: 'Product-Market Fit (PMF)',
+    description: 'Refining your product to meet market demands effectively'
   },
   {
-    id: 'go_to_market',
-    title: 'Go-To-Market',
-    description: 'Developing marketing strategy'
+    value: 'go_to_market',
+    label: 'Go to Market',
+    description: 'Launching and executing your marketing and sales strategy'
   },
   {
-    id: 'growth',
-    title: 'Growth',
-    description: 'Scaling the business'
+    value: 'growth',
+    label: 'Growth',
+    description: 'Scaling operations and expanding your customer base'
   },
   {
-    id: 'maturity',
-    title: 'Maturity',
-    description: 'Established business'
-  }
+    value: 'maturity',
+    label: 'Maturity',
+    description: 'Established business optimizing for profitability and stability'
+  },
 ];
 
-const StageSelector = ({ selectedStage, onChange }: StageSelectorProps) => {
+const StageSelector = ({ value, onChange, id = 'stage', required = false }: StageSelectorProps) => {
   return (
-    <RadioGroup
-      value={selectedStage || undefined}
-      onValueChange={(value: IdeaStage) => onChange(value)}
-      className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full"
-    >
-      {stages.map((stage) => (
-        <div key={stage.id}>
-          <RadioGroupItem
-            value={stage.id}
-            id={`stage-${stage.id}`}
-            className="peer sr-only"
-          />
-          <Label
-            htmlFor={`stage-${stage.id}`}
-            className="flex flex-col items-start space-y-1 rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-          >
-            <div className="flex w-full items-center justify-between">
-              <div className="font-semibold">{stage.title}</div>
-              <Check className="h-4 w-4 opacity-0 peer-data-[state=checked]:opacity-100" />
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {stage.description}
-            </div>
-          </Label>
-        </div>
-      ))}
-    </RadioGroup>
+    <div className="space-y-2">
+      <Label htmlFor={id} className={required ? 'after:content-["*"] after:ml-0.5 after:text-red-500' : ''}>
+        Development Stage
+      </Label>
+      
+      <Select
+        value={value || undefined}
+        onValueChange={(val) => onChange(val as IdeaStage)}
+      >
+        <SelectTrigger id={id}>
+          <SelectValue placeholder="Select stage of development" />
+        </SelectTrigger>
+        
+        <SelectContent>
+          {stages.map((stage) => (
+            <SelectItem 
+              key={stage.value} 
+              value={stage.value}
+              className="cursor-pointer"
+            >
+              <div>
+                <div className="font-medium">{stage.label}</div>
+                <div className="text-xs text-idolyst-gray mt-1 line-clamp-1">
+                  {stage.description}
+                </div>
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 };
 
