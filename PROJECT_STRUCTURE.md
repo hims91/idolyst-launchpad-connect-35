@@ -45,18 +45,18 @@
 
 ### Messaging System
 - `src/pages/Messages.tsx` - Main messaging page with conversation list and message view
-- `src/components/messages/ConversationList.tsx` - List of all conversations
-- `src/components/messages/ConversationItem.tsx` - Individual conversation item in the list
-- `src/components/messages/ConversationView.tsx` - Display of a selected conversation with messages
-- `src/components/messages/MessageItem.tsx` - Individual message component
-- `src/components/messages/MessageInput.tsx` - Input component for sending messages
-- `src/components/messages/MobileHeader.tsx` - Mobile-specific header for messaging UI
+- `src/components/messages/ConversationList.tsx` - List of all conversations with search functionality
+- `src/components/messages/ConversationItem.tsx` - Individual conversation item with user info and message preview
+- `src/components/messages/ConversationView.tsx` - Display of a selected conversation with messages and attachments
+- `src/components/messages/MessageItem.tsx` - Individual message component with support for text and media
+- `src/components/messages/MessageInput.tsx` - Input component for sending messages with attachment support
+- `src/components/messages/MobileHeader.tsx` - Mobile-specific header with context switching
 - `src/components/messages/EmptyState.tsx` - Empty state when no conversation is selected
-- `src/components/messages/NewMessageModal.tsx` - Modal for starting a new conversation
-- `src/api/messages.ts` - API functions for messages (fetch, send, read, etc.)
+- `src/components/messages/NewMessageModal.tsx` - Modal for starting a new conversation with user search
+- `src/api/messages.ts` - API functions for messages (fetch, send, read, delete, etc.)
 - `src/hooks/use-messages.tsx` - Custom hook for managing messages state and realtime updates
 - `src/hooks/use-unread-messages.tsx` - Hook for tracking unread message count for notifications
-- `src/types/messages.ts` - TypeScript types for messages and conversations
+- `src/types/messages.ts` - TypeScript types for messages, conversations and attachments
 
 ### Routes
 - `src/App.tsx` - Main route definitions and auth-protected routes
@@ -65,9 +65,9 @@
 - Button, Form, Input, Dialog, Toast, etc. (already configured)
 
 ### Utilities
-- `src/lib/utils.ts` - General utilities
+- `src/lib/utils.ts` - General utilities for formatting, validation, and UI helpers
 - `src/lib/validation.ts` - Form validation schemas
-- `src/lib/animations.ts` - Animation utilities
+- `src/lib/animations.ts` - Animation utilities for Framer Motion transitions
 - `src/lib/supabase-types.ts` - TypeScript types for Supabase client
 
 ### API
@@ -83,6 +83,113 @@
 - `src/types/user.ts` - User profile related types
 - `src/types/notifications.ts` - Notification system related types
 - `src/types/messages.ts` - Messaging system related types
+
+## Messaging System Implementation Details
+
+### Core Features
+1. **Conversations Management**:
+   - One-on-one messaging between connected users (followers or mentor-mentee pairs)
+   - Real-time conversation updates with Supabase Realtime
+   - Conversation list with most recent messages first
+   - Visual indicators for unread messages with badges
+   - Search functionality for existing conversations
+
+2. **Messaging Interface**:
+   - Real-time message delivery with animated transitions
+   - Read receipts with double-check indicators
+   - Media sharing with preview (images, documents, links)
+   - Dynamically resizing text input area
+   - Mobile-optimized experience with responsive design
+
+3. **User Experience**:
+   - Seamless transitions between conversation list and conversation view
+   - Smooth animations for message delivery
+   - Intuitive navigation with mobile-first approach
+   - Message grouping by sender and time
+   - Visual feedback on message status (sending, sent, delivered, read)
+
+4. **Security & Privacy**:
+   - Restricted messaging between connected users only (followers)
+   - Row-Level Security (RLS) ensures users can only access their conversations
+   - Protected file storage for message attachments
+
+### Database Schema
+- **conversations**: Tracks individual conversations
+- **conversation_participants**: Maps users to conversations (many-to-many relationship)
+- **messages**: Stores message content, media links, and read status
+- **follows**: Used to determine messaging eligibility (users can only message if they follow each other)
+
+### Row-Level Security (RLS)
+- Users can only view and modify conversations they are participants in
+- Message creation restricted to conversation participants
+- Conversation creation checked against follow relationship
+- File uploads secured by user ID verification
+
+### Real-time Features
+- Instant message delivery using Supabase Realtime
+- Live typing indicators with animation
+- Real-time read receipts
+- Unread message count updates across devices
+
+### UI Components and Animation
+- Mobile-first responsive design with distinctive message bubbles
+- Smooth transitions between conversation states
+- Animation for new messages with slide-in effects
+- Loading states for all data fetching operations
+- Scroll-to-bottom button for long conversations
+
+### Media Handling
+- Support for image uploads with preview
+- Document attachment capabilities
+- Secure file storage using Supabase Storage
+- Progress indicators for media uploads
+
+### Search and Filtering
+- Real-time search through conversations by username or message content
+- Results highlight matching terms
+- Empty state indicators for no matching results
+
+### Performance Optimizations
+- Message grouping to reduce DOM nodes
+- Lazy loading of images and media
+- Debounced search to prevent excessive API calls
+- Optimized real-time subscriptions
+
+### Accessibility Features
+- High contrast message bubbles
+- Keyboard navigation support
+- Screen reader compatible components
+- Touch targets sized appropriately for mobile
+
+## Notification System Implementation Details
+
+### Core Features
+1. **Notification Center**:
+   - Chronological listing of notifications with visual indicators for unread items
+   - Grouping by date (Today, Yesterday, Older)
+   - "Mark all as read" functionality
+   - Swipe-to-dismiss gesture on mobile
+   - Real-time updates when new notifications arrive
+
+2. **Notification Types**:
+   - Social interactions: new followers, messages
+   - Mentorship: session bookings, cancellations, reminders
+   - PitchHub: votes, comments, mentor feedback
+   - Ascend: level-ups, badge unlocks, leaderboard shifts
+   - Launchpad: comments, reactions, reposts
+
+3. **Notification Preferences**:
+   - Fine-grained control over which notifications to receive
+   - Delivery method settings (in-app, push, email)
+   - Email digest frequency options (daily, weekly, never)
+   - Temporary muting capabilities (1 hour, 4 hours, 24 hours)
+
+4. **UI/UX Features**:
+   - Unread notification badges in navigation
+   - Custom icons and colors for different notification types
+   - Smooth animations for new notifications
+   - Empty state for no notifications
+   - Mobile-first responsive design
 
 ## Profile Module Implementation Details
 
@@ -115,129 +222,14 @@
    - Privacy controls
    - Security settings
 
-### Database Schema
-- **profiles**: Core user information including username, bio, avatar_url, professional_details, and portfolio_url
-- **social_links**: Links to external social media platforms with icon identification
-- **user_badges**: Achievements and recognitions earned by users
-- **user_activity**: Record of user actions and engagements on the platform
-- **follows**: Tracks follower/following relationships between users
-- **privacy_settings**: User-configurable privacy preferences 
-- **user_roles**: User role assignments (entrepreneur, mentor)
+## UI/UX Animations (Mobile-First)
+- **Transitions**: Page loads with swipe-and-fade; button taps trigger scale effects
+- **Feedback**: Successful actions show checkmark or ripple animations
+- **Touch-Friendly**: Buttons ≥48px; swipe gestures for navigation
+- **Real-Time Updates**: Notifications and messages slide in; counters update with subtle bounce
 
-### Row-Level Security (RLS)
-- Each table is protected with appropriate RLS policies
-- Users can only modify their own profile data, social links, and privacy settings
-- Anyone can view public profile information
-- Follow/unfollow actions are restricted to the follower's user
-
-### Real-time Features
-- Follow/unfollow updates reflected in real-time using Supabase Realtime
-- Profile updates propagate instantly across the application
-
-### UI Components and Animation
-- Smooth transitions using Framer Motion animations
-- Responsive design for all screen sizes
-- Interactive elements with hover effects and loading states
-- Toast notifications for user feedback
-- Modal dialogs for detailed information (followers/following lists)
-
-### Authentication Integration
-- Profile actions tied to authentication state
-- Role-based feature access
-- Protected routes for authenticated users only
-
-## Notification System Implementation Details
-
-### Core Features
-1. **Notification Center**:
-   - Chronological listing of notifications with visual indicators for unread items
-   - Grouping by date (Today, Yesterday, Older)
-   - "Mark all as read" functionality
-   - Swipe-to-dismiss gesture on mobile
-   - Real-time updates when new notifications arrive
-
-2. **Notification Types**:
-   - Social interactions: new followers, messages
-   - Mentorship: session bookings, cancellations, reminders
-   - PitchHub: votes, comments, mentor feedback
-   - Ascend: level-ups, badge unlocks, leaderboard shifts
-   - Launchpad: comments, reactions, reposts
-
-3. **Notification Preferences**:
-   - Fine-grained control over which notifications to receive
-   - Delivery method settings (in-app, push, email)
-   - Email digest frequency options (daily, weekly, never)
-   - Temporary muting capabilities (1 hour, 4 hours, 24 hours)
-
-4. **UI/UX Features**:
-   - Unread notification badges in navigation
-   - Custom icons and colors for different notification types
-   - Smooth animations for new notifications
-   - Empty state for no notifications
-   - Mobile-first responsive design
-
-## Messaging System Implementation Details
-
-### Core Features
-1. **Conversations Management**:
-   - One-on-one messaging between connected users (followers or mentor-mentee pairs)
-   - Real-time conversation updates with Supabase Realtime
-   - Conversation list with most recent messages first
-   - Visual indicators for unread messages
-   - Search functionality for existing conversations
-
-2. **Messaging Interface**:
-   - Real-time message delivery
-   - Read receipts
-   - Media sharing with preview (images, documents)
-   - Text formatting and emoji support
-   - Mobile-optimized experience with responsive design
-
-3. **User Experience**:
-   - Seamless transitions between conversation list and conversation view
-   - Smooth animations for message delivery
-   - Intuitive navigation with mobile-first approach
-   - Infinite scroll for message history
-   - Visual feedback on message status (sending, sent, delivered, read)
-
-4. **Security & Privacy**:
-   - Restricted messaging between connected users only
-   - Row-Level Security (RLS) ensures users can only access their conversations
-   - Protected file storage for message attachments
-
-### Database Schema
-- **conversations**: Tracks individual conversations between users
-- **conversation_participants**: Maps users to conversations (many-to-many relationship)
-- **messages**: Stores actual message content and metadata
-- **follows**: Used to determine messaging eligibility (users can only message if they follow each other)
-
-### Row-Level Security (RLS)
-- Users can only view and modify conversations they are participants in
-- Message creation restricted to conversation participants
-- Conversation creation checked against follow relationship
-
-### Real-time Features
-- Instant message delivery using Supabase Realtime
-- Live typing indicators
-- Real-time read receipts
-- Unread message count updates across devices
-
-### UI Components and Animation
-- Mobile-first responsive design
-- Smooth transitions between conversation states
-- Animation for new messages with slide-in effects
-- Loading states for all data fetching operations
-- Infinite scroll with optimistic updates
-
-### Integration Points
-- Profile pages include direct messaging button for eligible users
-- Unread message count displayed in navigation
-- New message notifications link directly to the conversation
-- Mentor bookings automatically create messaging channel
-
-### Media Handling
-- Support for image uploads with preview
-- Document attachment capabilities
-- Secure file storage using Supabase Storage
-- Progress indicators for media uploads
-
+## SEO Optimization
+- **Meta Tags**: Dynamic page titles and descriptions based on content
+- **Semantic HTML**: Proper heading hierarchy and semantic elements
+- **Performance**: Optimized loading with lazy loading for images
+- **Mobile Responsiveness**: Full mobile optimization for all features

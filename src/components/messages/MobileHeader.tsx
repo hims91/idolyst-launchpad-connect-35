@@ -1,7 +1,8 @@
 
-import { motion } from "framer-motion";
+import { ArrowLeft, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, PlusCircle, Settings } from "lucide-react";
+import UserAvatar from "@/components/shared/UserAvatar";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface MobileHeaderProps {
   onNewMessage: () => void;
@@ -10,46 +11,75 @@ interface MobileHeaderProps {
   conversationTitle: string;
 }
 
-const MobileHeader = ({
-  onNewMessage,
-  showBackButton,
-  onBackClick,
-  conversationTitle
-}: MobileHeaderProps) => {
+const MobileHeader = ({ onNewMessage, showBackButton, onBackClick, conversationTitle }: MobileHeaderProps) => {
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="p-4 bg-white dark:bg-gray-900 shadow-sm flex items-center justify-between mb-4 rounded-lg"
-    >
-      <div className="flex items-center">
+    <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between">
+      <AnimatePresence mode="wait">
         {showBackButton ? (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="mr-2"
-            onClick={onBackClick}
+          <motion.div 
+            key="conversation-header"
+            className="flex items-center flex-1"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.2 }}
           >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        ) : null}
-        
-        <h1 className="text-lg font-bold">
-          {showBackButton ? conversationTitle : "Messages"}
-        </h1>
-      </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="mr-2"
+              onClick={onBackClick}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            
+            <div className="flex items-center">
+              <UserAvatar
+                fallbackText={conversationTitle?.[0]?.toUpperCase() || "?"}
+                size="sm"
+                className="mr-2"
+              />
+              <span className="font-medium truncate max-w-[180px]">
+                {conversationTitle || "Chat"}
+              </span>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.h1 
+            key="messages-title"
+            className="text-lg font-bold"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2 }}
+          >
+            Messages
+          </motion.h1>
+        )}
+      </AnimatePresence>
       
-      {!showBackButton && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-purple-600 dark:text-purple-400"
-          onClick={onNewMessage}
-        >
-          <PlusCircle className="h-5 w-5" />
-        </Button>
-      )}
-    </motion.div>
+      <div className="flex items-center">
+        {!showBackButton && (
+          <>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-gray-500 dark:text-gray-400 mr-1"
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost" 
+              size="icon"
+              className="text-purple-600 dark:text-purple-400"
+              onClick={onNewMessage}
+            >
+              <Plus className="h-5 w-5" />
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
   );
 };
 

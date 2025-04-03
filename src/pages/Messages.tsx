@@ -1,8 +1,9 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/providers/AuthProvider";
 import { useMessages } from "@/hooks/use-messages";
+import { useUnreadMessages } from "@/hooks/use-unread-messages";
 import Layout from "@/components/layout/Layout";
 import ConversationList from "@/components/messages/ConversationList";
 import ConversationView from "@/components/messages/ConversationView";
@@ -12,7 +13,8 @@ import EmptyState from "@/components/messages/EmptyState";
 import { fadeInUp } from "@/lib/animations";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { LogIn, MessageSquare, UserPlus } from "lucide-react";
+import { LogIn, MessageSquare, UserPlus, Loader2 } from "lucide-react";
+import { Helmet } from "react-helmet-async";
 
 const Messages = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -26,6 +28,15 @@ const Messages = () => {
     selectConversation,
     setCurrentConversation
   } = useMessages();
+  
+  // Refresh unread message count when navigating to this page
+  const { checkUnread } = useUnreadMessages();
+  
+  useEffect(() => {
+    if (isAuthenticated) {
+      checkUnread();
+    }
+  }, [isAuthenticated, checkUnread]);
 
   const handleBackToList = () => {
     setCurrentConversation(null);
@@ -35,8 +46,12 @@ const Messages = () => {
   if (authLoading) {
     return (
       <Layout>
+        <Helmet>
+          <title>Messages | Idolyst</title>
+          <meta name="description" content="Connect with mentors and other entrepreneurs through direct messaging on Idolyst." />
+        </Helmet>
         <div className="flex justify-center items-center min-h-[60vh]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-idolyst-purple"></div>
+          <Loader2 className="h-12 w-12 text-purple-600 animate-spin" />
         </div>
       </Layout>
     );
@@ -46,6 +61,10 @@ const Messages = () => {
   if (!isAuthenticated) {
     return (
       <Layout>
+        <Helmet>
+          <title>Messages | Idolyst</title>
+          <meta name="description" content="Connect with mentors and other entrepreneurs through direct messaging on Idolyst." />
+        </Helmet>
         <div className="max-w-2xl mx-auto pb-20 md:pb-0 text-center">
           <motion.div 
             className="flex flex-col items-center justify-center py-12"
@@ -62,9 +81,9 @@ const Messages = () => {
               Connect directly with mentors and other entrepreneurs. Message your connections and build valuable relationships.
             </p>
             
-            <div className="flex gap-4">
+            <div className="flex gap-4 flex-col sm:flex-row">
               <Button 
-                className="gradient-bg hover-scale"
+                className="gradient-bg hover-scale w-full sm:w-auto"
                 asChild
               >
                 <Link to="/auth/login">
@@ -75,7 +94,7 @@ const Messages = () => {
               
               <Button 
                 variant="outline" 
-                className="hover-scale"
+                className="hover-scale w-full sm:w-auto"
                 asChild
               >
                 <Link to="/auth/signup">
@@ -92,6 +111,13 @@ const Messages = () => {
 
   return (
     <Layout>
+      <Helmet>
+        <title>
+          {currentConversation ? `Chat with ${currentConversation.otherParticipant?.profile?.username || 'User'}` : 'Messages'} | Idolyst
+        </title>
+        <meta name="description" content="Connect with mentors and other entrepreneurs through direct messaging on Idolyst." />
+      </Helmet>
+      
       {/* Mobile header - only shown on small screens */}
       <div className="md:hidden">
         <MobileHeader 
@@ -102,7 +128,7 @@ const Messages = () => {
         />
       </div>
       
-      <div className="flex h-[calc(100vh-8rem)] w-full max-w-6xl mx-auto bg-white dark:bg-gray-900 rounded-lg shadow-sm overflow-hidden">
+      <div className="h-[calc(100vh-8rem)] w-full max-w-6xl mx-auto bg-white dark:bg-gray-900 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-800">
         {/* Conversation List - Hidden on mobile when viewing a conversation */}
         <div className={`${currentConversation ? 'hidden md:block' : ''} w-full md:w-1/3 border-r border-gray-200 dark:border-gray-800`}>
           <ConversationList 

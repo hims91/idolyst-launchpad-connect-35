@@ -1,13 +1,15 @@
 
 import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useMessages } from "@/hooks/use-messages";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, SendHorizonal, UserPlus, X } from "lucide-react";
+import { Search, SendHorizonal, UserPlus, X, Loader2 } from "lucide-react";
 import UserAvatar from "@/components/shared/UserAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { fadeInUp, staggerContainer, staggerItem } from "@/lib/animations";
 
 interface NewMessageModalProps {
   isOpen: boolean;
@@ -70,7 +72,11 @@ const NewMessageModal = ({ isOpen, onClose }: NewMessageModalProps) => {
           <div>
             <div className="relative">
               {selectedUser ? (
-                <div className="flex items-center py-2">
+                <motion.div 
+                  className="flex items-center py-2"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
                   <UserAvatar
                     src={selectedUser.avatar_url || ""}
                     fallbackText={selectedUser.username?.[0] || selectedUser.full_name?.[0] || "?"}
@@ -87,17 +93,22 @@ const NewMessageModal = ({ isOpen, onClose }: NewMessageModalProps) => {
                   >
                     <X className="h-4 w-4" />
                   </Button>
-                </div>
+                </motion.div>
               ) : (
-                <>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="relative"
+                >
                   <Input
                     placeholder="Search for a user..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-9"
+                    autoComplete="off"
                   />
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                </>
+                </motion.div>
               )}
             </div>
             
@@ -117,20 +128,30 @@ const NewMessageModal = ({ isOpen, onClose }: NewMessageModalProps) => {
                     ))}
                   </div>
                 ) : searchResults.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500">
+                  <motion.div 
+                    className="p-4 text-center text-gray-500"
+                    variants={fadeInUp}
+                    initial="hidden"
+                    animate="visible"
+                  >
                     <UserPlus className="h-8 w-8 mx-auto opacity-50 mb-2" />
                     <p>No users found matching "{searchTerm}"</p>
                     <p className="text-sm mt-1">
                       You can only message users who follow you or who you follow.
                     </p>
-                  </div>
+                  </motion.div>
                 ) : (
-                  <div>
+                  <motion.div
+                    variants={staggerContainer}
+                    initial="hidden"
+                    animate="visible"
+                  >
                     {searchResults.map((user) => (
-                      <div
+                      <motion.div
                         key={user.id}
+                        variants={staggerItem}
                         onClick={() => setSelectedUser(user)}
-                        className="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+                        className="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors"
                       >
                         <UserAvatar
                           src={user.avatar_url || ""}
@@ -142,29 +163,37 @@ const NewMessageModal = ({ isOpen, onClose }: NewMessageModalProps) => {
                             {user.username || user.full_name}
                           </p>
                           {user.username && user.full_name && (
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               {user.full_name}
                             </p>
                           )}
                         </div>
-                      </div>
+                      </motion.div>
                     ))}
-                  </div>
+                  </motion.div>
                 )}
               </div>
             )}
           </div>
           
           {/* Message input */}
-          <div>
-            <Textarea
-              placeholder="Write your message..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              className="resize-none"
-              rows={4}
-            />
-          </div>
+          <AnimatePresence>
+            {selectedUser && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+              >
+                <Textarea
+                  placeholder="Write your message..."
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  className="resize-none"
+                  rows={4}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
           
           {/* Send button */}
           <div className="flex justify-end">
@@ -173,7 +202,11 @@ const NewMessageModal = ({ isOpen, onClose }: NewMessageModalProps) => {
               disabled={!selectedUser || !message.trim() || isCreating}
               className="gradient-bg hover-scale"
             >
-              <SendHorizonal className="mr-2 h-5 w-5" />
+              {isCreating ? (
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+              ) : (
+                <SendHorizonal className="mr-2 h-5 w-5" />
+              )}
               Start Conversation
             </Button>
           </div>
