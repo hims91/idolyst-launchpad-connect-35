@@ -45,6 +45,7 @@ export interface ExtendedProfile {
   roles: UserRole[];
   recent_activity: ProfileActivity[];
   created_at: string;
+  location?: string | null;
 }
 
 export interface ProfileUpdatePayload {
@@ -54,6 +55,7 @@ export interface ProfileUpdatePayload {
   avatar_url?: string;
   professional_details?: string;
   portfolio_url?: string;
+  location?: string;
 }
 
 export interface PrivacySettings {

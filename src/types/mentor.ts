@@ -87,6 +87,10 @@ export interface SessionReview {
   created_at: string;
   updated_at: string;
   reviewer?: ExtendedProfile;
+  session?: {
+    id: string;
+    session_date: string;
+  };
 }
 
 export interface TimeSlot {

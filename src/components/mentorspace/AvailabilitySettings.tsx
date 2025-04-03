@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -69,7 +68,6 @@ const AvailabilitySettings = ({ availability, dateExceptions }: AvailabilitySett
   const addException = useAddDateException();
   
   const handleSaveAvailability = () => {
-    // Validate end times are after start times
     const isValid = scheduleItems.every(item => item.start_time < item.end_time);
     
     if (!isValid) {
@@ -110,7 +108,6 @@ const AvailabilitySettings = ({ availability, dateExceptions }: AvailabilitySett
   };
   
   const handleAddTimeSlot = () => {
-    // Check that end time is after start time
     if (newStartTime >= newEndTime) {
       toast({
         title: "Invalid time range",
@@ -120,7 +117,6 @@ const AvailabilitySettings = ({ availability, dateExceptions }: AvailabilitySett
       return;
     }
     
-    // Check for overlapping time slots
     const overlapping = scheduleItems.some(item => 
       item.day_of_week === newDayOfWeek && 
       ((newStartTime >= item.start_time && newStartTime < item.end_time) ||
@@ -309,7 +305,7 @@ const AvailabilitySettings = ({ availability, dateExceptions }: AvailabilitySett
             components={{
               DayContent: (props) => (
                 <div className="relative">
-                  <div>{props.day}</div>
+                  <div>{props.date.getDate()}</div>
                   {isDateException(props.date) && (
                     <Badge 
                       variant={getExceptionBadgeText(props.date) === "Available" ? "default" : "destructive"}
@@ -326,7 +322,6 @@ const AvailabilitySettings = ({ availability, dateExceptions }: AvailabilitySett
         </div>
       </div>
       
-      {/* Add Time Slot Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -399,7 +394,6 @@ const AvailabilitySettings = ({ availability, dateExceptions }: AvailabilitySett
         </DialogContent>
       </Dialog>
       
-      {/* Add Exception Dialog */}
       <Dialog open={showExceptionDialog} onOpenChange={setShowExceptionDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

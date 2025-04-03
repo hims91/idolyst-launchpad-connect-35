@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const MentorCardSkeleton = () => {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 flex flex-col md:flex-row items-center md:items-start gap-4 animate-pulse">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 flex flex-col md:flex-row items-center md:items-start gap-4">
       <Skeleton className="h-16 w-16 md:h-20 md:w-20 rounded-full" />
       
       <div className="flex-1 w-full text-center md:text-left">
