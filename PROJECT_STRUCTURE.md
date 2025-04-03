@@ -58,6 +58,28 @@
 - `src/hooks/use-unread-messages.tsx` - Hook for tracking unread message count for notifications
 - `src/types/messages.ts` - TypeScript types for messages, conversations and attachments
 
+### MentorSpace Module
+- `src/pages/MentorSpace.tsx` - Main entry page for MentorSpace features
+- `src/pages/mentorspace/MentorDirectory.tsx` - Browse and filter available mentors
+- `src/pages/mentorspace/MentorProfile.tsx` - View a mentor's profile and book sessions
+- `src/pages/mentorspace/SessionManagement.tsx` - Manage mentorship sessions
+- `src/pages/mentorspace/MentorApplication.tsx` - Apply to become a mentor
+- `src/pages/mentorspace/MentorProfilePage.tsx` - Mentor's own profile management page
+- `src/components/mentorspace/MentorCard.tsx` - Card component for displaying mentor information
+- `src/components/mentorspace/MentorCardSkeleton.tsx` - Loading skeleton for mentor cards
+- `src/components/mentorspace/FilterBar.tsx` - Filter interface for mentor directory
+- `src/components/mentorspace/CertificationCard.tsx` - Display a mentor's certification
+- `src/components/mentorspace/ReviewCard.tsx` - Display a mentor review
+- `src/components/mentorspace/SessionCard.tsx` - Card for displaying session information
+- `src/components/mentorspace/AvailabilityPicker.tsx` - Date and time slot selection for booking
+- `src/components/mentorspace/BookingForm.tsx` - Form for completing session booking
+- `src/components/mentorspace/ReviewForm.tsx` - Form for submitting session reviews
+- `src/components/mentorspace/MentorApplicationForm.tsx` - Form for applying to be a mentor
+- `src/components/mentorspace/EmptyState.tsx` - Empty states for various MentorSpace views
+- `src/api/mentor.ts` - API functions for mentor-related operations
+- `src/hooks/use-mentors.tsx` - Custom hooks for mentor-related data and operations
+- `src/types/mentor.ts` - TypeScript types for mentors, sessions, and reviews
+
 ### Routes
 - `src/App.tsx` - Main route definitions and auth-protected routes
 
@@ -75,6 +97,7 @@
 - `src/api/profile.ts` - Profile-related API calls
 - `src/api/notifications.ts` - Notification-related API calls
 - `src/api/messages.ts` - Messaging-related API calls
+- `src/api/mentor.ts` - Mentor-related API calls
 - `src/integrations/supabase/client.ts` - Supabase client
 
 ### Types
@@ -83,6 +106,7 @@
 - `src/types/user.ts` - User profile related types
 - `src/types/notifications.ts` - Notification system related types
 - `src/types/messages.ts` - Messaging system related types
+- `src/types/mentor.ts` - Mentor system related types
 
 ## Messaging System Implementation Details
 
@@ -160,6 +184,98 @@
 - Keyboard navigation support
 - Screen reader compatible components
 - Touch targets sized appropriately for mobile
+
+## MentorSpace Module Implementation Details
+
+### Core Features
+
+1. **Mentor Directory**:
+   - Browse mentors with filtering by expertise, price range, rating
+   - Search functionality for finding mentors by name or keywords
+   - Mobile-optimized grid/list view with mentor cards
+   - Real-time data with Supabase integration
+   - Sorting options (rating, price, session count)
+
+2. **Mentor Profiles**:
+   - Detailed profile pages with bio, expertise, pricing
+   - Certification and credential display
+   - Client reviews and ratings
+   - Session availability calendar
+   - Booking interface with time slot selection
+
+3. **Session Management**:
+   - Book, reschedule, and cancel sessions
+   - View upcoming and past sessions
+   - Meeting link management
+   - Session status tracking (scheduled, completed, cancelled)
+   - XP rewards for completed sessions
+
+4. **Review System**:
+   - Leave reviews and ratings for completed sessions
+   - Public/private review options
+   - Average rating calculation
+   - Impact on mentor visibility and ranking
+   - Badge rewards for highly-rated mentors
+
+5. **Mentor Application**:
+   - Apply to become a mentor
+   - Set expertise, hourly rate, and availability
+   - Admin approval flow with status tracking
+   - Certification and credential management
+
+### Database Schema
+
+- **mentors**: Stores mentor profiles, rates, expertise, and statistics
+- **mentor_certifications**: Tracks professional certifications and credentials
+- **mentor_availability**: Manages recurring weekly availability slots
+- **mentor_date_exceptions**: Handles specific date exceptions (days off or extra availability)
+- **mentorship_sessions**: Records booked sessions with status tracking
+- **session_reviews**: Stores session feedback and ratings
+
+### Row-Level Security (RLS)
+
+- Public read access for approved mentor profiles
+- Private write access for users' own mentor profiles
+- Session access limited to the mentor and mentee involved
+- Review creation restricted to session participants
+- Availability management limited to the mentor
+
+### Real-time Features
+
+- Instant updates to availability when sessions are booked
+- Real-time session status changes with notifications
+- Live mentor directory filtering and sorting
+- Immediate review impact on mentor ratings
+
+### Notifications Integration
+
+- Session booking notifications for mentors
+- Session reminders for mentees
+- Status change alerts (cancellations, rescheduling)
+- Review notifications
+- Badge award notifications for "Top Mentor" achievement
+
+### XP & Gamification
+
+- XP rewards: +25 XP for mentors, +15 XP for mentees per completed session
+- "Top Mentor" badge for mentors with 4.5+ rating across at least 5 sessions
+- Featured placement for top-rated mentors
+
+### Mobile-First UI Components
+
+- Responsive mentor cards with touch-friendly elements
+- Swipeable session management interface
+- Touch-optimized availability selection
+- Rating input with large touch targets
+- Animated transitions between views
+
+### Accessibility Features
+
+- High contrast UI elements
+- Keyboard navigation support
+- Screen reader compatible components
+- Appropriate touch target sizing
+- Color-coded status indicators with text labels
 
 ## Notification System Implementation Details
 

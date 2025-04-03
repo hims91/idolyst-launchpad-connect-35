@@ -132,6 +132,227 @@ export type Database = {
           },
         ]
       }
+      mentor_availability: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          is_recurring: boolean | null
+          mentor_id: string
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_recurring?: boolean | null
+          mentor_id: string
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_recurring?: boolean | null
+          mentor_id?: string
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_availability_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentor_certifications: {
+        Row: {
+          created_at: string
+          credential_url: string | null
+          expiry_date: string | null
+          id: string
+          image_url: string | null
+          issue_date: string
+          issuer: string
+          mentor_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          credential_url?: string | null
+          expiry_date?: string | null
+          id?: string
+          image_url?: string | null
+          issue_date: string
+          issuer: string
+          mentor_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          credential_url?: string | null
+          expiry_date?: string | null
+          id?: string
+          image_url?: string | null
+          issue_date?: string
+          issuer?: string
+          mentor_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_certifications_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentor_date_exceptions: {
+        Row: {
+          created_at: string
+          exception_date: string
+          id: string
+          is_available: boolean
+          mentor_id: string
+        }
+        Insert: {
+          created_at?: string
+          exception_date: string
+          id?: string
+          is_available?: boolean
+          mentor_id: string
+        }
+        Update: {
+          created_at?: string
+          exception_date?: string
+          id?: string
+          is_available?: boolean
+          mentor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_date_exceptions_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentors: {
+        Row: {
+          avg_rating: number | null
+          bio: string
+          created_at: string
+          expertise: Database["public"]["Enums"]["expertise_category"][]
+          hourly_rate: number
+          id: string
+          is_featured: boolean | null
+          status: Database["public"]["Enums"]["mentor_status"] | null
+          total_reviews: number | null
+          total_sessions: number | null
+          updated_at: string
+          years_experience: number
+        }
+        Insert: {
+          avg_rating?: number | null
+          bio: string
+          created_at?: string
+          expertise: Database["public"]["Enums"]["expertise_category"][]
+          hourly_rate: number
+          id: string
+          is_featured?: boolean | null
+          status?: Database["public"]["Enums"]["mentor_status"] | null
+          total_reviews?: number | null
+          total_sessions?: number | null
+          updated_at?: string
+          years_experience?: number
+        }
+        Update: {
+          avg_rating?: number | null
+          bio?: string
+          created_at?: string
+          expertise?: Database["public"]["Enums"]["expertise_category"][]
+          hourly_rate?: number
+          id?: string
+          is_featured?: boolean | null
+          status?: Database["public"]["Enums"]["mentor_status"] | null
+          total_reviews?: number | null
+          total_sessions?: number | null
+          updated_at?: string
+          years_experience?: number
+        }
+        Relationships: []
+      }
+      mentorship_sessions: {
+        Row: {
+          created_at: string
+          description: string | null
+          end_time: string
+          id: string
+          meeting_link: string | null
+          mentee_id: string
+          mentor_id: string
+          payment_status: boolean | null
+          price: number
+          session_date: string
+          start_time: string
+          status: Database["public"]["Enums"]["session_status"] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          end_time: string
+          id?: string
+          meeting_link?: string | null
+          mentee_id: string
+          mentor_id: string
+          payment_status?: boolean | null
+          price: number
+          session_date: string
+          start_time: string
+          status?: Database["public"]["Enums"]["session_status"] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          id?: string
+          meeting_link?: string | null
+          mentee_id?: string
+          mentor_id?: string
+          payment_status?: boolean | null
+          price?: number
+          session_date?: string
+          start_time?: string
+          status?: Database["public"]["Enums"]["session_status"] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentorship_sessions_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
@@ -443,6 +664,47 @@ export type Database = {
         }
         Relationships: []
       }
+      session_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          is_public: boolean | null
+          rating: number
+          reviewer_id: string
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          rating: number
+          reviewer_id: string
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          rating?: number
+          reviewer_id?: string
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_reviews_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "mentorship_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_links: {
         Row: {
           created_at: string
@@ -604,6 +866,18 @@ export type Database = {
       }
     }
     Enums: {
+      expertise_category:
+        | "Business"
+        | "Marketing"
+        | "Technology"
+        | "Design"
+        | "Finance"
+        | "Product"
+        | "Leadership"
+        | "Sales"
+        | "Operations"
+        | "Data"
+      mentor_status: "pending" | "approved" | "rejected"
       notification_type:
         | "new_follower"
         | "new_message"
@@ -619,6 +893,7 @@ export type Database = {
         | "launchpad_comment"
         | "launchpad_reaction"
         | "launchpad_repost"
+      session_status: "scheduled" | "completed" | "cancelled" | "rescheduled"
       user_role: "entrepreneur" | "mentor"
     }
     CompositeTypes: {

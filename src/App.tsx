@@ -31,6 +31,13 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import AuthCallback from "./pages/auth/Callback";
 
+// MentorSpace pages
+import MentorDirectory from "./pages/mentorspace/MentorDirectory";
+import MentorProfile from "./pages/mentorspace/MentorProfile";
+import SessionManagement from "./pages/mentorspace/SessionManagement";
+import MentorApplication from "./pages/mentorspace/MentorApplication";
+import MentorProfilePage from "./pages/mentorspace/MentorProfilePage";
+
 // Create a new QueryClient instance
 const queryClient = new QueryClient();
 
@@ -47,6 +54,7 @@ const App = () => (
                 {/* Public routes */}
                 <Route path="/" element={<Index />} />
                 <Route path="/pitch-hub" element={<PitchHub />} />
+                <Route path="/mentor-space" element={<MentorSpace />} />
                 
                 {/* Auth routes */}
                 <Route path="/auth/login" element={<Login />} />
@@ -77,15 +85,35 @@ const App = () => (
                   } 
                 />
                 
-                {/* Protected routes */}
+                {/* MentorSpace routes */}
+                <Route path="/mentor-space/directory" element={<MentorDirectory />} />
+                <Route path="/mentor-space/:mentorId" element={<MentorProfile />} />
                 <Route 
-                  path="/mentor-space" 
+                  path="/mentor-space/sessions" 
                   element={
                     <ProtectedRoute>
-                      <MentorSpace />
+                      <SessionManagement />
                     </ProtectedRoute>
                   } 
                 />
+                <Route 
+                  path="/mentor-space/apply" 
+                  element={
+                    <ProtectedRoute>
+                      <MentorApplication />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/mentor-space/profile" 
+                  element={
+                    <ProtectedRoute>
+                      <MentorProfilePage />
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Protected routes */}
                 <Route 
                   path="/ascend" 
                   element={
