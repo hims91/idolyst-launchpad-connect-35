@@ -252,11 +252,13 @@ export const createNotification = async (
   actionUrl?: string
 ): Promise<Notification | null> => {
   try {
+    // We need to cast the type to any to bypass the TypeScript error
+    // until the Supabase types are regenerated
     const { data, error } = await supabase
       .from("notifications")
       .insert({
         user_id: userId,
-        type,
+        type: type as any, // Cast to bypass TypeScript error
         title,
         content,
         related_id: relatedId,

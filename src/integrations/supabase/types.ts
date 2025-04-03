@@ -1120,6 +1120,7 @@ export type Database = {
         | "launchpad_comment"
         | "launchpad_reaction"
         | "launchpad_repost"
+        | "payment_success"
       session_status: "scheduled" | "completed" | "cancelled" | "rescheduled"
       user_role: "entrepreneur" | "mentor"
     }
