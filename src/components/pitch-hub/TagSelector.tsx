@@ -19,45 +19,48 @@ const TagSelector = ({
     'Education', 'Gaming', 'Environment', 'B2B', 'B2C', 'Data', 
     'Social', 'E-commerce', 'PropTech', 'Marketplace'
   ], 
-  selectedTags, 
+  selectedTags = [], // Provide default empty array
   onChange 
 }: TagSelectorProps) => {
   const [inputValue, setInputValue] = useState('');
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Ensure selectedTags is always an array
+  const normalizedSelectedTags = Array.isArray(selectedTags) ? selectedTags : [];
 
   useEffect(() => {
     if (inputValue) {
       const filtered = suggestedTags.filter(tag => 
         tag.toLowerCase().includes(inputValue.toLowerCase()) && 
-        !selectedTags.includes(tag)
+        !normalizedSelectedTags.includes(tag)
       );
       setFilteredSuggestions(filtered);
       setShowSuggestions(filtered.length > 0);
     } else {
       setShowSuggestions(false);
     }
-  }, [inputValue, suggestedTags, selectedTags]);
+  }, [inputValue, suggestedTags, normalizedSelectedTags]);
 
   const handleAddTag = (tag: string) => {
     tag = tag.trim();
-    if (tag && !selectedTags.includes(tag) && selectedTags.length < maxTags) {
-      onChange([...selectedTags, tag]);
+    if (tag && !normalizedSelectedTags.includes(tag) && normalizedSelectedTags.length < maxTags) {
+      onChange([...normalizedSelectedTags, tag]);
       setInputValue('');
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    onChange(selectedTags.filter(tag => tag !== tagToRemove));
+    onChange(normalizedSelectedTags.filter(tag => tag !== tagToRemove));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && inputValue) {
       e.preventDefault();
       handleAddTag(inputValue);
-    } else if (e.key === 'Backspace' && !inputValue && selectedTags.length > 0) {
-      handleRemoveTag(selectedTags[selectedTags.length - 1]);
+    } else if (e.key === 'Backspace' && !inputValue && normalizedSelectedTags.length > 0) {
+      handleRemoveTag(normalizedSelectedTags[normalizedSelectedTags.length - 1]);
     }
   };
 
@@ -77,7 +80,7 @@ const TagSelector = ({
   return (
     <div className="w-full">
       <div className="flex flex-wrap gap-2 mb-2">
-        {selectedTags.map(tag => (
+        {normalizedSelectedTags.map(tag => (
           <Badge key={tag} variant="secondary" className="flex items-center">
             {tag}
             <button 
@@ -99,15 +102,15 @@ const TagSelector = ({
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             onFocus={() => setShowSuggestions(filteredSuggestions.length > 0)}
-            placeholder={selectedTags.length < maxTags ? "Add tags..." : "Max tags reached"}
-            disabled={selectedTags.length >= maxTags}
+            placeholder={normalizedSelectedTags.length < maxTags ? "Add tags..." : "Max tags reached"}
+            disabled={normalizedSelectedTags.length >= maxTags}
           />
           <Button 
             type="button"
             variant="outline" 
             size="icon" 
             onClick={() => handleAddTag(inputValue)}
-            disabled={!inputValue || selectedTags.length >= maxTags}
+            disabled={!inputValue || normalizedSelectedTags.length >= maxTags}
             className="ml-2"
           >
             <Plus className="h-4 w-4" />
@@ -132,8 +135,8 @@ const TagSelector = ({
         )}
       </div>
       
-      {selectedTags.length < maxTags ? (
-        <p className="text-xs text-gray-500 mt-1">{selectedTags.length}/{maxTags} tags (press Enter to add)</p>
+      {normalizedSelectedTags.length < maxTags ? (
+        <p className="text-xs text-gray-500 mt-1">{normalizedSelectedTags.length}/{maxTags} tags (press Enter to add)</p>
       ) : (
         <p className="text-xs text-amber-600 mt-1">Maximum tags reached</p>
       )}
@@ -143,7 +146,7 @@ const TagSelector = ({
           <p className="text-xs text-gray-600 mb-1">Popular tags:</p>
           <div className="flex flex-wrap gap-1">
             {suggestedTags
-              .filter(tag => !selectedTags.includes(tag))
+              .filter(tag => !normalizedSelectedTags.includes(tag))
               .slice(0, 8)
               .map(tag => (
                 <Badge
