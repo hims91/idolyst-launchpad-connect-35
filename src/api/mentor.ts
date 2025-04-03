@@ -353,6 +353,16 @@ export const fetchUserSessions = async () => {
       mentor:mentor_id(
         id,
         hourly_rate,
+        expertise,
+        bio,
+        years_experience,
+        is_featured,
+        avg_rating,
+        total_sessions,
+        total_reviews,
+        status,
+        created_at,
+        updated_at,
         profile:id(
           id,
           username,
@@ -380,24 +390,24 @@ export const fetchUserSessions = async () => {
     const mentorObject = mentor ? {
       id: mentor.id,
       hourly_rate: mentor.hourly_rate,
-      profile: mentor.profile as unknown as ExtendedProfile || {} as ExtendedProfile,
-      bio: '',
-      expertise: [] as ExpertiseCategory[],
-      years_experience: 0,
-      is_featured: false,
-      avg_rating: 0,
-      total_sessions: 0,
-      total_reviews: 0,
-      status: 'approved',
-      created_at: '',
-      updated_at: ''
+      bio: mentor.bio || '',
+      expertise: mentor.expertise as ExpertiseCategory[] || [],
+      years_experience: mentor.years_experience || 0,
+      is_featured: mentor.is_featured || false,
+      avg_rating: mentor.avg_rating || 0,
+      total_sessions: mentor.total_sessions || 0,
+      total_reviews: mentor.total_reviews || 0,
+      status: mentor.status as MentorStatus || 'pending',
+      created_at: mentor.created_at || '',
+      updated_at: mentor.updated_at || '',
+      profile: mentor.profile as unknown as ExtendedProfile || {} as ExtendedProfile
     } : undefined;
     
     return {
       ...sessionData,
       mentor: mentorObject,
       mentee: mentee as unknown as ExtendedProfile || {} as ExtendedProfile
-    };
+    } as MentorshipSession;
   });
   
   return sessions;

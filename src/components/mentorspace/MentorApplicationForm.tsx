@@ -1,11 +1,11 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ExpertiseCategory } from "@/types/mentor";
+import { ExpertiseCategory, Mentor } from "@/types/mentor";
 import { motion } from "framer-motion";
 import { fadeInUp } from "@/lib/animations";
 import { useApplyAsMentor } from "@/hooks/use-mentors";
@@ -14,20 +14,32 @@ import { useToast } from "@/hooks/use-toast";
 
 interface MentorApplicationFormProps {
   expertiseCategories: ExpertiseCategory[];
+  mentorData?: Mentor;
 }
 
 const MentorApplicationForm = ({
   expertiseCategories,
+  mentorData
 }: MentorApplicationFormProps) => {
-  const [bio, setBio] = useState("");
-  const [hourlyRate, setHourlyRate] = useState("");
-  const [yearsExperience, setYearsExperience] = useState("");
-  const [selectedExpertise, setSelectedExpertise] = useState<ExpertiseCategory[]>([]);
+  const [bio, setBio] = useState(mentorData?.bio || "");
+  const [hourlyRate, setHourlyRate] = useState(mentorData?.hourly_rate.toString() || "");
+  const [yearsExperience, setYearsExperience] = useState(mentorData?.years_experience.toString() || "");
+  const [selectedExpertise, setSelectedExpertise] = useState<ExpertiseCategory[]>(mentorData?.expertise || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const navigate = useNavigate();
   const applyAsMentor = useApplyAsMentor();
   const { toast } = useToast();
+
+  // Update form when mentorData changes
+  useEffect(() => {
+    if (mentorData) {
+      setBio(mentorData.bio);
+      setHourlyRate(mentorData.hourly_rate.toString());
+      setYearsExperience(mentorData.years_experience.toString());
+      setSelectedExpertise(mentorData.expertise);
+    }
+  }, [mentorData]);
 
   const toggleExpertise = (expertise: ExpertiseCategory) => {
     if (selectedExpertise.includes(expertise)) {

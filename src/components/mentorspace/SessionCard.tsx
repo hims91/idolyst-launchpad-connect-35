@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -30,9 +31,11 @@ import { ExtendedProfile } from "@/types/profile";
 export interface SessionCardProps {
   session: MentorshipSession;
   isMentor?: boolean;
+  onReview?: (sessionId: string) => void;
+  onStatusChange?: (sessionId: string, status: SessionStatus) => void;
 }
 
-const SessionCard = ({ session, isMentor = false }: SessionCardProps) => {
+const SessionCard = ({ session, isMentor = false, onReview, onStatusChange }: SessionCardProps) => {
   const { user } = useAuth();
   const updateSession = useUpdateSessionStatus();
   const submitReview = useSubmitReview();
@@ -66,6 +69,12 @@ const SessionCard = ({ session, isMentor = false }: SessionCardProps) => {
   const StatusIcon = statusIcons[session.status];
 
   const handleCancel = () => {
+    if (onStatusChange) {
+      onStatusChange(session.id, 'cancelled');
+      setIsCancelOpen(false);
+      return;
+    }
+    
     updateSession.mutate({
       sessionId: session.id,
       status: 'cancelled'
@@ -77,6 +86,12 @@ const SessionCard = ({ session, isMentor = false }: SessionCardProps) => {
   };
 
   const handleComplete = () => {
+    if (onStatusChange) {
+      onStatusChange(session.id, 'completed');
+      setIsCompleteOpen(false);
+      return;
+    }
+    
     updateSession.mutate({
       sessionId: session.id,
       status: 'completed',
@@ -97,6 +112,9 @@ const SessionCard = ({ session, isMentor = false }: SessionCardProps) => {
     }, {
       onSuccess: () => {
         setIsReviewOpen(false);
+        if (onReview) {
+          onReview(session.id);
+        }
       }
     });
   };
