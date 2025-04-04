@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -33,6 +32,7 @@ import {
   SidebarGroupLabel,
   SidebarGroupContent
 } from '@/components/ui/sidebar';
+import { ThemeToggle } from './ThemeToggle';
 
 const WebSidebar = () => {
   const { isAuthenticated, user, signOut, isLoading } = useAuth();
@@ -67,13 +67,10 @@ const WebSidebar = () => {
     }
   };
 
-  // Mark a nav item as active if it's the current route
   const isActive = (path: string) => {
-    // Exact match for home
     if (path === '/' && location.pathname === '/') {
       return true;
     }
-    // Prefix match for other routes, but not home
     if (path !== '/' && location.pathname.startsWith(path)) {
       return true;
     }
@@ -83,14 +80,12 @@ const WebSidebar = () => {
   return (
     <Sidebar className="hidden md:flex">
       <div className="flex flex-col h-full py-6 pr-2">
-        {/* Logo */}
         <div className="px-6 pb-6 mb-2">
           <Link to="/">
             <IdolystLogo />
           </Link>
         </div>
 
-        {/* Main Navigation */}
         <SidebarContent>
           <SidebarGroup>
             <SidebarGroupLabel>Navigation</SidebarGroupLabel>
@@ -182,7 +177,6 @@ const WebSidebar = () => {
           </SidebarGroup>
         </SidebarContent>
 
-        {/* Quick Actions */}
         {isAuthenticated && !isLoading && (
           <SidebarContent>
             <SidebarGroup>
@@ -256,7 +250,6 @@ const WebSidebar = () => {
           </SidebarContent>
         )}
 
-        {/* User Profile / Login */}
         <div className="mt-auto px-4">
           {isLoading ? (
             <div className="flex items-center justify-center py-4">
@@ -327,6 +320,13 @@ const WebSidebar = () => {
               </Link>
             </div>
           )}
+        </div>
+
+        <div className="mt-auto border-t border-gray-100 dark:border-gray-800 pt-4">
+          <div className="flex items-center justify-between px-4 pb-4">
+            <div className="text-xs text-gray-500 dark:text-gray-400">© {new Date().getFullYear()} Idolyst</div>
+            <ThemeToggle variant="sidebar" />
+          </div>
         </div>
       </div>
     </Sidebar>

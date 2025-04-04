@@ -255,3 +255,139 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Enhanced Dark Mode Styles */
+.dark {
+  --idolyst-gray-dark: #F0F0F0;
+  color-scheme: dark;
+  /* Dark mode background */
+  --idolyst-bg: #121212;
+  --card-bg: #1E1E1E;
+  --input-bg: #2A2A2A;
+  --idolyst-hover: rgba(155, 135, 245, 0.1);
+}
+
+/* Dark mode overrides */
+.dark body {
+  @apply bg-gray-900;
+}
+
+.dark .bg-white {
+  @apply bg-gray-800;
+}
+
+.dark .bg-idolyst-bg {
+  background-color: var(--idolyst-bg);
+}
+
+.dark .gradient-text {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-idolyst-purple-light to-idolyst-purple;
+}
+
+.dark .text-idolyst-gray-dark {
+  @apply text-gray-300;
+}
+
+.dark .border-gray-100 {
+  @apply border-gray-700;
+}
+
+.dark .border-gray-200 {
+  @apply border-gray-700;
+}
+
+.dark .shadow-md {
+  @apply shadow-gray-900/50;
+}
+
+.dark .text-black {
+  @apply text-white;
+}
+
+.dark .text-gray-700 {
+  @apply text-gray-300;
+}
+
+.dark .text-gray-600 {
+  @apply text-gray-400;
+}
+
+.dark .hover\:bg-gray-100:hover {
+  @apply hover:bg-gray-800;
+}
+
+/* Card styles in dark mode */
+.dark .card {
+  @apply bg-gray-800 border-gray-700;
+}
+
+/* Input styles in dark mode */
+.dark input,
+.dark textarea,
+.dark select {
+  @apply bg-gray-800 border-gray-700 text-white;
+}
+
+/* Button styles in dark mode */
+.dark .btn-primary {
+  @apply bg-idolyst-purple text-white;
+}
+
+.dark .btn-secondary {
+  @apply bg-gray-700 text-white;
+}
+
+/* Enhanced hover effects for dark mode */
+.dark .hover\:bg-idolyst-purple-dark:hover {
+  @apply hover:bg-idolyst-purple;
+}
+
+/* Placeholder color in dark mode */
+.dark ::placeholder {
+  @apply text-gray-500;
+}
+
+/* Scrollbar styles for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  @apply bg-gray-800;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  @apply bg-gray-600 rounded-full;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500;
+}
+
+/* Table styles for dark mode */
+.dark table {
+  @apply border-gray-700;
+}
+
+.dark tr, .dark td, .dark th {
+  @apply border-gray-700;
+}
+
+/* Code block styles for dark mode */
+.dark code {
+  @apply bg-gray-800 text-idolyst-purple-light;
+}
+
+/* Focus states for dark mode */
+.dark *:focus-visible {
+  @apply outline-idolyst-purple;
+}
+
+/* Transition classes for theme switching */
+.theme-transition {
+  @apply transition-colors duration-300;
+}
+
+.theme-transition * {
+  @apply transition-colors duration-300;
+}

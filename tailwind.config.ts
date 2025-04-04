@@ -63,7 +63,7 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Idolyst custom colors
+				// Idolyst custom colors with dark mode support
 				idolyst: {
 					purple: {
 						light: "#D6BCFA",
@@ -77,7 +77,9 @@ export default {
 						light: "#F6F6F7",
 						DEFAULT: "#8E9196",
 						dark: "#1A1F2C"
-					}
+					},
+					bg: "var(--idolyst-bg, #FFFFFF)",
+					hover: "var(--idolyst-hover, rgba(155, 135, 245, 0.05))"
 				}
 			},
 			borderRadius: {
@@ -159,6 +161,10 @@ export default {
 					'50%': {
 						transform: 'translateY(-25%)'
 					}
+				},
+				"theme-fade": {
+					"0%": { opacity: "0.4" },
+					"100%": { opacity: "1" }
 				}
 			},
 			animation: {
@@ -175,7 +181,8 @@ export default {
 				"enter": "fade-in 0.3s ease-out, scale-in 0.2s ease-out",
 				"exit": "fade-out 0.3s ease-out, scale-out 0.2s ease-out",
 				"pulse": "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-				"bounce": "bounce 0.5s ease-in-out"
+				"bounce": "bounce 0.5s ease-in-out",
+				"theme-fade": "theme-fade 0.5s ease-out"
 			}
 		}
 	},

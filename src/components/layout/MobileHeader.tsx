@@ -7,6 +7,7 @@ import IdolystLogo from '@/components/shared/IdolystLogo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { LogIn } from 'lucide-react';
+import { ThemeToggle } from './ThemeToggle';
 
 const MobileHeader = () => {
   const { isAuthenticated, user } = useAuth();
@@ -24,8 +25,8 @@ const MobileHeader = () => {
   
   return (
     <header 
-      className={`fixed top-0 left-0 right-0 h-12 md:hidden z-30 bg-white transition-all duration-200 ${
-        scrolled ? 'shadow-md' : ''
+      className={`fixed top-0 left-0 right-0 h-12 md:hidden z-30 bg-white dark:bg-gray-900 transition-all duration-200 ${
+        scrolled ? 'shadow-md dark:shadow-gray-800/50' : ''
       }`}
     >
       <div className="flex items-center justify-between px-4 h-full">
@@ -36,13 +37,16 @@ const MobileHeader = () => {
         
         {/* Right side actions */}
         <div className="flex items-center space-x-2">
+          {/* Theme Toggle */}
+          <ThemeToggle variant="minimal" />
+          
           {isAuthenticated ? (
             <Link to="/profile">
               <motion.div 
                 whileHover={{ scale: 1.05 }} 
                 whileTap={{ scale: 0.95 }}
               >
-                <Avatar className="h-8 w-8 border border-gray-200">
+                <Avatar className="h-8 w-8 border border-gray-200 dark:border-gray-700">
                   <AvatarImage 
                     src={user?.profile?.avatar_url || undefined} 
                     alt={user?.profile?.username || "User"} 

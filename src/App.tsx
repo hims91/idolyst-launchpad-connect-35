@@ -8,6 +8,7 @@ import { AuthProvider } from "@/providers/AuthProvider";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { HelmetProvider } from 'react-helmet-async';
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { ThemeProvider } from "@/hooks/use-theme";
 
 // Pages
 import Index from "./pages/Index";
@@ -59,133 +60,135 @@ const App = () => (
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <TooltipProvider>
-            <SidebarProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <Routes>
-                  {/* Public routes */}
-                  <Route path="/" element={<Index />} />
-                  <Route path="/pitch-hub" element={<PitchHub />} />
-                  <Route path="/mentor-space" element={<MentorSpace />} />
-                  <Route path="/ascend" element={<Ascend />} />
-                  
-                  {/* Launchpad routes */}
-                  <Route path="/launchpad/post/:id" element={<PostPage />} />
-                  
-                  {/* PitchHub routes */}
-                  <Route path="/pitch-hub/index" element={<PitchHubIndex />} />
-                  <Route path="/pitch-hub/leaderboard" element={<PitchHubLeaderboard />} />
-                  <Route path="/pitch-hub/:id" element={<PitchHubDetail />} />
-                  <Route 
-                    path="/pitch-hub/new" 
-                    element={
-                      <ProtectedRoute>
-                        <PitchHubNew />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  
-                  {/* Auth routes */}
-                  <Route path="/auth/login" element={<Login />} />
-                  <Route path="/auth/signup" element={<SignUp />} />
-                  <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-                  <Route path="/auth/reset-password" element={<ResetPassword />} />
-                  <Route path="/auth/callback" element={<AuthCallback />} />
-                  <Route path="/unauthorized" element={<Unauthorized />} />
-                  
-                  {/* Profile routes */}
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/profile/:id" element={<ProfileDetail />} />
-                  <Route 
-                    path="/profile/edit" 
-                    element={
-                      <ProtectedRoute>
-                        <ProfileEdit />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route path="/profile/:id/activity" element={<ActivityFeed />} />
-                  <Route 
-                    path="/settings" 
-                    element={
-                      <ProtectedRoute>
-                        <Settings />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  
-                  {/* MentorSpace routes */}
-                  <Route path="/mentor-space/directory" element={<MentorDirectory />} />
-                  <Route path="/mentor-space/:mentorId" element={<MentorDetail />} />
-                  <Route 
-                    path="/mentor-space/sessions" 
-                    element={
-                      <ProtectedRoute>
-                        <SessionManagement />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/mentor-space/apply" 
-                    element={
-                      <ProtectedRoute>
-                        <MentorApplication />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/mentor-space/profile" 
-                    element={
-                      <ProtectedRoute>
-                        <MentorProfilePage />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  
-                  {/* Ascend routes */}
-                  <Route 
-                    path="/ascend/dashboard" 
-                    element={
-                      <ProtectedRoute>
-                        <AscendDashboard />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/ascend/leaderboard" 
-                    element={
-                      <ProtectedRoute>
-                        <AscendLeaderboard />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  
-                  {/* Protected routes */}
-                  <Route 
-                    path="/messages" 
-                    element={
-                      <ProtectedRoute>
-                        <Messages />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/notifications" 
-                    element={
-                      <ProtectedRoute>
-                        <Notifications />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  
-                  {/* Catch all */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </BrowserRouter>
-            </SidebarProvider>
-          </TooltipProvider>
+          <ThemeProvider>
+            <TooltipProvider>
+              <SidebarProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <Routes>
+                    {/* Public routes */}
+                    <Route path="/" element={<Index />} />
+                    <Route path="/pitch-hub" element={<PitchHub />} />
+                    <Route path="/mentor-space" element={<MentorSpace />} />
+                    <Route path="/ascend" element={<Ascend />} />
+                    
+                    {/* Launchpad routes */}
+                    <Route path="/launchpad/post/:id" element={<PostPage />} />
+                    
+                    {/* PitchHub routes */}
+                    <Route path="/pitch-hub/index" element={<PitchHubIndex />} />
+                    <Route path="/pitch-hub/leaderboard" element={<PitchHubLeaderboard />} />
+                    <Route path="/pitch-hub/:id" element={<PitchHubDetail />} />
+                    <Route 
+                      path="/pitch-hub/new" 
+                      element={
+                        <ProtectedRoute>
+                          <PitchHubNew />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    
+                    {/* Auth routes */}
+                    <Route path="/auth/login" element={<Login />} />
+                    <Route path="/auth/signup" element={<SignUp />} />
+                    <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/auth/reset-password" element={<ResetPassword />} />
+                    <Route path="/auth/callback" element={<AuthCallback />} />
+                    <Route path="/unauthorized" element={<Unauthorized />} />
+                    
+                    {/* Profile routes */}
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/profile/:id" element={<ProfileDetail />} />
+                    <Route 
+                      path="/profile/edit" 
+                      element={
+                        <ProtectedRoute>
+                          <ProfileEdit />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route path="/profile/:id/activity" element={<ActivityFeed />} />
+                    <Route 
+                      path="/settings" 
+                      element={
+                        <ProtectedRoute>
+                          <Settings />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    
+                    {/* MentorSpace routes */}
+                    <Route path="/mentor-space/directory" element={<MentorDirectory />} />
+                    <Route path="/mentor-space/:mentorId" element={<MentorDetail />} />
+                    <Route 
+                      path="/mentor-space/sessions" 
+                      element={
+                        <ProtectedRoute>
+                          <SessionManagement />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/mentor-space/apply" 
+                      element={
+                        <ProtectedRoute>
+                          <MentorApplication />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/mentor-space/profile" 
+                      element={
+                        <ProtectedRoute>
+                          <MentorProfilePage />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    
+                    {/* Ascend routes */}
+                    <Route 
+                      path="/ascend/dashboard" 
+                      element={
+                        <ProtectedRoute>
+                          <AscendDashboard />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/ascend/leaderboard" 
+                      element={
+                        <ProtectedRoute>
+                          <AscendLeaderboard />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    
+                    {/* Protected routes */}
+                    <Route 
+                      path="/messages" 
+                      element={
+                        <ProtectedRoute>
+                          <Messages />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/notifications" 
+                      element={
+                        <ProtectedRoute>
+                          <Notifications />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    
+                    {/* Catch all */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </BrowserRouter>
+              </SidebarProvider>
+            </TooltipProvider>
+          </ThemeProvider>
         </AuthProvider>
       </QueryClientProvider>
     </HelmetProvider>

@@ -1,3 +1,4 @@
+
 # Idolyst Project Structure
 Idolyst, a mobile-first professional networking platform designed for entrepreneurs launching ideas (PitchHub), mentorship for professional growth (MentorSpace), gamified engagement (Ascend), one-on-one networking (Messaging), and monetization through mentorship fees and premium features. Every page, card, button, and UI/UX element is fleshed out with a very modern, mobile-first approach, complete with animations and deep interlinkages between modules.
 
@@ -23,6 +24,16 @@ Idolyst, a mobile-first professional networking platform designed for entreprene
 - `src/components/layout/MobileNavigation.tsx` - Mobile bottom navigation
 - `src/components/layout/MobileHeader.tsx` - Mobile header with authentication state
 - `src/components/layout/AuthLayout.tsx` - Authentication pages layout
+- `src/components/layout/ThemeToggle.tsx` - Theme toggle component for switching between dark, light, and system modes
+
+### Theme System
+- `src/hooks/use-theme.tsx` - Theme management with context provider, browser preference detection, persistent storage in localStorage and user profile, and APIs for theme switching
+- Theme implementation supports three modes:
+  - Light mode: Default bright theme
+  - Dark mode: Low-light UI for night usage and eye comfort
+  - System mode: Automatically follows the user's system preference
+- Responsive design considerations with different theme toggle placements for mobile and desktop
+- Smooth theme transitions with CSS animations
 
 ### Routes
 - `src/App.tsx` - Main route definitions and auth-protected routes
@@ -64,3 +75,4 @@ The right sidebar enhances the Idolyst desktop experience with:
 3. **Featured PitchHub Ideas**: Presents mini idea cards with title, votes, and click-to-view functionality
 
 The right sidebar is implemented with responsive design principles, smooth animations (fade-in on scroll), hover effects on cards, and real-time data fetching. It's strategically positioned to provide valuable supplementary content while maintaining focus on the main content area.
+

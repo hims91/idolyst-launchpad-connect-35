@@ -8,6 +8,7 @@ import MobileNavigation from './MobileNavigation';
 import MobileHeader from './MobileHeader';
 import { useAuth } from '@/hooks/useAuth';
 import { Helmet } from 'react-helmet-async';
+import { ThemeToggle } from './ThemeToggle';
 
 interface LayoutProps {
   children?: React.ReactNode;
