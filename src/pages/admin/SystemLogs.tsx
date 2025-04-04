@@ -17,14 +17,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, AlertTriangle, Info } from "lucide-react";
 
 const SystemLogs = () => {
-  const [logType, setLogType] = useState<string>("");
+  const [logType, setLogType] = useState<string>("all");
   const [component, setComponent] = useState<string>("");
   const [limit, setLimit] = useState<number>(100);
   
   const { useSystemLogs } = useAdmin();
   
   const { data: logs, isLoading } = useSystemLogs(
-    logType || undefined,
+    logType !== "all" ? logType : undefined,
     component || undefined,
     limit
   );
@@ -68,7 +68,7 @@ const SystemLogs = () => {
                 <SelectValue placeholder="Log Type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Types</SelectItem>
+                <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="error">Error</SelectItem>
                 <SelectItem value="warning">Warning</SelectItem>
                 <SelectItem value="info">Info</SelectItem>
@@ -155,7 +155,7 @@ const SystemLogs = () => {
             <Info className="mx-auto h-12 w-12 text-gray-400 mb-3" />
             <h3 className="text-lg font-medium">No logs found</h3>
             <p className="text-muted-foreground">
-              {logType || component
+              {logType !== "all" || component
                 ? "Try changing your filters"
                 : "There are no system logs to display"}
             </p>

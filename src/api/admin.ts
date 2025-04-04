@@ -259,7 +259,7 @@ export const fetchSystemLogs = async (
       .order("created_at", { ascending: false })
       .limit(limit);
     
-    if (logType) {
+    if (logType && logType !== "all") {
       query = query.eq("log_type", logType);
     }
     
