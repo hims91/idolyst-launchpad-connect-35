@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -33,8 +32,8 @@ const SignUp = () => {
   const { signUp, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [roles, setRoles] = useState(["entrepreneur"]);
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
       navigate("/");
@@ -49,25 +48,23 @@ const SignUp = () => {
       password: "",
       confirmPassword: "",
       fullName: "",
-      roles: ["entrepreneur"], // Default role
+      roles: ["entrepreneur"],
     },
   });
 
-  const { watch } = form;
+  const { watch, formState: { errors } } = form;
   const password = watch("password");
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
-      // Prepare metadata for Supabase auth
       const metadata = {
         username: data.username,
         full_name: data.fullName || "",
         roles: data.roles,
-        byline: "" // Initialize byline as empty string
+        byline: ""
       };
 
-      // Sign up user
       const { error } = await signUp(data.email, data.password, metadata);
       
       if (error) {
@@ -77,13 +74,11 @@ const SignUp = () => {
           variant: "destructive",
         });
       } else {
-        // Show success message
         toast({
           title: "Account created!",
           description: "Please check your email to verify your account.",
         });
         
-        // Redirect to login with a query param to show a success message
         navigate("/auth/login?registered=true");
       }
     } catch (error: any) {
@@ -238,9 +233,10 @@ const SignUp = () => {
               render={({ field }) => (
                 <FormItem className="pt-2">
                   <RoleSelector
-                    selectedRoles={field.value}
-                    onChange={field.onChange}
-                    error={form.formState.errors.roles?.message}
+                    selectedRoles={roles}
+                    onChange={setRoles}
+                    error={errors.roles}
+                    includeAdmin={false}
                   />
                 </FormItem>
               )}

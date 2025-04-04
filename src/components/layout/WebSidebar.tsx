@@ -1,7 +1,9 @@
-import React from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
+import { useAdmin } from '@/hooks/use-admin';
 import {
   LayoutDashboard,
   Sparkles,
@@ -13,7 +15,8 @@ import {
   LogIn,
   LogOut,
   User,
-  Loader2
+  Loader2,
+  Shield
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -35,10 +38,19 @@ import {
 import { ThemeToggle } from './ThemeToggle';
 
 const WebSidebar = () => {
-  const { isAuthenticated, user, signOut, isLoading } = useAuth();
+  const { isAuthenticated, user, signOut, isLoading, roles } = useAuth();
   const location = useLocation();
   const { toast } = useToast();
   const [isSigningOut, setIsSigningOut] = React.useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const { isAdmin: adminStatus, isLoading: isAdminLoading } = useAdmin();
+  
+  // Check if user has admin role
+  useEffect(() => {
+    if (!isLoading) {
+      setIsAdmin(adminStatus);
+    }
+  }, [adminStatus, isLoading]);
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
@@ -171,6 +183,29 @@ const WebSidebar = () => {
                       Grow and track your progress
                     </TooltipContent>
                   </Tooltip>
+                  
+                  {/* Admin panel link - only visible to admins */}
+                  {isAdmin && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link to="/admin">
+                          <Button
+                            variant={isActive('/admin') ? "default" : "ghost"}
+                            size="lg"
+                            className={`w-full justify-start ${
+                              isActive('/admin') ? 'gradient-bg hover-scale' : ''
+                            }`}
+                          >
+                            <Shield className="mr-2 h-5 w-5" />
+                            Admin Panel
+                          </Button>
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        Platform administration
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
                 </div>
               </TooltipProvider>
             </SidebarGroupContent>

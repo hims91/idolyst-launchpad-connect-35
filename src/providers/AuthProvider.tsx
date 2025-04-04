@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Session, User, Provider } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +15,6 @@ import {
 import { toast } from '@/hooks/use-toast';
 import * as authApi from '@/api/auth';
 
-// Create a typed supabase client
 const typedSupabase = getTypedSupabaseClient(supabase);
 
 export interface UserWithProfile extends User {
@@ -46,6 +44,7 @@ interface AuthContextType {
   updateExperience: (experience: ProfessionalExperience[]) => Promise<{ error: any }>;
   updateQualifications: (qualifications: UserQualification[]) => Promise<{ error: any }>;
   updateThemePreference: (theme: string) => Promise<{ error: any }>;
+  addRole: (role: 'entrepreneur' | 'mentor' | 'admin') => Promise<{ error: any }>;
 }
 
 interface AuthProviderProps {
@@ -100,16 +99,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (rolesError) throw rolesError;
       
-      // Fetch OAuth connections
       const { connections, error: oauthError } = await authApi.getUserOAuthConnections(userId);
       if (!oauthError && connections) {
         setOauthConnections(connections as OAuthConnection[]);
       }
       
-      // Check if two-factor auth is set up for this user
       const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
       if (!factorsError && factorsData) {
-        // Check if there are any factors enrolled
         const hasFactors = factorsData.all && factorsData.all.length > 0;
         
         setTwoFactorState({
@@ -365,7 +361,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (error) throw error;
       
-      // Update two-factor state
       setTwoFactorState(prev => ({
         ...prev,
         isEnrolled: true,
@@ -402,7 +397,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (error) throw error;
       
-      // Update local profile state
       if (profile) {
         setProfile({
           ...profile,
@@ -427,7 +421,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (error) throw error;
       
-      // Update local profile state
       if (profile) {
         setProfile(prev => ({
           ...prev,
@@ -452,7 +445,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (error) throw error;
       
-      // Update local profile state
       if (profile) {
         setProfile(prev => ({
           ...prev,
@@ -477,7 +469,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (error) throw error;
       
-      // Update local profile state
       if (profile) {
         setProfile(prev => ({
           ...prev,
@@ -488,6 +479,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { error: null };
     } catch (error) {
       console.error('Update theme preference error:', error);
+      return { error };
+    }
+  };
+
+  const addRole = async (role: 'entrepreneur' | 'mentor' | 'admin') => {
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      
+      if (!user?.user) throw new Error('User not authenticated');
+
+      const { error } = await supabase
+        .from("user_roles")
+        .insert({
+          user_id: user.user.id,
+          role,
+          is_verified: false
+        });
+
+      if (error) throw error;
+      
+      await refreshProfile();
+      
+      toast({
+        title: "Role added",
+        description: `${role} role has been added successfully.`
+      });
+      
+      return { error: null };
+    } catch (error) {
+      console.error('Add role error:', error);
+      
+      toast({
+        variant: "destructive",
+        title: "Error adding role",
+        description: "There was an error adding the role."
+      });
+      
       return { error };
     }
   };
@@ -514,7 +542,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     updateByline,
     updateExperience,
     updateQualifications,
-    updateThemePreference
+    updateThemePreference,
+    addRole
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
