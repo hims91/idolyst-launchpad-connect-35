@@ -2064,7 +2064,7 @@ export type Database = {
         | "collab_worthy"
         | "like"
       session_status: "scheduled" | "completed" | "cancelled" | "rescheduled"
-      user_role: "entrepreneur" | "mentor"
+      user_role: "entrepreneur" | "mentor" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never

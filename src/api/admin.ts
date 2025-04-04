@@ -279,3 +279,60 @@ export const fetchSystemLogs = async (
     return [];
   }
 };
+
+/**
+ * Adds a role to a user
+ * @param userId User ID to add role to
+ * @param role Role to add
+ * @param isVerified Whether the role should be marked as verified
+ * @returns Boolean indicating success
+ */
+export const addUserRole = async (
+  userId: string,
+  role: 'entrepreneur' | 'mentor' | 'admin',
+  isVerified: boolean = role === 'admin' // Admin roles are automatically verified
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from("user_roles")
+      .insert({
+        user_id: userId,
+        role: role as any,
+        is_verified: isVerified
+      });
+
+    if (error) {
+      console.error("Error adding role:", error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error in addUserRole:", error);
+    return false;
+  }
+};
+
+/**
+ * Removes a role from a user
+ * @param roleId The ID of the role entry to remove
+ * @returns Boolean indicating success
+ */
+export const removeUserRole = async (roleId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from("user_roles")
+      .delete()
+      .eq("id", roleId);
+
+    if (error) {
+      console.error("Error removing role:", error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error in removeUserRole:", error);
+    return false;
+  }
+};

@@ -1,4 +1,3 @@
-
 export interface AdminSetting {
   id: string;
   setting_key: string;
@@ -62,4 +61,11 @@ export interface AdminStats {
   active_users_last_week: number;
   total_reports: number;
   pending_reports: number;
+}
+
+// Add Role management types
+export interface UserRoleManagement {
+  userId: string;
+  role: 'entrepreneur' | 'mentor' | 'admin';
+  isVerified: boolean;
 }
