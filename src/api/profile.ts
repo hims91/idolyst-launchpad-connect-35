@@ -252,6 +252,52 @@ export const fetchExtendedProfile = async (
       }
     ];
 
+    // Parse experience and qualifications from JSON if they exist
+    let parsedExperience = [];
+    let parsedQualifications = [];
+    
+    // Handle experience parsing
+    if (profile.experience) {
+      try {
+        // If experience is already an array, use it directly
+        if (Array.isArray(profile.experience)) {
+          parsedExperience = profile.experience;
+        } 
+        // If it's a string (JSON), parse it
+        else if (typeof profile.experience === 'string') {
+          parsedExperience = JSON.parse(profile.experience);
+        }
+        // Otherwise assume it's already the correct format from Supabase
+        else {
+          parsedExperience = profile.experience;
+        }
+      } catch (e) {
+        console.error("Error parsing experience:", e);
+        parsedExperience = [];
+      }
+    }
+    
+    // Handle qualifications parsing
+    if (profile.qualifications) {
+      try {
+        // If qualifications is already an array, use it directly
+        if (Array.isArray(profile.qualifications)) {
+          parsedQualifications = profile.qualifications;
+        } 
+        // If it's a string (JSON), parse it
+        else if (typeof profile.qualifications === 'string') {
+          parsedQualifications = JSON.parse(profile.qualifications);
+        }
+        // Otherwise assume it's already the correct format from Supabase
+        else {
+          parsedQualifications = profile.qualifications;
+        }
+      } catch (e) {
+        console.error("Error parsing qualifications:", e);
+        parsedQualifications = [];
+      }
+    }
+
     // Construct extended profile
     const extendedProfile: ExtendedProfile = {
       ...profile,
@@ -262,7 +308,9 @@ export const fetchExtendedProfile = async (
       badges: [], // Placeholder - implement badge fetching if needed
       social_links: [], // Placeholder - implement social links fetching if needed
       recent_activity: activities || [],
-      xp: profile.xp || 0
+      xp: profile.xp || 0,
+      experience: parsedExperience,
+      qualifications: parsedQualifications
     };
 
     return extendedProfile;

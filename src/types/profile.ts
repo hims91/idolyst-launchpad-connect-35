@@ -51,8 +51,8 @@ export interface ExtendedProfile {
   created_at: string;
   location?: string | null;
   byline?: string | null;
-  experience?: any[];
-  qualifications?: any[];
+  experience?: any; // Changed from any[] to any to handle different types from database
+  qualifications?: any; // Changed from any[] to any to handle different types from database
   preferred_theme?: string;
   resume_url?: string | null; // Added for professional profiles
   github_url?: string | null; // Added for developer profiles

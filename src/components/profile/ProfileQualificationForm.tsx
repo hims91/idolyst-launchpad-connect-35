@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -77,7 +76,13 @@ const ProfileQualificationForm: React.FC<ProfileQualificationFormProps> = ({
       if (!isEditing) {
         const newQualification: UserQualification = {
           id: uuidv4(),
-          ...values,
+          degree: values.degree,
+          institution: values.institution,
+          startDate: values.startDate,
+          fieldOfStudy: values.fieldOfStudy,
+          endDate: values.endDate,
+          isCurrentlyStudying: values.isCurrentlyStudying,
+          description: values.description,
         };
 
         const updatedQualifications = [...qualifications, newQualification];
@@ -94,7 +99,16 @@ const ProfileQualificationForm: React.FC<ProfileQualificationFormProps> = ({
       // For editing existing qualification
       else {
         const updatedQualifications = qualifications.map(qual => 
-          qual.id === qualification.id ? { ...qual, ...values } : qual
+          qual.id === qualification.id ? { 
+            ...qual, 
+            degree: values.degree,
+            institution: values.institution,
+            startDate: values.startDate,
+            fieldOfStudy: values.fieldOfStudy,
+            endDate: values.endDate,
+            isCurrentlyStudying: values.isCurrentlyStudying,
+            description: values.description,
+          } : qual
         );
         
         if (onUpdate) {
