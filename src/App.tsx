@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -51,6 +52,13 @@ import AscendLeaderboard from "./pages/ascend/Leaderboard";
 
 // Launchpad pages
 import PostPage from "./pages/launchpad/Post";
+
+// Admin pages
+import AdminDashboard from "./pages/admin/Dashboard";
+import AdminModerationQueue from "./pages/admin/ModerationQueue";
+import AdminUsers from "./pages/admin/Users";
+import AdminSystemLogs from "./pages/admin/SystemLogs";
+import AdminSettings from "./pages/admin/Settings";
 
 // Create a new QueryClient instance
 const queryClient = new QueryClient();
@@ -160,6 +168,48 @@ const App = () => (
                       element={
                         <ProtectedRoute>
                           <AscendLeaderboard />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    
+                    {/* Admin routes */}
+                    <Route 
+                      path="/admin" 
+                      element={
+                        <ProtectedRoute requiredRoles={['admin']}>
+                          <AdminDashboard />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/admin/moderation" 
+                      element={
+                        <ProtectedRoute requiredRoles={['admin']}>
+                          <AdminModerationQueue />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/admin/users" 
+                      element={
+                        <ProtectedRoute requiredRoles={['admin']}>
+                          <AdminUsers />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/admin/logs" 
+                      element={
+                        <ProtectedRoute requiredRoles={['admin']}>
+                          <AdminSystemLogs />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/admin/settings" 
+                      element={
+                        <ProtectedRoute requiredRoles={['admin']}>
+                          <AdminSettings />
                         </ProtectedRoute>
                       } 
                     />

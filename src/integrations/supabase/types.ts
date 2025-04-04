@@ -9,6 +9,30 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_settings: {
+        Row: {
+          created_at: string
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          setting_key: string
+          setting_value: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       badge_progress: {
         Row: {
           badge_id: string
@@ -507,6 +531,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      moderation_queue: {
+        Row: {
+          content_id: string
+          content_type: string
+          created_at: string
+          id: string
+          moderator_id: string | null
+          moderator_notes: string | null
+          reason: string
+          reported_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          content_id: string
+          content_type: string
+          created_at?: string
+          id?: string
+          moderator_id?: string | null
+          moderator_notes?: string | null
+          reason: string
+          reported_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          content_id?: string
+          content_type?: string
+          created_at?: string
+          id?: string
+          moderator_id?: string | null
+          moderator_notes?: string | null
+          reason?: string
+          reported_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       notification_preferences: {
         Row: {
@@ -1630,6 +1693,33 @@ export type Database = {
           },
         ]
       }
+      system_logs: {
+        Row: {
+          component: string
+          created_at: string
+          id: string
+          log_type: string
+          message: string
+          metadata: Json | null
+        }
+        Insert: {
+          component: string
+          created_at?: string
+          id?: string
+          log_type: string
+          message: string
+          metadata?: Json | null
+        }
+        Update: {
+          component?: string
+          created_at?: string
+          id?: string
+          log_type?: string
+          message?: string
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
       two_factor_auth: {
         Row: {
           created_at: string | null
@@ -1894,11 +1984,25 @@ export type Database = {
         }
         Returns: Json
       }
+      is_admin: {
+        Args: {
+          user_id: string
+        }
+        Returns: boolean
+      }
       is_mentor: {
         Args: {
           user_id: string
         }
         Returns: boolean
+      }
+      report_content: {
+        Args: {
+          content_type: string
+          content_id: string
+          reason: string
+        }
+        Returns: string
       }
       set_user_theme_preference: {
         Args: {
