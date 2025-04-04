@@ -253,8 +253,8 @@ export const fetchExtendedProfile = async (
     ];
 
     // Parse experience and qualifications from JSON if they exist
-    let parsedExperience = [];
-    let parsedQualifications = [];
+    let parsedExperience: any[] = [];
+    let parsedQualifications: any[] = [];
     
     // Handle experience parsing
     if (profile.experience) {
@@ -265,11 +265,16 @@ export const fetchExtendedProfile = async (
         } 
         // If it's a string (JSON), parse it
         else if (typeof profile.experience === 'string') {
-          parsedExperience = JSON.parse(profile.experience);
+          const parsed = JSON.parse(profile.experience);
+          parsedExperience = Array.isArray(parsed) ? parsed : [];
         }
-        // Otherwise assume it's already the correct format from Supabase
-        else {
-          parsedExperience = profile.experience;
+        // Otherwise try to convert it to an array if possible, or use empty array
+        else if (profile.experience && typeof profile.experience === 'object') {
+          // If it's a JSON object from Supabase, it might have values we can use
+          parsedExperience = Object.values(profile.experience).filter(item => item !== null);
+        } else {
+          // Default to empty array for any other case
+          parsedExperience = [];
         }
       } catch (e) {
         console.error("Error parsing experience:", e);
@@ -286,11 +291,16 @@ export const fetchExtendedProfile = async (
         } 
         // If it's a string (JSON), parse it
         else if (typeof profile.qualifications === 'string') {
-          parsedQualifications = JSON.parse(profile.qualifications);
+          const parsed = JSON.parse(profile.qualifications);
+          parsedQualifications = Array.isArray(parsed) ? parsed : [];
         }
-        // Otherwise assume it's already the correct format from Supabase
-        else {
-          parsedQualifications = profile.qualifications;
+        // Otherwise try to convert it to an array if possible, or use empty array
+        else if (profile.qualifications && typeof profile.qualifications === 'object') {
+          // If it's a JSON object from Supabase, it might have values we can use
+          parsedQualifications = Object.values(profile.qualifications).filter(item => item !== null);
+        } else {
+          // Default to empty array for any other case
+          parsedQualifications = [];
         }
       } catch (e) {
         console.error("Error parsing qualifications:", e);
