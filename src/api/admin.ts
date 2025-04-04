@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { AdminSetting, ModerationItem, SystemLog } from "@/types/admin";
 
@@ -103,11 +104,11 @@ export const fetchModerationQueue = async (status?: string, contentType?: string
       `)
       .order("created_at", { ascending: false });
     
-    if (status) {
+    if (status && status !== "all") {
       query = query.eq("status", status);
     }
     
-    if (contentType) {
+    if (contentType && contentType !== "all") {
       query = query.eq("content_type", contentType);
     }
     
