@@ -77,7 +77,13 @@ const ProfileExperienceForm: React.FC<ProfileExperienceFormProps> = ({
       if (!isEditing) {
         const newExperience: ProfessionalExperience = {
           id: uuidv4(),
-          ...values,
+          title: values.title,  // Ensure required fields are explicitly set
+          company: values.company,
+          startDate: values.startDate,
+          location: values.location,
+          endDate: values.endDate,
+          isCurrentPosition: values.isCurrentPosition,
+          description: values.description,
         };
 
         const updatedExperiences = [...experiences, newExperience];
@@ -94,7 +100,16 @@ const ProfileExperienceForm: React.FC<ProfileExperienceFormProps> = ({
       // For editing existing experience
       else {
         const updatedExperiences = experiences.map(exp => 
-          exp.id === experience.id ? { ...exp, ...values } : exp
+          exp.id === experience.id ? { 
+            ...exp, 
+            title: values.title,
+            company: values.company,
+            location: values.location,
+            startDate: values.startDate,
+            endDate: values.endDate,
+            isCurrentPosition: values.isCurrentPosition,
+            description: values.description,
+          } : exp
         );
         
         if (onUpdate) {

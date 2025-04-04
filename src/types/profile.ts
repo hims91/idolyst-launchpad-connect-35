@@ -51,6 +51,9 @@ export interface ExtendedProfile {
   created_at: string;
   location?: string | null;
   byline?: string | null;
+  experience?: any[];
+  qualifications?: any[];
+  preferred_theme?: string;
   resume_url?: string | null; // Added for professional profiles
   github_url?: string | null; // Added for developer profiles
   availability_status?: 'available' | 'busy' | 'offline'; // Added for real-time status
@@ -66,6 +69,9 @@ export interface ProfileUpdatePayload {
   portfolio_url?: string;
   location?: string;
   byline?: string;
+  preferred_theme?: string;
+  experience?: any[];
+  qualifications?: any[];
   resume_url?: string; // Added
   github_url?: string; // Added
 }

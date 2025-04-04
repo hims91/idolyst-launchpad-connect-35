@@ -102,22 +102,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Fetch OAuth connections
       const { connections, error: oauthError } = await authApi.getUserOAuthConnections(userId);
-      if (!oauthError) {
-        setOauthConnections(connections);
+      if (!oauthError && connections) {
+        setOauthConnections(connections as OAuthConnection[]);
       }
       
       // Check if two-factor auth is set up for this user
       const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
-      if (!factorsError && factorsData?.factors && factorsData.factors.length > 0) {
+      if (!factorsError && factorsData) {
+        // Check if there are any factors enrolled
+        const hasFactors = factorsData.all && factorsData.all.length > 0;
+        
         setTwoFactorState({
-          isEnrolled: true,
-          isChallengeRequired: factorsData.totp ? factorsData.totp.has_challenge_required : false,
-          currentFactorId: factorsData.factors[0]?.id
+          isEnrolled: hasFactors,
+          isChallengeRequired: hasFactors,
+          currentFactorId: hasFactors ? factorsData.all[0]?.id : undefined
         });
       }
       
       const enhancedProfile: ExtendedProfile = {
-        ...profileData,
+        ...profileData as any,
         roles: userRoles || [],
         followers_count: 0,
         following_count: 0,
@@ -426,10 +429,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Update local profile state
       if (profile) {
-        setProfile({
-          ...profile,
+        setProfile(prev => ({
+          ...prev,
           experience
-        });
+        }));
       }
       
       return { error: null };
@@ -451,10 +454,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Update local profile state
       if (profile) {
-        setProfile({
-          ...profile,
+        setProfile(prev => ({
+          ...prev,
           qualifications
-        });
+        }));
       }
       
       return { error: null };
@@ -476,10 +479,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Update local profile state
       if (profile) {
-        setProfile({
-          ...profile,
+        setProfile(prev => ({
+          ...prev,
           preferred_theme: theme
-        });
+        }));
       }
       
       return { error: null };

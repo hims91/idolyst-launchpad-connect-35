@@ -131,8 +131,15 @@ export const verifyTwoFactorSetup = async (factorId: string, code: string) => {
 // Verify two-factor token during login
 export const verifyTwoFactorLogin = async (factorId: string, code: string) => {
   try {
+    // First create a challenge
+    const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({ factorId });
+    
+    if (challengeError) throw challengeError;
+    
+    // Then verify with the challenge ID
     const { data, error } = await supabase.auth.mfa.verify({
       factorId,
+      challengeId: challengeData.id,
       code,
     });
     
@@ -148,7 +155,9 @@ export const updateThemePreference = async (userId: string, theme: string) => {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .update({ preferred_theme: theme })
+      .update({ 
+        preferred_theme: theme 
+      })
       .eq('id', userId);
     
     return { data, error };
@@ -198,10 +207,19 @@ export const getUserProfessionalDetails = async (userId: string) => {
       .eq('id', userId)
       .single();
     
+    if (error) {
+      console.error('Error fetching professional details:', error);
+      return { 
+        experience: [], 
+        qualifications: [],
+        error 
+      };
+    }
+    
     return { 
       experience: data?.experience || [], 
       qualifications: data?.qualifications || [],
-      error 
+      error: null
     };
   } catch (error) {
     console.error('Get user professional details error:', error);
@@ -218,7 +236,9 @@ export const updateUserExperience = async (userId: string, experience: any[]) =>
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .update({ experience })
+      .update({ 
+        experience: experience 
+      })
       .eq('id', userId);
     
     return { data, error };
@@ -233,7 +253,9 @@ export const updateUserQualifications = async (userId: string, qualifications: a
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .update({ qualifications })
+      .update({ 
+        qualifications: qualifications 
+      })
       .eq('id', userId);
     
     return { data, error };
@@ -251,7 +273,12 @@ export const getUserOAuthConnections = async (userId: string) => {
       .select('provider, last_sign_in')
       .eq('user_id', userId);
     
-    return { connections: data || [], error };
+    if (error) {
+      console.error('Error fetching OAuth connections:', error);
+      return { connections: [], error };
+    }
+    
+    return { connections: data || [], error: null };
   } catch (error) {
     console.error('Get user OAuth connections error:', error);
     return { connections: [], error };
