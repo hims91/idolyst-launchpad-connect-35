@@ -1,143 +1,143 @@
 
-import { useState, useEffect } from "react";
-import { Helmet } from "react-helmet-async";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Plus } from "lucide-react";
-import Layout from "../components/layout/Layout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import React from "react";
+import { Link } from "react-router-dom";
+import { Helmet } from 'react-helmet-async';
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/use-toast";
-import CategoryFilter from "@/components/launchpad/CategoryFilter";
-import LaunchpadFeed from "@/components/launchpad/LaunchpadFeed";
-import CreatePostModal from "@/components/launchpad/CreatePostModal";
-import { FeedType } from "@/api/launchpad";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import { useAuth } from "@/hooks/useAuth";
+import { Rocket, Users, Award } from "lucide-react";
 
 const Index = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  
-  // Get params from URL or use defaults
-  const initialTab = searchParams.get("tab") as FeedType || "trending";
-  const initialCategory = searchParams.get("category") || "All";
-  
-  const [activeTab, setActiveTab] = useState<FeedType>(
-    ["trending", "following", "latest"].includes(initialTab) ? initialTab as FeedType : "trending"
-  );
-  const [activeCategory, setActiveCategory] = useState(initialCategory);
-  const [refreshFeed, setRefreshFeed] = useState(0);
-  
-  // Update URL when filters change
-  useEffect(() => {
-    const params = new URLSearchParams();
-    params.set("tab", activeTab);
-    if (activeCategory !== "All") {
-      params.set("category", activeCategory);
-    }
-    setSearchParams(params, { replace: true });
-  }, [activeTab, activeCategory, setSearchParams]);
-  
-  // Handle filter changes
-  const handleTabChange = (value: string) => {
-    if (value === "following" && !user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to view posts from people you follow",
-        variant: "destructive",
-      });
-      return;
-    }
-    setActiveTab(value as FeedType);
-  };
-  
-  const handleCategoryChange = (category: string) => {
-    setActiveCategory(category);
-  };
-  
-  // Handle post creation
-  const handlePostCreated = () => {
-    toast({
-      title: "Post created",
-      description: "Your post has been published successfully",
-    });
-    
-    // Refresh feed
-    setRefreshFeed(prev => prev + 1);
-    
-    // If on following tab, switch to trending to see the new post
-    if (activeTab === "following") {
-      setActiveTab("trending");
-    }
-  };
-  
+
   return (
-    <Layout>
+    <ResponsiveLayout showRightSidebar={true}>
       <Helmet>
-        <title>Idolyst | Launchpad - Connect with the startup ecosystem</title>
-        <meta name="description" content="Join Idolyst Launchpad to engage with posts from entrepreneurs, mentors, and innovators in the startup ecosystem." />
-        <meta property="og:title" content="Idolyst Launchpad - Connect with the startup ecosystem" />
-        <meta property="og:description" content="Join Idolyst to engage with posts from entrepreneurs, mentors, and innovators in the startup ecosystem." />
-        <meta property="og:type" content="website" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Idolyst Launchpad - Connect with the startup ecosystem" />
-        <meta name="twitter:description" content="Join Idolyst to engage with posts from entrepreneurs, mentors, and innovators in the startup ecosystem." />
+        <title>Idolyst - Professional Networking Platform for Entrepreneurs</title>
       </Helmet>
       
-      <div className="max-w-2xl mx-auto pb-20 md:pb-0 px-4 lg:px-0">
-        <motion.div 
-          className="flex justify-between items-center mb-6"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <h1 className="text-2xl font-bold gradient-text">Launchpad</h1>
+      <div className="space-y-8">
+        {/* Hero Section */}
+        <section className="text-center py-8 md:py-12">
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">Welcome to Idolyst</h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
+            A professional networking platform for entrepreneurs launching ideas, seeking mentorship, and building connections.
+          </p>
           
-          <CreatePostModal 
-            trigger={
-              <Button className="gradient-bg hover-scale">
-                <Plus className="mr-2 h-4 w-4" />
-                New Post
+          {!user && (
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button asChild size="lg">
+                <Link to="/auth/signup">Create Your Account</Link>
               </Button>
-            }
-            onPostCreated={handlePostCreated}
-          />
-        </motion.div>
+              <Button asChild variant="outline" size="lg">
+                <Link to="/auth/login">Sign In</Link>
+              </Button>
+            </div>
+          )}
+        </section>
         
-        <Tabs 
-          defaultValue={activeTab} 
-          value={activeTab}
-          onValueChange={handleTabChange} 
-          className="w-full"
-        >
-          <div className="sticky top-12 md:top-0 bg-white z-10 pb-2">
-            <TabsList className="grid w-full grid-cols-3 mb-4">
-              <TabsTrigger value="trending" className="data-[state=active]:gradient-bg">Trending</TabsTrigger>
-              <TabsTrigger value="following" className="data-[state=active]:gradient-bg">Following</TabsTrigger>
-              <TabsTrigger value="latest" className="data-[state=active]:gradient-bg">Latest</TabsTrigger>
-            </TabsList>
-            
-            <CategoryFilter
-              selectedCategory={activeCategory}
-              onCategoryChange={handleCategoryChange}
-            />
-          </div>
+        {/* Main Content Tabs */}
+        <Tabs defaultValue="discover" className="w-full">
+          <TabsList className="grid grid-cols-3 mb-6">
+            <TabsTrigger value="discover">Discover</TabsTrigger>
+            <TabsTrigger value="featured">Featured</TabsTrigger>
+            <TabsTrigger value="trending">Trending</TabsTrigger>
+          </TabsList>
           
-          <TabsContent value="trending" className="mt-4">
-            <LaunchpadFeed key={`trending-${activeCategory}-${refreshFeed}`} feedType="trending" category={activeCategory !== "All" ? activeCategory : undefined} />
+          {/* Discover Tab */}
+          <TabsContent value="discover" className="space-y-8 focus-visible:outline-none">
+            {/* Main Platform Services */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* PitchHub */}
+              <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+                <CardContent className="p-0">
+                  <Link to="/pitch-hub" className="block">
+                    <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-6 flex justify-between items-center">
+                      <h3 className="text-xl font-semibold text-white">PitchHub</h3>
+                      <Rocket className="h-8 w-8 text-white" />
+                    </div>
+                    <div className="p-6">
+                      <p className="text-muted-foreground mb-4">
+                        Launch your startup ideas and get feedback from entrepreneurs and investors.
+                      </p>
+                      <Button variant="outline" className="w-full">
+                        Explore PitchHub
+                      </Button>
+                    </div>
+                  </Link>
+                </CardContent>
+              </Card>
+              
+              {/* MentorSpace */}
+              <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+                <CardContent className="p-0">
+                  <Link to="/mentor-space" className="block">
+                    <div className="bg-gradient-to-br from-green-500 to-teal-600 p-6 flex justify-between items-center">
+                      <h3 className="text-xl font-semibold text-white">MentorSpace</h3>
+                      <Users className="h-8 w-8 text-white" />
+                    </div>
+                    <div className="p-6">
+                      <p className="text-muted-foreground mb-4">
+                        Connect with industry experts for guidance, feedback, and professional growth.
+                      </p>
+                      <Button variant="outline" className="w-full">
+                        Find Mentors
+                      </Button>
+                    </div>
+                  </Link>
+                </CardContent>
+              </Card>
+              
+              {/* Ascend */}
+              <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+                <CardContent className="p-0">
+                  <Link to="/ascend" className="block">
+                    <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-6 flex justify-between items-center">
+                      <h3 className="text-xl font-semibold text-white">Ascend</h3>
+                      <Award className="h-8 w-8 text-white" />
+                    </div>
+                    <div className="p-6">
+                      <p className="text-muted-foreground mb-4">
+                        Level up your profile with engagement rewards and track your professional growth.
+                      </p>
+                      <Button variant="outline" className="w-full">
+                        Start Ascending
+                      </Button>
+                    </div>
+                  </Link>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
           
-          <TabsContent value="following" className="mt-4">
-            <LaunchpadFeed key={`following-${activeCategory}-${refreshFeed}`} feedType="following" category={activeCategory !== "All" ? activeCategory : undefined} />
+          {/* Featured Tab */}
+          <TabsContent value="featured" className="focus-visible:outline-none">
+            <div className="grid grid-cols-1 gap-6">
+              <Card className="p-6">
+                <h3 className="text-xl font-semibold mb-4">Featured Content</h3>
+                <p className="text-muted-foreground">
+                  Featured content will be displayed here. Check back soon!
+                </p>
+              </Card>
+            </div>
           </TabsContent>
           
-          <TabsContent value="latest" className="mt-4">
-            <LaunchpadFeed key={`latest-${activeCategory}-${refreshFeed}`} feedType="latest" category={activeCategory !== "All" ? activeCategory : undefined} />
+          {/* Trending Tab */}
+          <TabsContent value="trending" className="focus-visible:outline-none">
+            <div className="grid grid-cols-1 gap-6">
+              <Card className="p-6">
+                <h3 className="text-xl font-semibold mb-4">Trending Now</h3>
+                <p className="text-muted-foreground">
+                  Trending content will be displayed here. Check back soon!
+                </p>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
-    </Layout>
+    </ResponsiveLayout>
   );
 };
 
