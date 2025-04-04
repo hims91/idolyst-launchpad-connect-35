@@ -12,15 +12,19 @@ export const checkAdminAccess = async (): Promise<boolean> => {
     
     if (!user?.user) return false;
 
-    const { data, error } = await supabase
-      .rpc('is_admin', { _user_id: user.user.id });
+    // Check if user has admin role directly from user_roles table
+    const { data: userRoles, error: rolesError } = await supabase
+      .from("user_roles")
+      .select("*")
+      .eq("user_id", user.user.id)
+      .eq("role", "admin");
 
-    if (error) {
-      console.error("Error checking admin status:", error);
+    if (rolesError) {
+      console.error("Error checking admin status:", rolesError);
       return false;
     }
 
-    return data || false;
+    return userRoles && userRoles.length > 0;
   } catch (error) {
     console.error("Error in checkAdminAccess:", error);
     return false;
@@ -47,7 +51,7 @@ export const fetchAdminSettings = async (key?: string): Promise<AdminSetting[]> 
       return [];
     }
 
-    return data || [];
+    return data as AdminSetting[] || [];
   } catch (error) {
     console.error("Error in fetchAdminSettings:", error);
     return [];
@@ -62,7 +66,7 @@ export const fetchAdminSettings = async (key?: string): Promise<AdminSetting[]> 
  */
 export const updateAdminSetting = async (key: string, value: any): Promise<boolean> => {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("admin_settings")
       .update({
         setting_value: value,
@@ -114,7 +118,7 @@ export const fetchModerationQueue = async (status?: string, contentType?: string
       return [];
     }
 
-    return data || [];
+    return data as unknown as ModerationItem[] || [];
   } catch (error) {
     console.error("Error in fetchModerationQueue:", error);
     return [];
@@ -173,11 +177,18 @@ export const reportContent = async (
   reason: string
 ): Promise<boolean> => {
   try {
-    const { data, error } = await supabase
-      .rpc('report_content', {
+    const { data: user } = await supabase.auth.getUser();
+    
+    if (!user?.user) return false;
+
+    const { error } = await supabase
+      .from("moderation_queue")
+      .insert({
         content_type: contentType,
         content_id: contentId,
-        reason: reason
+        reported_by: user.user.id,
+        reason: reason,
+        status: 'pending'
       });
 
     if (error) {
@@ -262,7 +273,7 @@ export const fetchSystemLogs = async (
       return [];
     }
 
-    return data || [];
+    return data as SystemLog[] || [];
   } catch (error) {
     console.error("Error in fetchSystemLogs:", error);
     return [];

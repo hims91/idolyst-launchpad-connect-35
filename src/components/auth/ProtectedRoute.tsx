@@ -7,7 +7,7 @@ import { toast } from "@/components/ui/use-toast";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRoles?: ('entrepreneur' | 'mentor')[];
+  requiredRoles?: ('entrepreneur' | 'mentor' | 'admin')[];
 }
 
 const ProtectedRoute = ({ 

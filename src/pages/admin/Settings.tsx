@@ -21,12 +21,12 @@ const AdminSettings = () => {
   const moderationSettings = settings ? getModerationSettings(settings) : null;
   const notificationSettings = settings ? getNotificationSettings(settings) : null;
   
-  // Local state for form values
-  const [siteName, setSiteName] = useState(siteSettings?.site_name || "");
-  const [maintenanceMode, setMaintenanceMode] = useState(siteSettings?.maintenance_mode || false);
-  const [requireApproval, setRequireApproval] = useState(moderationSettings?.require_approval_for_new_users || false);
-  const [adminEmail, setAdminEmail] = useState(notificationSettings?.admin_email || "");
-  const [alertOnReports, setAlertOnReports] = useState(notificationSettings?.alert_on_reports || true);
+  // Local state for form values with proper initialization
+  const [siteName, setSiteName] = useState<string>(siteSettings?.site_name || "");
+  const [maintenanceMode, setMaintenanceMode] = useState<boolean>(siteSettings?.maintenance_mode || false);
+  const [requireApproval, setRequireApproval] = useState<boolean>(moderationSettings?.require_approval_for_new_users || false);
+  const [adminEmail, setAdminEmail] = useState<string>(notificationSettings?.admin_email || "");
+  const [alertOnReports, setAlertOnReports] = useState<boolean>(notificationSettings?.alert_on_reports || false);
   
   // Update local state when settings are loaded
   React.useEffect(() => {

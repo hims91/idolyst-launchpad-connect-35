@@ -47,13 +47,19 @@ const AdminDashboard = () => {
   const { data: reportCount, isLoading: loadingReports } = useQuery({
     queryKey: ["admin", "stats", "reports"],
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from("moderation_queue")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
+      try {
+        // Use a direct query to count the pending reports
+        const { count, error } = await supabase
+          .from("moderation_queue")
+          .select("*", { count: "exact", head: true })
+          .eq("status", "pending");
         
-      if (error) throw error;
-      return count || 0;
+        if (error) throw error;
+        return count || 0;
+      } catch (error) {
+        console.error("Error fetching report count:", error);
+        return 0;
+      }
     },
   });
 
