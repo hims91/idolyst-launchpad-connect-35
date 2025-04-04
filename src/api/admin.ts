@@ -273,7 +273,7 @@ export const fetchSystemLogs = async (
       return [];
     }
 
-    return data as SystemLog[] || [];
+    return data as unknown as SystemLog[] || [];
   } catch (error) {
     console.error("Error in fetchSystemLogs:", error);
     return [];

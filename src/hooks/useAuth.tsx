@@ -8,7 +8,7 @@ declare module '@/providers/AuthProvider' {
   export interface Role {
     id: string;
     user_id: string;
-    role: 'entrepreneur' | 'mentor' | 'admin';
+    role: 'entrepreneur' | 'mentor' | 'admin';  // Updated to include 'admin'
     is_verified: boolean;
     created_at: string;
     updated_at: string;

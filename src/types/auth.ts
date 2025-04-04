@@ -1,4 +1,3 @@
-
 import { User as SupabaseUser } from "@supabase/supabase-js";
 
 export interface AuthUser {
@@ -10,7 +9,7 @@ export interface AuthUser {
 
 export interface UserRole {
   id: string;
-  role: 'entrepreneur' | 'mentor';
+  role: 'entrepreneur' | 'mentor' | 'admin';
   is_verified: boolean;
 }
 
@@ -85,7 +84,7 @@ export interface AuthContextType extends AuthState {
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
   updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
-  addRole: (role: 'entrepreneur' | 'mentor') => Promise<void>;
+  addRole: (role: 'entrepreneur' | 'mentor' | 'admin') => Promise<void>;
   removeRole: (roleId: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
   setupTwoFactor: () => Promise<TwoFactorSetupResponse>;
@@ -103,7 +102,7 @@ export interface SignUpFormData {
   confirmPassword: string;
   username: string;
   full_name?: string;
-  roles: ('entrepreneur' | 'mentor')[];
+  roles: ('entrepreneur' | 'mentor' | 'admin')[];
 }
 
 export interface LoginFormData {
@@ -129,7 +128,6 @@ export interface TwoFactorVerifyFormData {
   code: string;
 }
 
-// Helper function to convert Supabase User to AuthUser
 export const mapSupabaseUser = (user: SupabaseUser | null): AuthUser | null => {
   if (!user) return null;
   

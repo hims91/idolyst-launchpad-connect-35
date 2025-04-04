@@ -7,7 +7,7 @@ import { toast } from "@/components/ui/use-toast";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRoles?: ('entrepreneur' | 'mentor' | 'admin')[];
+  requiredRoles?: ('entrepreneur' | 'mentor' | 'admin')[];  // Updated to include 'admin'
 }
 
 const ProtectedRoute = ({ 
@@ -45,7 +45,7 @@ const ProtectedRoute = ({
   // Check for required roles if specified
   if (requiredRoles && requiredRoles.length > 0 && roles) {
     const userRoles = roles.map(r => r.role);
-    const hasRequiredRole = requiredRoles.some(role => userRoles.includes(role));
+    const hasRequiredRole = requiredRoles.some(role => userRoles.includes(role as 'entrepreneur' | 'mentor' | 'admin'));
     
     if (!hasRequiredRole) {
       // Redirect to unauthorized page

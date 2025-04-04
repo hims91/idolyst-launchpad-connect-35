@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { User, Lightbulb, Check } from "lucide-react";
+import { User, Lightbulb, Check, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Role {
@@ -15,10 +15,17 @@ interface RoleSelectorProps {
   selectedRoles: string[];
   onChange: (roles: string[]) => void;
   error?: string;
+  includeAdmin?: boolean;  // New prop to optionally show admin role
 }
 
-const RoleSelector = ({ selectedRoles, onChange, error }: RoleSelectorProps) => {
-  const roles: Role[] = [
+const RoleSelector = ({ 
+  selectedRoles, 
+  onChange, 
+  error,
+  includeAdmin = false  // Default to false
+}: RoleSelectorProps) => {
+  // Base roles that are always available
+  const baseRoles: Role[] = [
     {
       id: "entrepreneur",
       title: "Entrepreneur",
@@ -32,6 +39,17 @@ const RoleSelector = ({ selectedRoles, onChange, error }: RoleSelectorProps) => 
       icon: User,
     },
   ];
+  
+  // Admin role that's only included when includeAdmin prop is true
+  const adminRole: Role = {
+    id: "admin",
+    title: "Administrator",
+    description: "Manage platform settings and moderate content",
+    icon: Shield,
+  };
+  
+  // Combine roles based on includeAdmin prop
+  const roles = includeAdmin ? [...baseRoles, adminRole] : baseRoles;
 
   const toggleRole = (roleId: string) => {
     if (selectedRoles.includes(roleId)) {
