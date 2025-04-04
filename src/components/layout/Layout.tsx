@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import WebSidebar from './WebSidebar';
@@ -16,16 +16,6 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { isAuthenticated } = useAuth();
-  const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
-  const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(false);
-  
-  const toggleLeftSidebar = () => {
-    setLeftSidebarCollapsed(!leftSidebarCollapsed);
-  };
-  
-  const toggleRightSidebar = () => {
-    setRightSidebarCollapsed(!rightSidebarCollapsed);
-  };
   
   return (
     <div className="flex min-h-screen bg-idolyst-bg">
@@ -34,7 +24,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </Helmet>
       
       {/* Desktop Sidebar */}
-      <WebSidebar collapsed={leftSidebarCollapsed} onToggle={toggleLeftSidebar} />
+      <WebSidebar />
       
       {/* Mobile Header */}
       <MobileHeader />
@@ -50,7 +40,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </motion.main>
       
       {/* Web-only Right Sidebar */}
-      <WebRightSidebar collapsed={rightSidebarCollapsed} onToggle={toggleRightSidebar} />
+      <WebRightSidebar />
       
       {/* Mobile Navigation */}
       <MobileNavigation />

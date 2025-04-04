@@ -1,210 +1,176 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, Search, Bell, X, ChevronLeft } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
+import IdolystLogo from '@/components/shared/IdolystLogo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
-  Sheet, 
-  SheetTrigger, 
-  SheetContent,
-  SheetClose
-} from '@/components/ui/sheet';
+  LogIn, Settings, LogOut, User, 
+  Bell, MessageSquare, Shield, Home,
+  GitPullRequest, BookOpen, TrendingUp
+} from 'lucide-react';
+import { ThemeToggle } from './ThemeToggle';
+import { Badge } from '@/components/ui/badge';
+import { useUnreadMessages } from '@/hooks/use-unread-messages';
 
-const MobileHeader: React.FC = () => {
-  const { user, profile } = useAuth();
-  const location = useLocation();
-  const [searchOpen, setSearchOpen] = useState(false);
+const MobileHeader = () => {
+  const { isAuthenticated, user, signOut } = useAuth();
+  const [scrolled, setScrolled] = useState(false);
+  const { unreadCount } = useUnreadMessages();
   
-  // Determine if we need the back button rather than menu
-  const shouldShowBackButton = location.pathname !== "/" && 
-                              !location.pathname.match(/^\/(?:mentor-space|pitch-hub|messages|ascend|profile)$/);
-  
-  // Get page title based on current route
-  const getPageTitle = () => {
-    const path = location.pathname;
+  // Add shadow when scrolled
+  React.useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
     
-    if (path === '/') return 'Idolyst';
-    if (path === '/pitch-hub') return 'PitchHub';
-    if (path.includes('/pitch-hub')) return 'PitchHub';
-    if (path === '/mentor-space') return 'MentorSpace';
-    if (path.includes('/mentor-space')) return 'MentorSpace';
-    if (path === '/ascend') return 'Ascend';
-    if (path.includes('/ascend')) return 'Ascend';
-    if (path.includes('/messages')) return 'Messages';
-    if (path === '/profile') return 'My Profile';
-    if (path.includes('/profile')) return 'Profile';
-    if (path.includes('/notifications')) return 'Notifications';
-    if (path.includes('/settings')) return 'Settings';
-    
-    return 'Idolyst';
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const handleSignOut = async () => {
+    await signOut();
   };
   
-  const pageTitle = getPageTitle();
-  
-  // Mobile search component
-  const MobileSearch = () => (
-    <div className="fixed inset-0 bg-background z-40 p-4">
-      <div className="flex items-center gap-2 mb-4">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => setSearchOpen(false)}
-          className="shrink-0"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <div className="relative w-full">
-          <input 
-            type="text" 
-            placeholder="Search..." 
-            className="w-full px-4 py-2 rounded-full bg-muted focus:outline-none focus:ring-2 focus:ring-primary"
-            autoFocus
-          />
-        </div>
-      </div>
-      <div className="pt-2">
-        <p className="text-sm text-muted-foreground mb-2">Recent Searches</p>
-        {/* Recent search items would go here */}
-        <p className="text-sm text-muted-foreground">No recent searches</p>
-      </div>
-    </div>
-  );
-
   return (
-    <>
-      <header className="px-4 py-3 flex items-center justify-between bg-background/80 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          {shouldShowBackButton ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => window.history.back()}
-              className="shrink-0"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-          ) : (
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="shrink-0">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[85%] sm:w-[350px] p-0">
-                <div className="flex flex-col h-full">
-                  <div className="p-6 border-b">
-                    {user ? (
-                      <div className="flex items-center gap-3">
-                        <Avatar className="w-12 h-12">
-                          <AvatarImage src={profile?.avatar_url || ""} alt={profile?.username || "User"} />
-                          <AvatarFallback>{profile?.username?.substring(0, 2).toUpperCase() || "ID"}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{profile?.full_name || "Idolyst User"}</p>
-                          <p className="text-sm text-muted-foreground truncate">@{profile?.username || "idolyst_user"}</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <p className="font-medium">Welcome to Idolyst</p>
-                        <div className="flex gap-2">
-                          <SheetClose asChild>
-                            <Button asChild variant="default" className="w-full">
-                              <Link to="/auth/login">Sign In</Link>
-                            </Button>
-                          </SheetClose>
-                          <SheetClose asChild>
-                            <Button asChild variant="outline" className="w-full">
-                              <Link to="/auth/signup">Sign Up</Link>
-                            </Button>
-                          </SheetClose>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <nav className="flex-1 overflow-y-auto p-2">
-                    <div className="grid gap-1 px-2">
-                      <SheetClose asChild>
-                        <Link to="/" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted">
-                          <span>Home</span>
-                        </Link>
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <Link to="/pitch-hub" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted">
-                          <span>PitchHub</span>
-                        </Link>
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <Link to="/mentor-space" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted">
-                          <span>MentorSpace</span>
-                        </Link>
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <Link to="/ascend" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted">
-                          <span>Ascend</span>
-                        </Link>
-                      </SheetClose>
-                      
-                      {user && (
-                        <>
-                          <hr className="my-2 border-t border-muted" />
-                          <SheetClose asChild>
-                            <Link to="/profile" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted">
-                              <span>My Profile</span>
-                            </Link>
-                          </SheetClose>
-                          <SheetClose asChild>
-                            <Link to="/settings" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted">
-                              <span>Settings</span>
-                            </Link>
-                          </SheetClose>
-                        </>
-                      )}
-                    </div>
-                  </nav>
-                  {user && (
-                    <div className="p-4 border-t">
-                      <SheetClose asChild>
-                        <Button variant="outline" className="w-full" onClick={() => {/* Sign out logic */}}>
-                          Sign Out
-                        </Button>
-                      </SheetClose>
-                    </div>
-                  )}
-                </div>
-              </SheetContent>
-            </Sheet>
-          )}
-          
-          <h1 className="text-lg font-semibold truncate">{pageTitle}</h1>
-        </div>
+    <header 
+      className={`fixed top-0 left-0 right-0 h-12 md:hidden z-30 bg-white dark:bg-gray-900 transition-all duration-200 ${
+        scrolled ? 'shadow-md dark:shadow-gray-800/50' : ''
+      }`}
+    >
+      <div className="flex items-center justify-between px-4 h-full">
+        {/* Logo */}
+        <Link to="/" className="flex items-center">
+          <IdolystLogo size="small" />
+        </Link>
         
-        <div className="flex items-center gap-1">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setSearchOpen(true)} 
-            className="shrink-0"
-          >
-            <Search className="h-5 w-5" />
-          </Button>
+        {/* Right side actions */}
+        <div className="flex items-center space-x-2">
+          {/* Theme Toggle */}
+          <ThemeToggle variant="minimal" />
           
-          {user && (
-            <Link to="/notifications">
-              <Button variant="ghost" size="icon" className="shrink-0">
-                <Bell className="h-5 w-5" />
+          {isAuthenticated ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <motion.div 
+                  whileHover={{ scale: 1.05 }} 
+                  whileTap={{ scale: 0.95 }}
+                  className="cursor-pointer relative"
+                >
+                  <Avatar className="h-8 w-8 border border-gray-200 dark:border-gray-700">
+                    <AvatarImage 
+                      src={user?.profile?.avatar_url || undefined} 
+                      alt={user?.profile?.username || "User"} 
+                    />
+                    <AvatarFallback>
+                      {(user?.profile?.username?.[0] || "U").toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  {(unreadCount > 0) && (
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
+                    />
+                  )}
+                </motion.div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel>
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user?.profile?.full_name || user?.profile?.username}</p>
+                    <p className="text-xs leading-none text-muted-foreground truncate">{user?.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuItem asChild>
+                    <Link to="/">
+                      <Home className="mr-2 h-4 w-4" />
+                      <span>Home</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/messages">
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      <span>Messages</span>
+                      {unreadCount > 0 && (
+                        <Badge variant="destructive" className="ml-auto py-0 h-5">
+                          {unreadCount}
+                        </Badge>
+                      )}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/notifications">
+                      <Bell className="mr-2 h-4 w-4" />
+                      <span>Notifications</span>
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuItem asChild>
+                    <Link to="/pitch-hub">
+                      <GitPullRequest className="mr-2 h-4 w-4" />
+                      <span>PitchHub</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/mentor-space">
+                      <BookOpen className="mr-2 h-4 w-4" />
+                      <span>MentorSpace</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/ascend">
+                      <TrendingUp className="mr-2 h-4 w-4" />
+                      <span>Ascend</span>
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link to="/auth/login">
+              <Button size="sm" variant="ghost" className="flex items-center">
+                <LogIn className="h-4 w-4 mr-1" />
+                <span className="text-sm">Login</span>
               </Button>
             </Link>
           )}
         </div>
-      </header>
-      
-      {/* Mobile search overlay */}
-      {searchOpen && <MobileSearch />}
-    </>
+      </div>
+    </header>
   );
 };
 
