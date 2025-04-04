@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { format } from "date-fns";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -29,17 +29,26 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "@/components/ui/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Users as UsersIcon } from "lucide-react";
+import { Search, Users as UsersIcon, MoreHorizontal, ShieldCheck, ShieldX } from "lucide-react";
 
 const UsersAdmin = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("");
   const [page, setPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const queryClient = useQueryClient();
   
   const pageSize = 10;
   
@@ -74,6 +83,75 @@ const UsersAdmin = () => {
       return { users: filteredData, totalCount: count || 0 };
     },
   });
+  
+  // Mutation for adding admin role
+  const addAdminRoleMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await supabase
+        .from("user_roles")
+        .insert({
+          user_id: userId,
+          role: "admin" as any,
+          is_verified: true
+        });
+      
+      if (error) throw error;
+      return userId;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Admin role added",
+        description: "User has been granted admin privileges",
+      });
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+    onError: (error) => {
+      console.error("Error adding admin role:", error);
+      toast({
+        title: "Error adding admin role",
+        description: "There was an error granting admin privileges",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Mutation for removing admin role
+  const removeAdminRoleMutation = useMutation({
+    mutationFn: async (params: { userId: string, roleId: string }) => {
+      const { error } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("id", params.roleId)
+        .eq("user_id", params.userId)
+        .eq("role", "admin" as any);
+      
+      if (error) throw error;
+      return params;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Admin role removed",
+        description: "User's admin privileges have been revoked",
+      });
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+    onError: (error) => {
+      console.error("Error removing admin role:", error);
+      toast({
+        title: "Error removing admin role",
+        description: "There was an error revoking admin privileges",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const handleAddAdminRole = (userId: string) => {
+    addAdminRoleMutation.mutate(userId);
+  };
+  
+  const handleRemoveAdminRole = (userId: string, roleId: string) => {
+    removeAdminRoleMutation.mutate({ userId, roleId });
+  };
   
   const users = usersData?.users || [];
   const totalCount = usersData?.totalCount || 0;
@@ -131,6 +209,15 @@ const UsersAdmin = () => {
           return <Badge key={role.id} variant="outline">{role.role}</Badge>;
       }
     });
+  };
+
+  const hasAdminRole = (roles: any[]) => {
+    return roles?.some((role: any) => role.role === "admin") || false;
+  };
+  
+  const getAdminRoleId = (roles: any[]) => {
+    const adminRole = roles?.find((role: any) => role.role === "admin");
+    return adminRole?.id || null;
   };
   
   return (
@@ -228,13 +315,32 @@ const UsersAdmin = () => {
                       {user.created_at ? format(new Date(user.created_at), "MMM d, yyyy") : "N/A"}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleViewUser(user)}
-                      >
-                        View
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleViewUser(user)}>
+                            View Details
+                          </DropdownMenuItem>
+                          {hasAdminRole(user.roles) ? (
+                            <DropdownMenuItem 
+                              onClick={() => handleRemoveAdminRole(user.id, getAdminRoleId(user.roles))}
+                              className="text-red-500"
+                            >
+                              <ShieldX className="h-4 w-4 mr-2" />
+                              Remove Admin
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem onClick={() => handleAddAdminRole(user.id)}>
+                              <ShieldCheck className="h-4 w-4 mr-2" />
+                              Make Admin
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -294,6 +400,36 @@ const UsersAdmin = () => {
                   <div className="flex flex-wrap gap-1 mt-1">
                     {getUserRoleBadges(selectedUser.roles)}
                   </div>
+                </div>
+                
+                <div className="ml-auto">
+                  {hasAdminRole(selectedUser.roles) ? (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-red-500 border-red-300"
+                      onClick={() => {
+                        handleRemoveAdminRole(selectedUser.id, getAdminRoleId(selectedUser.roles));
+                        setSelectedUser(null);
+                      }}
+                    >
+                      <ShieldX className="h-4 w-4 mr-2" />
+                      Remove Admin
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-purple-700 border-purple-300"
+                      onClick={() => {
+                        handleAddAdminRole(selectedUser.id);
+                        setSelectedUser(null);
+                      }}
+                    >
+                      <ShieldCheck className="h-4 w-4 mr-2" />
+                      Make Admin
+                    </Button>
+                  )}
                 </div>
               </div>
               
