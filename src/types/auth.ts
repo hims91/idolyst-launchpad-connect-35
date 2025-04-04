@@ -14,6 +14,28 @@ export interface UserRole {
   is_verified: boolean;
 }
 
+export interface ProfessionalExperience {
+  id: string;
+  company: string;
+  title: string;
+  startDate: string;
+  endDate?: string;
+  isCurrentPosition?: boolean;
+  description?: string;
+  location?: string;
+}
+
+export interface UserQualification {
+  id: string;
+  degree: string;
+  institution: string;
+  fieldOfStudy?: string;
+  startDate: string;
+  endDate?: string;
+  isCurrentlyStudying?: boolean;
+  description?: string;
+}
+
 export interface UserProfile extends AuthUser {
   full_name?: string;
   bio?: string;
@@ -23,6 +45,27 @@ export interface UserProfile extends AuthUser {
   created_at: string;
   professional_details?: string | null;
   portfolio_url?: string | null;
+  byline?: string | null;
+  experience?: ProfessionalExperience[];
+  qualifications?: UserQualification[];
+  preferred_theme?: string;
+}
+
+export interface TwoFactorSetupResponse {
+  qrCode: string | null;
+  secret: string | null;
+  error: any;
+}
+
+export interface TwoFactorState {
+  isEnrolled: boolean;
+  isChallengeRequired: boolean;
+  currentFactorId?: string;
+}
+
+export interface OAuthConnection {
+  provider: string;
+  last_sign_in: string;
 }
 
 export interface AuthState {
@@ -30,11 +73,14 @@ export interface AuthState {
   profile: UserProfile | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  twoFactorState: TwoFactorState;
+  oauthConnections: OAuthConnection[];
 }
 
 export interface AuthContextType extends AuthState {
   signUp: (email: string, password: string, metadata: any) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithProvider: (provider: 'google' | 'linkedin_oidc') => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
@@ -42,6 +88,13 @@ export interface AuthContextType extends AuthState {
   addRole: (role: 'entrepreneur' | 'mentor') => Promise<void>;
   removeRole: (roleId: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
+  setupTwoFactor: () => Promise<TwoFactorSetupResponse>;
+  verifyTwoFactorSetup: (factorId: string, code: string) => Promise<{ success: boolean; error: any }>;
+  verifyTwoFactorLogin: (factorId: string, code: string) => Promise<{ success: boolean; error: any }>;
+  updateThemePreference: (theme: string) => Promise<void>;
+  updateByline: (byline: string) => Promise<void>;
+  updateExperience: (experience: ProfessionalExperience[]) => Promise<void>;
+  updateQualifications: (qualifications: UserQualification[]) => Promise<void>;
 }
 
 export interface SignUpFormData {
@@ -66,6 +119,14 @@ export interface ForgotPasswordFormData {
 export interface ResetPasswordFormData {
   password: string;
   confirmPassword: string;
+}
+
+export interface TwoFactorSetupFormData {
+  code: string;
+}
+
+export interface TwoFactorVerifyFormData {
+  code: string;
 }
 
 // Helper function to convert Supabase User to AuthUser

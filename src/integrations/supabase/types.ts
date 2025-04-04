@@ -1334,6 +1334,7 @@ export type Database = {
           show_badges: boolean | null
           show_followers: boolean | null
           show_following: boolean | null
+          two_factor_enabled: boolean | null
           user_id: string
         }
         Insert: {
@@ -1345,6 +1346,7 @@ export type Database = {
           show_badges?: boolean | null
           show_followers?: boolean | null
           show_following?: boolean | null
+          two_factor_enabled?: boolean | null
           user_id: string
         }
         Update: {
@@ -1356,6 +1358,7 @@ export type Database = {
           show_badges?: boolean | null
           show_followers?: boolean | null
           show_following?: boolean | null
+          two_factor_enabled?: boolean | null
           user_id?: string
         }
         Relationships: [
@@ -1418,6 +1421,7 @@ export type Database = {
           dark_mode_enabled: boolean | null
           education: string | null
           email: string
+          experience: Json | null
           full_name: string | null
           github_url: string | null
           id: string
@@ -1427,7 +1431,9 @@ export type Database = {
           linkedin_url: string | null
           location: string | null
           portfolio_url: string | null
+          preferred_theme: string | null
           professional_details: string | null
+          qualifications: Json | null
           resume_url: string | null
           show_xp: boolean | null
           skills: string[] | null
@@ -1450,6 +1456,7 @@ export type Database = {
           dark_mode_enabled?: boolean | null
           education?: string | null
           email: string
+          experience?: Json | null
           full_name?: string | null
           github_url?: string | null
           id: string
@@ -1459,7 +1466,9 @@ export type Database = {
           linkedin_url?: string | null
           location?: string | null
           portfolio_url?: string | null
+          preferred_theme?: string | null
           professional_details?: string | null
+          qualifications?: Json | null
           resume_url?: string | null
           show_xp?: boolean | null
           skills?: string[] | null
@@ -1482,6 +1491,7 @@ export type Database = {
           dark_mode_enabled?: boolean | null
           education?: string | null
           email?: string
+          experience?: Json | null
           full_name?: string | null
           github_url?: string | null
           id?: string
@@ -1491,7 +1501,9 @@ export type Database = {
           linkedin_url?: string | null
           location?: string | null
           portfolio_url?: string | null
+          preferred_theme?: string | null
           professional_details?: string | null
+          qualifications?: Json | null
           resume_url?: string | null
           show_xp?: boolean | null
           skills?: string[] | null
@@ -1887,6 +1899,13 @@ export type Database = {
           user_id: string
         }
         Returns: boolean
+      }
+      set_user_theme_preference: {
+        Args: {
+          user_id: string
+          theme_preference: string
+        }
+        Returns: undefined
       }
       update_login_streak: {
         Args: {

@@ -10,6 +10,8 @@ import { motion } from "framer-motion";
 import { fadeInUp, scaleAnimation } from "@/lib/animations";
 
 import AuthLayout from "@/components/layout/AuthLayout";
+import SocialLoginButtons from "@/components/auth/SocialLoginButtons";
+import TwoFactorVerification from "@/components/auth/TwoFactorVerification";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -22,15 +24,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/components/ui/use-toast";
-import { Loader } from "lucide-react";
+import { Loader, Mail, LockKeyhole } from "lucide-react";
 
 type FormData = z.infer<typeof loginSchema>;
 
 const Login = () => {
-  const { signIn, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { signIn, isAuthenticated, isLoading: authLoading, twoFactorState } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showTwoFactor, setShowTwoFactor] = useState(false);
   
   // Get redirect path from location state or default to home
   const from = location.state?.from || "/";
@@ -49,14 +52,26 @@ const Login = () => {
       // Clean up the URL
       navigate("/auth/login", { replace: true });
     }
+
+    // Check for email_verified param
+    const emailVerified = searchParams.get("email_verified");
+    if (emailVerified === "true") {
+      toast({
+        title: "Email verified!",
+        description: "Your email has been verified. You can now log in.",
+      });
+      
+      // Clean up the URL
+      navigate("/auth/login", { replace: true });
+    }
   }, [location, navigate]);
   
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated && !authLoading) {
+    if (isAuthenticated && !authLoading && !showTwoFactor) {
       navigate(from, { replace: true });
     }
-  }, [isAuthenticated, authLoading, navigate, from]);
+  }, [isAuthenticated, authLoading, navigate, from, showTwoFactor]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(loginSchema),
@@ -79,11 +94,16 @@ const Login = () => {
           variant: "destructive",
         });
       } else {
-        toast({
-          title: "Login successful",
-          description: "Welcome back to Idolyst!",
-        });
-        navigate(from, { replace: true });
+        // Check if 2FA is required
+        if (twoFactorState.isEnrolled && twoFactorState.isChallengeRequired) {
+          setShowTwoFactor(true);
+        } else {
+          toast({
+            title: "Login successful",
+            description: "Welcome back to Idolyst!",
+          });
+          navigate(from, { replace: true });
+        }
       }
     } catch (error: any) {
       console.error("Login error:", error);
@@ -96,6 +116,30 @@ const Login = () => {
       setIsSubmitting(false);
     }
   };
+
+  // Render two-factor verification if needed
+  if (showTwoFactor) {
+    return (
+      <AuthLayout
+        title="Two-Factor Authentication"
+        subtitle="Enter the verification code from your authenticator app"
+        showBackButton
+        backPath="/auth/login"
+        backText="Back to login"
+      >
+        <TwoFactorVerification 
+          onVerified={() => {
+            toast({
+              title: "Login successful",
+              description: "Welcome back to Idolyst!",
+            });
+            navigate(from, { replace: true });
+          }}
+          onCancel={() => setShowTwoFactor(false)}
+        />
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout
@@ -119,12 +163,16 @@ const Login = () => {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="name@example.com"
-                      autoComplete="email"
-                      {...field}
-                    />
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+                      <Input
+                        type="email"
+                        placeholder="name@example.com"
+                        autoComplete="email"
+                        className="pl-10"
+                        {...field}
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -146,12 +194,16 @@ const Login = () => {
                     </Link>
                   </div>
                   <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="••••••••"
-                      autoComplete="current-password"
-                      {...field}
-                    />
+                    <div className="relative">
+                      <LockKeyhole className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        autoComplete="current-password"
+                        className="pl-10"
+                        {...field}
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -193,6 +245,19 @@ const Login = () => {
                 Log In
               </Button>
             </motion.div>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white dark:bg-gray-900 text-gray-500">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+
+            <SocialLoginButtons />
           </form>
         </Form>
       </motion.div>

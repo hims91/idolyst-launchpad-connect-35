@@ -12,6 +12,7 @@ import { fadeInUp, scaleAnimation } from "@/lib/animations";
 import AuthLayout from "@/components/layout/AuthLayout";
 import RoleSelector from "@/components/auth/RoleSelector";
 import PasswordStrengthMeter from "@/components/auth/PasswordStrengthMeter";
+import SocialLoginButtons from "@/components/auth/SocialLoginButtons";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -24,7 +25,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
-import { Loader } from "lucide-react";
+import { Loader, Mail, LockKeyhole, User, UserCheck } from "lucide-react";
 
 type FormData = z.infer<typeof signUpSchema>;
 
@@ -62,7 +63,8 @@ const SignUp = () => {
       const metadata = {
         username: data.username,
         full_name: data.fullName || "",
-        roles: data.roles
+        roles: data.roles,
+        byline: "" // Initialize byline as empty string
       };
 
       // Sign up user
@@ -118,11 +120,15 @@ const SignUp = () => {
                 <FormItem>
                   <FormLabel>Username</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="e.g., johndoe"
-                      autoComplete="username"
-                      {...field}
-                    />
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+                      <Input
+                        placeholder="e.g., johndoe"
+                        autoComplete="username"
+                        className="pl-10"
+                        {...field}
+                      />
+                    </div>
                   </FormControl>
                   <FormDescription>
                     Your unique username on Idolyst
@@ -139,12 +145,16 @@ const SignUp = () => {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="name@example.com"
-                      autoComplete="email"
-                      {...field}
-                    />
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+                      <Input
+                        type="email"
+                        placeholder="name@example.com"
+                        autoComplete="email"
+                        className="pl-10"
+                        {...field}
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -160,11 +170,15 @@ const SignUp = () => {
                     Full Name <span className="text-gray-400">(Optional)</span>
                   </FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="John Doe"
-                      autoComplete="name"
-                      {...field}
-                    />
+                    <div className="relative">
+                      <UserCheck className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+                      <Input
+                        placeholder="John Doe"
+                        autoComplete="name"
+                        className="pl-10"
+                        {...field}
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -178,12 +192,16 @@ const SignUp = () => {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="••••••••"
-                      autoComplete="new-password"
-                      {...field}
-                    />
+                    <div className="relative">
+                      <LockKeyhole className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        autoComplete="new-password"
+                        className="pl-10"
+                        {...field}
+                      />
+                    </div>
                   </FormControl>
                   <PasswordStrengthMeter password={password} className="mt-2" />
                   <FormMessage />
@@ -198,12 +216,16 @@ const SignUp = () => {
                 <FormItem>
                   <FormLabel>Confirm Password</FormLabel>
                   <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="••••••••"
-                      autoComplete="new-password"
-                      {...field}
-                    />
+                    <div className="relative">
+                      <LockKeyhole className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        autoComplete="new-password"
+                        className="pl-10"
+                        {...field}
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -241,6 +263,19 @@ const SignUp = () => {
                 Sign Up
               </Button>
             </motion.div>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white dark:bg-gray-900 text-gray-500">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+
+            <SocialLoginButtons />
           </form>
         </Form>
       </motion.div>
