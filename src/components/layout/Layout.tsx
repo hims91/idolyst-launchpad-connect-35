@@ -30,7 +30,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       
       {/* Main Content */}
       <motion.main 
-        className="flex-1 md:ml-60 mt-12 md:mt-0"
+        className="flex-1 md:ml-60 md:mr-72 mt-12 md:mt-0 overflow-x-hidden"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
