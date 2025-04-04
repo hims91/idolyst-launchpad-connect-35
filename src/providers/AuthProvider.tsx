@@ -493,7 +493,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         .from("user_roles")
         .insert({
           user_id: user.user.id,
-          role,
+          role: role as any,
           is_verified: false
         });
 

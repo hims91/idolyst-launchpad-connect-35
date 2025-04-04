@@ -235,7 +235,7 @@ const SignUp = () => {
                   <RoleSelector
                     selectedRoles={roles}
                     onChange={setRoles}
-                    error={errors.roles}
+                    error={errors.roles?.message}
                     includeAdmin={false}
                   />
                 </FormItem>

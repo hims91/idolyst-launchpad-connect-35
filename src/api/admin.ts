@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { AdminSetting, ModerationItem, SystemLog } from "@/types/admin";
 
@@ -13,11 +12,12 @@ export const checkAdminAccess = async (): Promise<boolean> => {
     if (!user?.user) return false;
 
     // Check if user has admin role directly from user_roles table
+    // Use type assertion to fix the TypeScript error
     const { data: userRoles, error: rolesError } = await supabase
       .from("user_roles")
       .select("*")
       .eq("user_id", user.user.id)
-      .eq("role", "admin");
+      .eq("role", "admin" as any);
 
     if (rolesError) {
       console.error("Error checking admin status:", rolesError);

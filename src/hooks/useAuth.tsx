@@ -3,7 +3,7 @@
 import { useAuth } from '@/providers/AuthProvider';
 export { useAuth };
 
-// Add a type declaration for roles to include admin
+// Add a type declaration to ensure the Role type includes admin
 declare module '@/providers/AuthProvider' {
   export interface Role {
     id: string;
