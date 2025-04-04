@@ -3,6 +3,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import WebSidebar from './WebSidebar';
+import WebRightSidebar from './WebRightSidebar';
 import MobileNavigation from './MobileNavigation';
 import MobileHeader from './MobileHeader';
 import { useAuth } from '@/hooks/useAuth';
@@ -36,6 +37,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       >
         {children || <Outlet />}
       </motion.main>
+      
+      {/* Web-only Right Sidebar */}
+      <WebRightSidebar />
       
       {/* Mobile Navigation */}
       <MobileNavigation />

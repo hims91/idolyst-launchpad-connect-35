@@ -85,7 +85,7 @@ const Index = () => {
         <meta name="twitter:description" content="Join Idolyst to engage with posts from entrepreneurs, mentors, and innovators in the startup ecosystem." />
       </Helmet>
       
-      <div className="max-w-2xl mx-auto pb-20 md:pb-0">
+      <div className="max-w-2xl mx-auto pb-20 md:pb-0 px-4 lg:px-0">
         <motion.div 
           className="flex justify-between items-center mb-6"
           initial={{ opacity: 0, y: -10 }}

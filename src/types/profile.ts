@@ -1,3 +1,4 @@
+
 import { UserRole } from "./auth";
 
 // Profile types
@@ -53,6 +54,7 @@ export interface ExtendedProfile {
   resume_url?: string | null; // Added for professional profiles
   github_url?: string | null; // Added for developer profiles
   availability_status?: 'available' | 'busy' | 'offline'; // Added for real-time status
+  contribution_points?: number; // Added for right sidebar contributor ranking
 }
 
 export interface ProfileUpdatePayload {
